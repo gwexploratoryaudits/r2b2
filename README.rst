@@ -12,9 +12,6 @@ Overview
     * - tests
       - | |travis| |requires|
         | |codecov|
-    * - package
-      - | |version| |wheel| |supported-versions| |supported-implementations|
-        | |commits-since|
 .. |docs| image:: https://readthedocs.org/projects/r2b2/badge/?style=flat
     :target: https://readthedocs.org/projects/r2b2
     :alt: Documentation Status
@@ -30,22 +27,6 @@ Overview
 .. |codecov| image:: https://codecov.io/github/gwexploratoryaudits/r2b2/coverage.svg?branch=master
     :alt: Coverage Status
     :target: https://codecov.io/github/gwexploratoryaudits/r2b2
-
-.. |version| image:: https://img.shields.io/pypi/v/r2b2.svg
-    :alt: PyPI Package latest release
-    :target: https://pypi.org/project/r2b2
-
-.. |wheel| image:: https://img.shields.io/pypi/wheel/r2b2.svg
-    :alt: PyPI Wheel
-    :target: https://pypi.org/project/r2b2
-
-.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/r2b2.svg
-    :alt: Supported versions
-    :target: https://pypi.org/project/r2b2
-
-.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/r2b2.svg
-    :alt: Supported implementations
-    :target: https://pypi.org/project/r2b2
 
 .. |commits-since| image:: https://img.shields.io/github/commits-since/gwexploratoryaudits/r2b2/v0.1.0.svg
     :alt: Commits since latest release
