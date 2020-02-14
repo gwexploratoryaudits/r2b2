@@ -18,7 +18,7 @@ class Audit(ABC):
             (false) replacement.
     """
     # NOTE: Audits should accept information about the election they will run on. This could be
-    # an Election object, a Contest object, or another structure we design. 
+    # an Election object, a Contest object, or another structure we design.
 
     alpha: float
     beta: float
