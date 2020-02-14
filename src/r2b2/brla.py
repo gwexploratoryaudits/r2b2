@@ -13,22 +13,18 @@ class BayesianRLA(Audit):
             election, the audit will fail to force a full recount.
         max_to_draw (int): The maximum total number of ballots auditors are willing to draw
             during the course of the audit.
-        rounds ()
+        rounds (List[int]): The round sizes to use during the audit.
     """
-    # TODO: How should the election/contest information be incorporated?
 
     rounds: List[int]
 
-    def __init__(self, alpha, max_to_draw, rounds):
+    def __init__(self, alpha, max_to_draw, contest, rounds):
         """Initialize a Byasian RLA."""
 
-        super().__init__(alpha)
-        self.max_to_draw = max_to_draw
+        super().__init__(alpha, 0, max_to_draw, False, contest)
         self.rounds = rounds
-        self.replacement = False
-        self.beta = 0
 
-    def compute_risk(self, sample: int, current_roud: int):
+    def compute_risk(self, sample: int, current_round: int):
         """Compute the risk level given current round size and votes for winner in sample
 
         TODO: insert description
