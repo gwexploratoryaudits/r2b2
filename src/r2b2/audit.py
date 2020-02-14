@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from r2b2.election import Contest
+
 
 class Audit(ABC):
     """Abstract Base Class to define a general Audit object type.
@@ -16,22 +18,30 @@ class Audit(ABC):
             during the course of the audit.
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
+        contest (Contest): Contest to audit.
     """
     # NOTE: Audits should accept information about the election they will run on. This could be
-    # an Election object, a Contest object, or another structure we design.
+    # an Election object, a Contest object, or another structure we design. Currently using
+    # contest type, but can/should be changed in future.
 
     alpha: float
     beta: float
     max_to_draw: int
     replacement: bool
+    contest: Contest
 
-    def __init__(self, alpha):
+    def __init__(self, alpha: float, beta: float, max_to_draw: int,
+                 replacement: bool, contest: Contest):
         """Create an instance of an Audit.
 
         Note: This should only be called when initializing a subclass as the Audit class is an
             abstract class.
         """
         self.alpha = alpha
+        self.beta = beta
+        self.max_to_draw = max_to_draw
+        self.replacement = replacement
+        self.contest = contest
 
     @abstractmethod
     def compute_risk(self):
