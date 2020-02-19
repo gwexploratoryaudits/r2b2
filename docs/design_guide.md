@@ -215,8 +215,7 @@ to match the code that *follows* them.
 - Inline Comments (a comment on the same line as the code) should be at least 2
 spaces away from the statement and server a purpose. They should disambiguate
 the line of code, either in function or intended purpose.
-- For comments aimed at developers try to use `TODO` and `FIXME` as much as
-possible.
+- Use `TODO` and `FIXME` in comments to document future work.
 
 
 **Documentation Strings** should follow the
@@ -332,8 +331,8 @@ for doctests, and tracked at our
 
 **Pushing, Merging, and Pulling**
 
-- **Commit** messages should have a short one-line summary, followed by a
-detailed description of changes made
+- **Commit** messages should have a short one-line summary of 50 characters or 
+less, followed by a detailed description of changes made
   - Commits should be modular (e.g. a complete method, passing current tests,
       passing linter)
   - Commits should **never** contain commented out code or print statements
