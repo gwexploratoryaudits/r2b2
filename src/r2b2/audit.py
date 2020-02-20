@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from r2b2.election import Contest
+from contest import Contest
 
 
 class Audit(ABC):
@@ -9,7 +9,7 @@ class Audit(ABC):
     The Audit class will be an abstract base class which defines the general structure and properties
     of a risk-limiting audit. Individual RLAs should be subclasses of the Audit class.
 
-    Attributes
+    Attributes:
         alpha (float): Risk limit.  Alpha represents the chance that given an incorrectly called
             election, the audit will fail to go to a full recount.
         beta (float): the worst case chance of causing an unnecessary full recount. For many RLAs,
@@ -18,11 +18,8 @@ class Audit(ABC):
             during the course of the audit.
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
-        contest (Contest): Contest to audit.
+        contest (Contest): Contest on which to run the audit.
     """
-    # NOTE: Audits should accept information about the election they will run on. This could be
-    # an Election object, a Contest object, or another structure we design. Currently using
-    # contest type, but can/should be changed in future.
 
     alpha: float
     beta: float
@@ -34,7 +31,8 @@ class Audit(ABC):
                  replacement: bool, contest: Contest):
         """Create an instance of an Audit.
 
-        Note: This should only be called when initializing a subclass as the Audit class is an
+        Note:
+            This should only be called when initializing a subclass as the Audit class is an
             abstract class.
         """
         self.alpha = alpha
