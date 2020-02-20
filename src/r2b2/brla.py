@@ -1,6 +1,6 @@
 from typing import List
 
-from r2b2.audit import Audit
+from audit import Audit
 
 
 class BayesianRLA(Audit):
@@ -33,5 +33,11 @@ class BayesianRLA(Audit):
             sample (int): Votes found for reported winner in current round size.
             current_round(int): Current round size.
         """
+        # TODO: Implement.
+        pass
+
+    def lookup_table(self):
+        """Generate a lookup table of stopping values for each round."""
+
         # TODO: Implement.
         pass
