@@ -41,6 +41,6 @@ class Contest:
         self.tally = tally
         self.num_winners = num_winners
         self.reported_winners = reported_winners
-        self.candidates = list(tally.getKeys())
+        self.candidates = list(tally.keys())
         self.num_candidates = len(self.candidates)
         self.contest_type = contest_type

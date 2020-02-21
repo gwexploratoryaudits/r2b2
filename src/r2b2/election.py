@@ -1,6 +1,6 @@
 from typing import List
 
-from contest import Contest
+from r2b2.contest import Contest
 
 
 class Election:
