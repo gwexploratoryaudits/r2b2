@@ -1,5 +1,7 @@
+from typing import Dict
+from typing import List
+
 import numpy as np
-from typing import List, Dict
 from scipy.stats import hypergeom as hg
 
 from r2b2.audit import Audit
