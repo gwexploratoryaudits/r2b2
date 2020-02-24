@@ -36,6 +36,27 @@ class Audit(ABC):
             This should only be called when initializing a subclass as the Audit class is an
             abstract class.
         """
+
+        if type(alpha) is not float:
+            raise TypeError('alpha must be a float.')
+        if alpha < 0 or alpha > 1.0:
+            raise ValueError('alpha value must be between 0 and 1.')
+        if type(beta) is not float:
+            raise TypeError('beta must be a float.')
+        if beta < 0 or beta > 1.0:
+            raise ValueError('beta must be between 0 and 1.')
+        if type(max_to_draw) is not int:
+            raise TypeError('max_to_draw must be an integer.')
+        if max_to_draw < 0:
+            raise ValueError('max_to_draw must be non-negative.')
+        if type(replacement) is not bool:
+            raise TypeError('replacement must be boolean.')
+        if contest is not None:
+            if type(contest) is not Contest:
+                raise TypeError('contest must be a Contest object')
+            if max_to_draw > contest.total_ballots_cast:
+                raise ValueError('max_to_draw cannot be more than the total ballots cast in the contest.')
+
         self.alpha = alpha
         self.beta = beta
         self.max_to_draw = max_to_draw
