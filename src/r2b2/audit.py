@@ -51,3 +51,9 @@ class Audit(ABC):
         """
 
         pass
+
+    @abstractmethod
+    def compute_sample_size(self):
+        """Compute the next sample size to draw."""
+
+        pass
