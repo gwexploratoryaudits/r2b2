@@ -29,11 +29,16 @@ class BayesianRLA(Audit):
     rounds: List[int]
     stopping_size: Dict[int, int]
 
-    def __init__(self, alpha, max_to_draw, contest, rounds):
+    def __init__(self, alpha, max_to_draw, contest, rounds=None, num_rounds=None):
         """Initialize a Byasian RLA."""
 
         super().__init__(alpha, 0, max_to_draw, False, contest)
-        self.rounds = rounds
+        if rounds is not None:
+            self.rounds = rounds
+        elif num_rounds is not None:
+            self.rounds = self.compute_sample_size(num_rounds)
+        else:
+            self.rounds = self.compute_sample_size(2)
         self.prior = self.compute_prior()
         self.stopping_size = {}
         for i in range(len(self.rounds)):
@@ -74,6 +79,15 @@ class BayesianRLA(Audit):
             posterior = posterior / normalize
 
         return sum(posterior[range(self.contest.total_ballots_cast // 2 + 1)])
+
+    def compute_sample_size(self, num_rounds: int):
+        """Compute list of round sizes for a given number of rounds.
+
+        Returns:
+            List of integer round sizes of length num_rounds.
+        """
+        # TODO: Implement.
+        pass
 
     def compute_stopping_size(self, current_round: int):
         """Compute the stopping size requirement for a given round.
