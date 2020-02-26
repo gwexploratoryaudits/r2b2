@@ -4,4 +4,4 @@ Reference
 .. toctree::
     :glob:
 
-    r2b2*
+    r2b2/index
