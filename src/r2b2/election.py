@@ -1,3 +1,4 @@
+"""Election module handles data associated with an Election or collection of Contests."""
 from typing import List
 
 from r2b2.contest import Contest
@@ -19,10 +20,10 @@ class Election:
     total_ballots: int
     contests: List[Contest]
 
-    # TODO: Determine how init method should work with respect to how election results as input.
-    def __init__(self, name: str, total_ballots: int):
-        # TODO: Implement.
-        pass
+    def __init__(self, name: str, total_ballots: int, contests: List[Contest]):
+        self.name = name
+        self.total_ballots = total_ballots
+        self.contests = contests
 
     def add_contest(self):
         # TODO: Implement.

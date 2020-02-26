@@ -1,3 +1,4 @@
+"""Bayesian Risk-Limiting Audit module."""
 from typing import Dict
 from typing import List
 
@@ -11,12 +12,12 @@ class BayesianRLA(Audit):
     """Baysian Risk-Limiting Audit implementation.
 
     A Bayesian Risk-Limit Audit implementation as defined by Vora, et. al. for auditing 2-candidate
-    plurailty elections. For a given set of rounds, the audit software provides a minimum number of
-    votes for the reported winner that must be found in a round of sampling to stop the audit and
-    confirm the reported outcome.
+    plurailty elections. For a given sample size, the audit software calculates a minimum number of
+    votes for the reported winner that must be found in the sample to stop the audit and confirm
+    the reported outcome.
 
     Attributes:
-        alpha (float): Risk limit. Alpha represents the chance, that gien and incorrect called
+        alpha (float): Risk limit. Alpha represents the chance, that given an incorrectly called
             election, the audit will fail to force a full recount.
         max_to_draw (int): The maximum total number of ballots auditors are willing to draw
             during the course of the audit.
@@ -29,7 +30,12 @@ class BayesianRLA(Audit):
     rounds: List[int]
     stopping_size: Dict[int, int]
 
-    def __init__(self, alpha, max_to_draw, contest, rounds=None, num_rounds=None):
+    def __init__(self,
+                 alpha,
+                 max_to_draw,
+                 contest,
+                 rounds=None,
+                 num_rounds=None):
         """Initialize a Byasian RLA."""
 
         super().__init__(alpha, 0, max_to_draw, False, contest)
@@ -56,7 +62,11 @@ class BayesianRLA(Audit):
             dtype=float)
         return np.concatenate((left, mid, right))
 
-    def compute_risk(self, sample: int, current_round: int):
+    def compute_risk(self,
+                     sample: int = None,
+                     current_round: int = None,
+                     *args,
+                     **kwargs):
         """Compute the risk level given current round size and votes for winner in sample
 
         TODO: insert description
@@ -80,7 +90,7 @@ class BayesianRLA(Audit):
 
         return sum(posterior[range(self.contest.total_ballots_cast // 2 + 1)])
 
-    def compute_sample_size(self, num_rounds: int):
+    def compute_sample_size(self, num_rounds: int = None, *args, **kwargs):
         """Compute list of round sizes for a given number of rounds.
 
         Returns:

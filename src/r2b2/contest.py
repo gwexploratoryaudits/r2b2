@@ -1,3 +1,4 @@
+"""Contest module for handling individual contest data."""
 from enum import Enum
 from typing import Dict
 from typing import List
@@ -16,7 +17,7 @@ class Contest:
     """Contest information from a single contest within an Election.
 
     Attributes:
-        total_ballots_cast (int): Total number of ballots cast in the contest.
+        contest_ballots (int): Total number of ballots cast in the contest.
         candidates (List[str]): List of candidates in the contest.
         num_candidates (int): Number of candidates in the contest.
         num_winners (int): Number of winners desired from contest.
@@ -27,7 +28,7 @@ class Contest:
             reported votes received.
     """
 
-    total_ballots_cast: int
+    contest_ballots: int
     candidates: List[str]
     num_candidates: int
     num_winners: int
@@ -35,10 +36,10 @@ class Contest:
     contest_type: ContestType
     tally: Dict[str, int]
 
-    def __init__(self, total_ballots_cast: int,
-                 tally: Dict[str, int], num_winners: int,
-                 reported_winners: List[str], contest_type: ContestType):
-        self.total_ballots_cast = total_ballots_cast
+    def __init__(self, contest_ballots: int, tally: Dict[str, int],
+                 num_winners: int, reported_winners: List[str],
+                 contest_type: ContestType):
+        self.contest_ballots = contest_ballots
         self.tally = tally
         self.num_winners = num_winners
         self.reported_winners = reported_winners
