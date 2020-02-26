@@ -14,6 +14,7 @@ include CHANGELOG.rst
 include CONTRIBUTING.rst
 include LICENSE
 include README.rst
+include requirements.txt
 
 include tox.ini .travis.yml .appveyor.yml
 
