@@ -53,14 +53,8 @@ class Audit(ABC):
             raise ValueError('max_fraction_to_draw must be between 0 and 1')
         if type(replacement) is not bool:
             raise TypeError('replacement must be boolean.')
-        if contest is not None:
-            if type(contest) is not Contest:
-                raise TypeError('contest must be a Contest object')
-            if max_fraction_to_draw > contest.total_ballots_cast:
-                raise ValueError(
-                    'max_fraction_to_draw cannot be more than the total ballots cast in the contest.'
-                )
-        # TODO: Handle cases where Contest is None.
+        if type(contest) is not Contest:
+            raise TypeError('contest must be a Contest object')
 
         self.alpha = alpha
         self.beta = beta
