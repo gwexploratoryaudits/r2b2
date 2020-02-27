@@ -21,6 +21,19 @@ class Election:
     contests: List[Contest]
 
     def __init__(self, name: str, total_ballots: int, contests: List[Contest]):
+        if type(name) is not str:
+            raise TypeError('name must be a string')
+        if type(total_ballots) is not int:
+            raise TypeError('total_ballots must be an integer value.')
+        if type(contests) is not list:
+            raise TypeError('contests must be a list of Contest objects.')
+        else:
+            for c in contests:
+                if type(c) is not Contest:
+                    raise TypeError('contests must be a list of Contest objects.')
+        if total_ballots < 1:
+            raise ValueError('total_ballots must be greater than 0.')
+
         self.name = name
         self.total_ballots = total_ballots
         self.contests = contests
