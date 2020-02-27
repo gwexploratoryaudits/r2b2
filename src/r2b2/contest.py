@@ -7,7 +7,8 @@ from typing import List
 class ContestType(Enum):
     """Enum indicating what type of vote variation was used in the contest.
 
-    TODO: Add additional vote variations from VVSG.
+    Todo:
+        Add additional vote variations from VVSG.
     """
     PLURALITY = 0
     MAJORITY = 1
@@ -63,6 +64,8 @@ class Contest:
                 'num_winners must be between 1 and number of candidates.')
         if type(reported_winners) is not list:
             raise TypeError('reported_winners must be a list[str].')
+        elif len(reported_winners) != num_winners:
+            raise ValueError('reported_winners must be of length num_winners')
         else:
             for w in reported_winners:
                 if type(w) is not str:
