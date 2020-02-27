@@ -1,9 +1,0 @@
-r2b2
-====
-
-.. testsetup::
-
-    from r2b2 import *
-
-.. automodule:: r2b2
-    :members:
