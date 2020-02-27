@@ -4,8 +4,7 @@ from __future__ import unicode_literals
 import os
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    'autoapi.extension',
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
@@ -21,6 +20,9 @@ year = '2019-2020'
 author = 'R2B2 Team'
 copyright = '{0}, {1}'.format(year, author)
 version = release = '0.1.0'
+
+autoapi_type = 'python'
+autoapi_dirs = ['../src']
 
 pygments_style = 'trac'
 templates_path = ['.']
