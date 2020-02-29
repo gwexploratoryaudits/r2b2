@@ -1,13 +1,10 @@
 import pytest
 
+import r2b2.tests.util as util
 from r2b2.audit import Audit
 from r2b2.contest import Contest
-from r2b2.contest import ContestType
 
-default_contest = Contest(100, {
-    'a': 60,
-    'b': 40
-}, 1, ['a'], ContestType.PLURALITY)
+default_contest = util.generate_contest(100)
 
 
 class SimpleAudit(Audit):
