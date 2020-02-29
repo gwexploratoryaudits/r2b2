@@ -5,8 +5,13 @@ from r2b2.election import Election
 
 
 def test_simple_election():
-    # TODO: implement
-    pass
+    contests = []
+    for i in range(10):
+        contests.append(util.generate_contest(100))
+    simple_election = Election('test_simple_election', 1000, contests)
+    assert simple_election.name == 'test_simple_election'
+    assert simple_election.total_ballots == 1000
+    assert simple_election.contests is contests
 
 
 def test_initialization_errors():
