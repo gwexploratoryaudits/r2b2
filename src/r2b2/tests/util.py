@@ -1,4 +1,5 @@
 import json
+import math
 from random import randint
 
 from r2b2.contest import Contest
@@ -7,13 +8,13 @@ from r2b2.election import Election
 
 
 def generate_contest(max_size):
-    """Generate a Contest with random data. For testing prposes only.
+    """Generate a Contest with random data. For testing purposes only.
 
     Note:
-        Currently this only generates 2 candidate Pluraity contests with 1 winner.
+        Currently this only generates 2 candidate Plurality contests with 1 winner.
     """
     contest_ballots = randint(1, max_size)
-    win_tally = randint(contest_ballots // 2, contest_ballots)
+    win_tally = randint(math.ceil(contest_ballots / 2), contest_ballots)
     tally = {'a': win_tally, 'b': contest_ballots - win_tally}
 
     return Contest(contest_ballots, tally, 1, ['a'], ContestType.PLURALITY)
@@ -75,7 +76,7 @@ def parse_election(json_file):
         tally = data['contests'][contest]['tally']
         num_winners = data['contests'][contest]['num_winners']
         reported_winners = data['contests'][contest]['reported_winners']
-        contest_type = ContestType(data['contests'][contest]['contest_type'])
+        contest_type = ContestType[data['contests'][contest]['contest_type']]
         contests.append(
             Contest(contest_ballots, tally, num_winners, reported_winners,
                     contest_type))
