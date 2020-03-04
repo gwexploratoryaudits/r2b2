@@ -5,11 +5,9 @@ from typing import List
 
 
 class ContestType(Enum):
-    """Enum indicating what type of vote variation was used in the contest.
+    """Enum indicating what type of vote variation was used in the contest."""
 
-    Todo:
-        Add additional vote variations from VVSG.
-    """
+    # TODO: Add additional vote variations from VVSG.
     PLURALITY = 0
     MAJORITY = 1
 
@@ -53,7 +51,7 @@ class Contest:
                     raise TypeError(
                         'tally must contain str keys and int values')
         if sum(tally.values()) > contest_ballots:
-            raise ValueError('tally contains more than contest_ballots.')
+            raise ValueError('tally total is greater than contest_ballots.')
         if sum(tally.values()) < 1:
             raise ValueError(
                 'tally must contain a total of at least 1 ballot.')
