@@ -104,11 +104,8 @@ class Audit(ABC):
             self.distribution_null = fftconvolve(self.distribution_null,
                                                  distribution_round_draw)
 
-        next_risk_schedule = 0
-        for i in range(kmin + 1, round_draw):
-            next_risk_schedule += self.distribution_null[i]
-            self.distribution_null[i] = 0
-        self.risk_schedule.append(next_risk_schedule)
+        self.risk_schedule.append(self.distribution_null[kmin+1:])
+        self.distribution_null = self.distribution_reported_tally[:kmin+1]
 
     def current_dist_reported(self, kmin: int):
         """Update distribution_reported_tally and stopping probability schedule for round."""
@@ -127,11 +124,8 @@ class Audit(ABC):
             self.distribution_reported_tally = fftconvolve(
                 self.distribution_reported_tally, distribution_round_draw)
 
-        next_stopping_prob = 0
-        for i in range(kmin + 1, round_draw):
-            next_stopping_prob += self.distribution_reported_tally[i]
-            self.distribution_reported_tally[i] = 0
-        self.stopping_prob_schedule.append(next_stopping_prob)
+        self.stopping_prob_schedule.append(self.distribution_reported_tally[kmin+1:])
+        self.distribution_reported_tally = self.distribution_reported_tally[:kmin+1]
 
     def next_sample_size(self, *args, **kwargs):
         """Generate estimates of possible next sample sizes.
