@@ -7,18 +7,19 @@ from r2b2.contest import ContestType
 def test_simple_contest():
     """Tests creation of a simple Contest object."""
     simplecontest = Contest(100, {
-        'a': 40,
-        'b': 60
+        'a': 60,
+        'b': 40
     }, 1, ['a'], ContestType.PLURALITY)
     assert simplecontest.contest_ballots == 100
     assert simplecontest.num_candidates == 2
     assert simplecontest.num_winners == 1
     assert simplecontest.contest_type == ContestType.PLURALITY
-    assert simplecontest.tally['a'] == 40
-    assert simplecontest.tally['b'] == 60
+    assert simplecontest.tally['a'] == 60
+    assert simplecontest.tally['b'] == 40
     for cand in simplecontest.candidates:
         assert cand in simplecontest.tally.keys()
     assert simplecontest.reported_winners[0] == 'a'
+    assert simplecontest.winner_prop == 0.6
 
 
 def test_initialization_errors():
