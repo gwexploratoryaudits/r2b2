@@ -1,105 +1,90 @@
 """Bayesian Risk-Limiting Audit module."""
-from typing import Dict
-from typing import List
-
 import numpy as np
 from scipy.stats import hypergeom as hg
 
 from r2b2.audit import Audit
+from r2b2.contest import Contest
 
 
 class BayesianRLA(Audit):
     """Baysian Risk-Limiting Audit implementation.
 
     A Bayesian Risk-Limit Audit implementation as defined by Vora, et. al. for auditing 2-candidate
-    plurailty elections. For a given sample size, the audit software calculates a minimum number of
+    plurality elections. For a given sample size, the audit software calculates a minimum number of
     votes for the reported winner that must be found in the sample to stop the audit and confirm
     the reported outcome.
 
     Attributes:
         alpha (float): Risk limit. Alpha represents the chance, that given an incorrectly called
             election, the audit will fail to force a full recount.
-        max_to_draw (int): The maximum total number of ballots auditors are willing to draw
+        max_fraction_to_draw (int): The maximum total number of ballots auditors are willing to draw
             during the course of the audit.
-        rounds (List[int]): The round sizes to use during the audit.
-        prior (np.ndarray): Prior distribution for worst-case election.
-        stopping_size (Dict[int, int]): Stopping sizes precomputed for each of the given round
+        rounds (List[int]): The round sizes used during the audit.
+        stopping_sizes (List[int]): Stopping sizes precomputed for each of the given round
             sizes.
+        contest (Contest): Contest to be audited.
+        prior (np.ndarray): Prior distribution for worst-case election.
     """
 
-    rounds: List[int]
-    stopping_size: Dict[int, int]
+    prior: np.ndarray
 
-    def __init__(self,
-                 alpha,
-                 max_to_draw,
-                 contest,
-                 rounds=None,
-                 num_rounds=None):
-        """Initialize a Byasian RLA."""
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
+        """Initialize a Bayesian RLA."""
 
-        super().__init__(alpha, 0, max_to_draw, False, contest)
-        if rounds is not None:
-            self.rounds = rounds
-        elif num_rounds is not None:
-            self.rounds = self.compute_sample_size(num_rounds)
-        else:
-            self.rounds = self.compute_sample_size(2)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, False, contest)
         self.prior = self.compute_prior()
-        self.stopping_size = {}
-        for i in range(len(self.rounds)):
-            self.stopping_size[rounds[i]] = self.compute_stopping_size(
-                rounds[i])
 
-    def compute_prior(self):
+    def stopping_condition(self, votes_for_winner: int) -> bool:
+        return self.compute_risk(votes_for_winner,
+                                 self.rounds[-1]) <= self.alpha
+
+    def next_stopping_size(self, sample_size: int) -> int:
+        return self.compute_stopping_size(sample_size)
+
+    def compute_prior(self) -> np.ndarray:
         """Compute prior distribution of worst case election."""
 
-        left = np.zeros(self.contest.total_ballots_cast // 2, dtype=float)
+        left = np.zeros(self.contest.contest_ballots // 2, dtype=float)
         mid = np.array([0.5])
-        right = np.array(
-            [(0.5 / float(self.contest.total_ballots_cast // 2))
-             for i in range(self.contest.total_ballots_cast // 2)],
-            dtype=float)
+        right = np.array([(0.5 / float(self.contest.contest_ballots // 2))
+                          for i in range(self.contest.contest_ballots // 2)],
+                         dtype=float)
         return np.concatenate((left, mid, right))
 
     def compute_risk(self,
-                     sample: int = None,
+                     votes_for_winner: int = None,
                      current_round: int = None,
                      *args,
-                     **kwargs):
+                     **kwargs) -> float:
         """Compute the risk level given current round size and votes for winner in sample
 
-        TODO: insert description
+        The risk level is computed using the normalized product of the prior and posterior
+        distributions. The prior comes from compute_prior() and the posterior is the hypergeometric
+        distribution of finding votes_for_winner from a sample of size current_round taken from a
+        total size of contest_ballots. The risk is defined as the lower half of the distribution,
+        i.e. the portion of the distribution associated with an incorrectly reported outcome.
 
         Args:
             sample (int): Votes found for reported winner in current round size.
             current_round(int): Current round size.
 
         Returns:
-            Float value for risk of given sample and round size.
+            float: Value for risk of given sample and round size.
         """
 
         posterior = np.array([
-            hg.pmf(sample, self.contest.total_ballots_cast, x, current_round)
-            for x in range(self.contest.total_ballots_cast + 1)
+            hg.pmf(votes_for_winner, self.contest.contest_ballots, x,
+                   current_round)
+            for x in range(self.contest.contest_ballots + 1)
         ])
         posterior = self.prior * posterior
         normalize = sum(posterior)
         if normalize > 0:
             posterior = posterior / normalize
 
-        return sum(posterior[range(self.contest.total_ballots_cast // 2 + 1)])
+        return sum(posterior[range(self.contest.contest_ballots // 2 + 1)])
 
-    def compute_sample_size(self, num_rounds: int = None, *args, **kwargs):
-        """Compute list of round sizes for a given number of rounds.
-
-        Returns:
-            List of integer round sizes of length num_rounds.
-        """
-        # TODO: Implement.
-        pass
-
-    def compute_stopping_size(self, current_round: int):
+    def compute_stopping_size(self, current_round: int, *args, **kwargs):
         """Compute the stopping size requirement for a given round.
 
         Args:
@@ -107,7 +92,7 @@ class BayesianRLA(Audit):
 
         Returns:
             An int which represents the minimum number of votes cast for the reported winner in the
-            current tound size in order to stop the audit during that round.
+            current round size in order to stop the audit during that round.
 
         Raises:
             ValueError: The current round size is not one of the audits rounds.
@@ -141,11 +126,3 @@ class BayesianRLA(Audit):
         # FIXME: Should we test final size when left = right and return some default if
         # round size is too small?
         return left
-
-    def lookup_table(self):
-        """Generate a lookup table of stopping values for each round."""
-
-        print('| Rounds   | Stop     |')
-        print('|----------|----------|')
-        for round_size, stop_size in self.stopping_size.items():
-            print('|{:10}|{:10}|'.format(round_size, stop_size))
