@@ -67,5 +67,8 @@ docs/_build
 .appveyor.token
 *.bak
 
+# Notebook Checkpoints
+.ipynb_checkpoints/
+
 # Mypy Cache
 .mypy_cache/
