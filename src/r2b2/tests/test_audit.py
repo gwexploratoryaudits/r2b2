@@ -14,16 +14,19 @@ class SimpleAudit(Audit):
         super().__init__(alpha, beta, max_fraction_to_draw, replacement,
                          contest)
 
+    def next_sample_size(self):
+        pass
+
     def stopping_condition(self, votes_for_winner: int) -> bool:
         return True
 
-    def next_stopping_size(self):
+    def next_min_winner_ballots(self):
         return 10
 
     def compute_risk(self):
         return 0.1
 
-    def compute_stopping_size(self):
+    def compute_min_winner_ballots(self):
         return 60
 
 
@@ -36,9 +39,9 @@ def test_simple_audit():
     assert simpleaudit1.replacement
     assert simpleaudit1.contest is default_contest
     assert simpleaudit1.stopping_condition(10)
-    assert simpleaudit1.next_stopping_size() == 10
+    assert simpleaudit1.next_min_winner_ballots() == 10
     assert simpleaudit1.compute_risk() == 0.1
-    assert simpleaudit1.compute_stopping_size() == 60
+    assert simpleaudit1.compute_min_winner_ballots() == 60
 
 
 def test_initialization_errors():

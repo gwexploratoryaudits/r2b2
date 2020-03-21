@@ -20,7 +20,7 @@ class BayesianRLA(Audit):
         max_fraction_to_draw (int): The maximum total number of ballots auditors are willing to draw
             during the course of the audit.
         rounds (List[int]): The round sizes used during the audit.
-        stopping_sizes (List[int]): Stopping sizes precomputed for each of the given round
+        min_winner_ballots (List[int]): Stopping sizes precomputed for each of the given round
             sizes.
         contest (Contest): Contest to be audited.
         prior (np.ndarray): Prior distribution for worst-case election.
@@ -38,8 +38,8 @@ class BayesianRLA(Audit):
         return self.compute_risk(votes_for_winner,
                                  self.rounds[-1]) <= self.alpha
 
-    def next_stopping_size(self, sample_size: int) -> int:
-        return self.compute_stopping_size(sample_size)
+    def next_min_winner_ballots(self, sample_size: int) -> int:
+        return self.compute_min_winner_ballots(sample_size)
 
     def compute_prior(self) -> np.ndarray:
         """Compute prior distribution of worst case election."""
@@ -84,7 +84,12 @@ class BayesianRLA(Audit):
 
         return sum(posterior[range(self.contest.contest_ballots // 2 + 1)])
 
-    def compute_stopping_size(self, current_round: int, *args, **kwargs):
+    def next_sample_size(self):
+        # TODO: Documentation
+        # TODO: Implement
+        pass
+
+    def compute_min_winner_ballots(self, current_round: int, *args, **kwargs):
         """Compute the stopping size requirement for a given round.
 
         Args:
