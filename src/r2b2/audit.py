@@ -25,8 +25,10 @@ class Audit(ABC):
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
         rounds (List[int]): List of round sizes (i.e. sample sizes).
-        stopping_sizes (List[int]): List of stopping sizes (kmin values) for each round size in
+        min_winner_ballots (List[int]): List of stopping sizes (kmin values) for each round size in
             rounds.
+        sample_winner_ballots (List[int]): List of ballots found for the reported winner in each
+            round size.
         risk_schedule (List[float]): Schedule of risk associated with each previous round.
             Corresponds to tail of null distribution.
         stopping_prob_schedule (List[float]): Schedule of stopping probabilities associated
@@ -42,7 +44,8 @@ class Audit(ABC):
     max_fraction_to_draw: float
     replacement: bool
     rounds: List[int]
-    stopping_sizes: List[int]
+    min_winner_ballots: List[int]
+    sample_winner_ballots: List[int]
     risk_schedule: List[float]
     stopping_prob_schedule: List[float]
     distribution_null: List[float]
@@ -82,7 +85,8 @@ class Audit(ABC):
         self.replacement = replacement
         self.contest = contest
         self.rounds = []
-        self.stopping_sizes = []
+        self.min_winner_ballots = []
+        self.sample_winner_ballots = []
         self.risk_schedule = []
         self.stopping_prob_schedule = []
         self.distribution_null = [1.0]
@@ -91,49 +95,49 @@ class Audit(ABC):
     def current_dist_null(self, kmin: int):
         """Update distribution null and risk schedule for current round."""
 
-        if len(self.rounds) < 2:
-            round_draw = self.rounds[0]
-        else:
-            round_draw = self.rounds[-1] - self.rounds[-2]
+        if self.replacement:
+            if len(self.rounds) < 2:
+                round_draw = self.rounds[0]
+            else:
+                round_draw = self.rounds[-1] - self.rounds[-2]
 
-        distribution_round_draw = binom.pmf(range(0, round_draw + 1),
-                                            round_draw, 0.5)
-        if len(self.rounds) < 2:
-            self.distribution_null = distribution_round_draw
-        else:
-            self.distribution_null = fftconvolve(self.distribution_null,
-                                                 distribution_round_draw)
+            distribution_round_draw = binom.pmf(range(0, round_draw + 1),
+                                                round_draw, 0.5)
+            if len(self.rounds) < 2:
+                self.distribution_null = distribution_round_draw
+            else:
+                self.distribution_null = fftconvolve(self.distribution_null,
+                                                     distribution_round_draw)
 
-        self.risk_schedule.append(self.distribution_null[kmin+1:])
-        self.distribution_null = self.distribution_reported_tally[:kmin+1]
+            self.risk_schedule.append(self.distribution_null[kmin+1:])
+            self.distribution_null = self.distribution_reported_tally[:kmin+1]
+        else:
+            # TODO Implement updating distributions for without replacement
+            pass
 
     def current_dist_reported(self, kmin: int):
         """Update distribution_reported_tally and stopping probability schedule for round."""
 
-        if len(self.rounds) < 2:
-            round_draw = self.rounds[0]
+        if self.replacement:
+            if len(self.rounds) < 2:
+                round_draw = self.rounds[0]
+            else:
+                round_draw = self.rounds[-1] - self.rounds[-2]
+
+            distribution_round_draw = binom.pmf(range(0,
+                                                      round_draw + 1), round_draw,
+                                                self.contest.winner_prop)
+            if len(self.rounds) < 2:
+                self.distribution_reported_tally = distribution_round_draw
+            else:
+                self.distribution_reported_tally = fftconvolve(
+                    self.distribution_reported_tally, distribution_round_draw)
+
+            self.stopping_prob_schedule.append(self.distribution_reported_tally[kmin+1:])
+            self.distribution_reported_tally = self.distribution_reported_tally[:kmin+1]
         else:
-            round_draw = self.rounds[-1] - self.rounds[-2]
-
-        distribution_round_draw = binom.pmf(range(0,
-                                                  round_draw + 1), round_draw,
-                                            self.contest.winner_prop)
-        if len(self.rounds) < 2:
-            self.distribution_reported_tally = distribution_round_draw
-        else:
-            self.distribution_reported_tally = fftconvolve(
-                self.distribution_reported_tally, distribution_round_draw)
-
-        self.stopping_prob_schedule.append(self.distribution_reported_tally[kmin+1:])
-        self.distribution_reported_tally = self.distribution_reported_tally[:kmin+1]
-
-    def next_sample_size(self, *args, **kwargs):
-        """Generate estimates of possible next sample sizes.
-
-        Note: To be used during live/interactive audit execution.
-        """
-
-        pass
+            # TODO: Implement updating distributions for without replacement
+            pass
 
     def run(self):
         """Begin interactive audit execution."""
@@ -203,13 +207,23 @@ class Audit(ABC):
                     print('Audit Complete: User stopped.')
                     return
 
-            kmin = self.next_stopping_size(sample_size)
-            self.stopping_sizes.append(kmin)
+            kmin = self.next_min_winner_ballots(sample_size)
+            self.min_winner_ballots.append(kmin)
             self.current_dist_null(kmin)
             self.current_dist_reported(kmin)
             previous_votes_for_winner = votes_for_winner
+            self.sample_winner_ballots.append(votes_for_winner)
 
         print('Audit Complete: Reached max sample size.')
+
+    @abstractmethod
+    def next_sample_size(self, *args, **kwargs):
+        """Generate estimates of possible next sample sizes.
+
+        Note: To be used during live/interactive audit execution.
+        """
+
+        pass
 
     @abstractmethod
     def stopping_condition(self, votes_for_winner: int) -> bool:
@@ -221,7 +235,7 @@ class Audit(ABC):
         pass
 
     @abstractmethod
-    def next_stopping_size(self, sample_size) -> int:
+    def next_min_winner_ballots(self, sample_size) -> int:
         """Compute next stopping size of given (actual) sample size.
 
         Note: To be used during live/interactive audit execution.
@@ -230,7 +244,7 @@ class Audit(ABC):
         pass
 
     @abstractmethod
-    def compute_stopping_size(self, *args, **kwargs):
+    def compute_min_winner_ballots(self, *args, **kwargs):
         """Compute the stopping size(s) for any number of sample sizes."""
 
         pass
