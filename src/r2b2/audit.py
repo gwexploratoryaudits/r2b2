@@ -95,7 +95,7 @@ class Audit(ABC):
     def current_dist_null(self, kmin: int):
         """Update distribution null and risk schedule for current round."""
 
-        if len(self.rounds) < 2:
+        if len(self.rounds) == 1:
             round_draw = self.rounds[0]
         else:
             round_draw = self.rounds[-1] - self.rounds[-2]
@@ -110,15 +110,15 @@ class Audit(ABC):
                                                      distribution_round_draw)
         else:
             # TODO Implement updating distributions for without replacement
-            pass
+            return
 
-        self.risk_schedule.append(self.distribution_null[kmin + 1:])
-        self.distribution_null = self.distribution_reported_tally[:kmin + 1]
+        self.risk_schedule.append(sum(self.distribution_null[kmin + 1:]))
+        self.distribution_null = self.distribution_null[:kmin + 1]
 
     def current_dist_reported(self, kmin: int):
         """Update distribution_reported_tally and stopping probability schedule for round."""
 
-        if len(self.rounds) < 2:
+        if len(self.rounds) == 1:
             round_draw = self.rounds[0]
         else:
             round_draw = self.rounds[-1] - self.rounds[-2]
@@ -134,10 +134,10 @@ class Audit(ABC):
                     self.distribution_reported_tally, distribution_round_draw)
         else:
             # TODO: Implement updating distributions for without replacement
-            pass
+            return
 
         self.stopping_prob_schedule.append(
-            self.distribution_reported_tally[kmin + 1:])
+            sum(self.distribution_reported_tally[kmin + 1:]))
         self.distribution_reported_tally = self.distribution_reported_tally[:
                                                                             kmin
                                                                             +
