@@ -144,8 +144,15 @@ class Audit(ABC):
                                                                             1]
 
     def run(self):
-        """Begin interactive audit execution."""
-        # TODO: documentation
+        """Begin interactive audit execution.
+
+        Begins the interactive version of the audit. While computations for different audits will
+        vary, the process for executing each one is the same. This provides a process for selecting
+        a sample size, determining if the ballots found for the reported winner in that sample
+        size meet the stopping condition(s), and if not continuing with the audit. As the audit
+        proceeds, data including round sizes, ballots for the winner in each round size, and per
+        round risk and stopping probability are stored.
+        """
 
         print('Beginning Audit...')
         sample_size = 0
