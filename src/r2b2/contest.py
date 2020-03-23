@@ -25,6 +25,8 @@ class Contest:
         contest_type (ContestType): What type of contest is this?
         tally (Dict[str, int]): Reported tally from contest as a dictionary of candidates to
             reported votes received.
+        winner_prop (float): Proportion of ballots cast for reported winner. Currently for first
+            winner listed in reported winners.
     """
 
     contest_ballots: int
@@ -34,6 +36,7 @@ class Contest:
     reported_winners: List[str]
     contest_type: ContestType
     tally: Dict[str, int]
+    winner_prop: float
 
     def __init__(self, contest_ballots: int, tally: Dict[str, int],
                  num_winners: int, reported_winners: List[str],
@@ -80,3 +83,5 @@ class Contest:
         self.candidates = list(tally.keys())
         self.num_candidates = len(self.candidates)
         self.contest_type = contest_type
+        self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(
+            self.contest_ballots)

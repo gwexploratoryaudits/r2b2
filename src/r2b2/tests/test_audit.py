@@ -14,11 +14,20 @@ class SimpleAudit(Audit):
         super().__init__(alpha, beta, max_fraction_to_draw, replacement,
                          contest)
 
+    def next_sample_size(self):
+        return 20
+
+    def stopping_condition(self, votes_for_winner: int) -> bool:
+        return True
+
+    def next_min_winner_ballots(self):
+        return 10
+
     def compute_risk(self):
         return 0.1
 
-    def compute_sample_size(self):
-        return 100
+    def compute_min_winner_ballots(self):
+        return 60
 
 
 def test_simple_audit():
@@ -29,8 +38,22 @@ def test_simple_audit():
     assert simpleaudit1.max_fraction_to_draw == 0.1
     assert simpleaudit1.replacement
     assert simpleaudit1.contest is default_contest
+    assert simpleaudit1.next_sample_size() == 20
+    assert simpleaudit1.stopping_condition(10)
+    assert simpleaudit1.next_min_winner_ballots() == 10
     assert simpleaudit1.compute_risk() == 0.1
-    assert simpleaudit1.compute_sample_size() == 100
+    assert simpleaudit1.compute_min_winner_ballots() == 60
+    simpleaudit1.rounds.append(10)
+    simpleaudit1.current_dist_null(8)
+    assert len(simpleaudit1.risk_schedule) == 1
+    assert simpleaudit1.risk_schedule[0] >= 0.0
+    assert simpleaudit1.risk_schedule[0] <= 1.0
+    assert len(simpleaudit1.distribution_null) == 9
+    simpleaudit1.current_dist_reported(8)
+    assert len(simpleaudit1.stopping_prob_schedule) == 1
+    assert simpleaudit1.stopping_prob_schedule[0] >= 0.0
+    assert simpleaudit1.stopping_prob_schedule[0] <= 1.0
+    assert len(simpleaudit1.distribution_reported_tally) == 9
 
 
 def test_initialization_errors():

@@ -7,13 +7,13 @@ from r2b2.contest import ContestType
 from r2b2.election import Election
 
 
-def generate_contest(max_size):
+def generate_contest(size):
     """Generate a Contest with random data. For testing purposes only.
 
     Note:
         Currently this only generates 2 candidate Plurality contests with 1 winner.
     """
-    contest_ballots = randint(1, max_size)
+    contest_ballots = size
     win_tally = randint(math.ceil(contest_ballots / 2), contest_ballots)
     tally = {'a': win_tally, 'b': contest_ballots - win_tally}
 
