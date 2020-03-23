@@ -13,6 +13,20 @@ def test_simple_brla():
     assert simplebrla.max_fraction_to_draw == 0.2
     assert not simplebrla.replacement
     assert simplebrla.contest is default_contest
+    simplebrla.rounds.append(20)
+    assert simplebrla.stopping_condition(20)
+    assert not simplebrla.stopping_condition(0)
+    test_min_winner_ballots = simplebrla.next_min_winner_ballots(20)
+    assert test_min_winner_ballots >= 10
+    assert test_min_winner_ballots <= 20
+    # FIXME: Following tests simply verify that the distribution functions do not modify the brla
+    # because it is without replacement
+    simplebrla.current_dist_null(18)
+    simplebrla.current_dist_reported(18)
+    assert simplebrla.distribution_null == [1.0]
+    assert simplebrla.distribution_reported_tally == [1.0]
+    assert len(simplebrla.risk_schedule) == 0
+    assert len(simplebrla.stopping_prob_schedule) == 0
 
 
 def test_exceptions():
