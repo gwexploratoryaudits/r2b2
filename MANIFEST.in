@@ -8,6 +8,7 @@ include .coveragerc
 include .cookiecutterrc
 include .editorconfig
 include .readthedocs.yml
+include codecov.yml
 
 include AUTHORS.rst
 include CHANGELOG.rst
