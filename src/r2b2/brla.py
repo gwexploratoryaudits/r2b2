@@ -1,4 +1,6 @@
 """Bayesian Risk-Limiting Audit module."""
+from typing import List
+
 import numpy as np
 from scipy.stats import hypergeom as hg
 
@@ -35,11 +37,52 @@ class BayesianRLA(Audit):
         self.prior = self.compute_prior()
 
     def stopping_condition(self, votes_for_winner: int) -> bool:
+        if len(self.rouunds) < 1:
+            raise Exception('Attempted to call stopping condition without any rounds.')
         return self.compute_risk(votes_for_winner,
                                  self.rounds[-1]) <= self.alpha
 
     def next_min_winner_ballots(self, sample_size: int) -> int:
-        return self.compute_min_winner_ballots(sample_size)
+        """Compute the stopping size requirement for a given round.
+
+        Args:
+            sample_size (int): Current round size, i.e. number of ballots to be sampled in round
+
+        Returns:
+            An int which represents the minimum number of votes cast for the reported winner in the
+            current round size in order to stop the audit during that round.
+        """
+
+        if sample_size < 1:
+            raise ValueError('Sample size must be at least 1.')
+        if sample_size > self.contest.contest_ballots * self.max_fraction_to_draw:
+            raise ValueError('Sample size cannot be larger than max fraction to draw of the contest ballots.')
+
+        left = sample_size // 2
+        right = sample_size
+
+        while left < right:
+            proposed_stop = (left + right) // 2
+            proposed_stop_risk = self.compute_risk(proposed_stop,
+                                                   sample_size)
+
+            if proposed_stop_risk == self.alpha:
+                return proposed_stop
+
+            if proposed_stop_risk < self.alpha:
+                previous_stop_risk = self.compute_risk(proposed_stop - 1,
+                                                       sample_size)
+                if previous_stop_risk == self.alpha:
+                    return proposed_stop - 1
+                if previous_stop_risk > self.alpha:
+                    return proposed_stop
+                right = proposed_stop - 1
+            else:
+                left = proposed_stop + 1
+
+        # FIXME: Should we test final size when left = right and return some default if
+        # round size is too small?
+        return left
 
     def compute_prior(self) -> np.ndarray:
         """Compute prior distribution of worst case election."""
@@ -89,45 +132,35 @@ class BayesianRLA(Audit):
         # TODO: Implement
         pass
 
-    def compute_min_winner_ballots(self, current_round: int, *args, **kwargs):
-        """Compute the stopping size requirement for a given round.
+    def compute_min_winner_ballots(self, rounds: List[int], *args, **kwargs):
+        """Compute the minimum number of winner ballots for a list of round sizes.
+
+        Compute a list of minimum number of winner ballots that must be found in the
+        corresponding round (sample) sizes to meet the stopping condition.
 
         Args:
-            current_round (int): Current round size, i.e. number of ballots to be sampled in round
+            rounds (List[int]): List of round sizes.
 
         Returns:
-            An int which represents the minimum number of votes cast for the reported winner in the
-            current round size in order to stop the audit during that round.
-
-        Raises:
-            ValueError: The current round size is not one of the audits rounds.
+            List[int]: List of minimum winner ballots to meet the stopping conditions for each
+            round size in rounds.
         """
 
-        if current_round not in self.rounds:
-            raise ValueError("Invalid round size.")
+        if len(rounds) < 1:
+            raise ValueError('rounds must contain at least 1 round size.')
+        previous_round = 0
+        for sample_size in rounds:
+            if sample_size < 1:
+                raise ValueError('Sample size must be at least 1.')
+            if sample_size > self.contest.contest_ballots * self.max_fraction_to_draw:
+                raise ValueError('Sample size cannot be larger than max fraction to draw of the contest ballots.')
+            if sample_size <= previous_round:
+                raise ValueError('Sample sizes must be in increasing order.')
+            previous_round = sample_size
 
-        left = current_round // 2
-        right = current_round
+        self.rounds = rounds
+        min_winner_ballots = []
+        for sample_size in self.rounds:
+            min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
 
-        while left < right:
-            proposed_stop = (left + right) // 2
-            proposed_stop_risk = self.compute_risk(proposed_stop,
-                                                   current_round)
-
-            if proposed_stop_risk == self.alpha:
-                return proposed_stop
-
-            if proposed_stop_risk < self.alpha:
-                previous_stop_risk = self.compute_risk(proposed_stop - 1,
-                                                       current_round)
-                if previous_stop_risk == self.alpha:
-                    return proposed_stop - 1
-                if previous_stop_risk > self.alpha:
-                    return proposed_stop
-                right = proposed_stop - 1
-            else:
-                left = proposed_stop + 1
-
-        # FIXME: Should we test final size when left = right and return some default if
-        # round size is too small?
-        return left
+        return min_winner_ballots
