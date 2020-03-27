@@ -23,6 +23,14 @@ def test_simple_brla():
     assert len(bulk_min_winner_ballots) == (20 - simplebrla.min_sample_size) + 1
 
 
+def test_str():
+    simplebrla = BRLA(0.1, 0.2, default_contest)
+    brla_str = 'BayesianRLA without replacement\n-------------------------------\n'
+    brla_str += 'Risk Limit: 0.1\nMaximum Fraction to Draw: 0.2\n'
+    brla_str += str(default_contest)
+    assert str(simplebrla) == brla_str
+
+
 def test_exceptions():
     simplebrla = BRLA(0.1, 0.2, default_contest)
     with pytest.raises(Exception):

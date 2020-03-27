@@ -57,6 +57,13 @@ class BayesianRLA(Audit):
         # FIXME: need check for final size, if we reach this is the contest to small for the audit?
         return left
 
+    def __str__(self):
+        title_str = 'BayesianRLA without replacement\n-------------------------------\n'
+        alpha_str = 'Risk Limit: {}\n'.format(self.alpha)
+        max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(
+            self.max_fraction_to_draw)
+        return title_str + alpha_str + max_frac_str + str(self.contest)
+
     def stopping_condition(self, votes_for_winner: int) -> bool:
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')

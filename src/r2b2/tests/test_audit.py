@@ -84,6 +84,20 @@ def test_simple_audit_execution():
         assert len(simpleaudit2.distribution_reported_tally) == (10 * i) - 4
 
 
+def test_repr():
+    simpleaudit1 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    simpleaudit2 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    assert repr(simpleaudit1) == repr(simpleaudit2)
+
+
+def test_str():
+    simpleaudit1 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    audit_str = 'Audit\n-----\nAlpha: 0.1\nBeta: 0.05\n'
+    audit_str += 'Maximum Fraction to Draw: 0.1\nReplacement: True\n\n'
+    audit_str += str(simpleaudit1.contest)
+    assert str(simpleaudit1) == audit_str
+
+
 def test_initialization_errors():
     """Tests exceptions are raised correctly by __init__()."""
     # alpha TypeError tests

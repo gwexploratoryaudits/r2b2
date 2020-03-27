@@ -14,6 +14,27 @@ def test_simple_election():
     assert simple_election.contests is contests
 
 
+def test_repr():
+    contests = []
+    for i in range(10):
+        contests.append(util.generate_contest(100))
+    simple_election1 = Election('Example Election', 100, contests)
+    simple_election2 = Election('Example Election', 100, contests)
+    assert repr(simple_election1) == repr(simple_election2)
+
+
+def test_str():
+    contests = []
+    for i in range(10):
+        contests.append(util.generate_contest(100))
+    simple_election = Election('Example Election', 100, contests)
+    election_str = 'Election\n--------\nName: Example Election\n'
+    election_str += 'Total Ballots: 100\nList of Contests:\n'
+    for contest in contests:
+        election_str += str(contest)
+    assert str(simple_election) == election_str
+
+
 def test_initialization_errors():
     name = 'BadElection'
     contests = []
