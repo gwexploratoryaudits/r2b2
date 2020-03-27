@@ -80,3 +80,20 @@ class Contest:
         self.num_candidates = len(self.candidates)
         self.contest_type = contest_type
         self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(self.contest_ballots)
+
+    def __repr__(self):
+        """String representation of Contest class."""
+        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__,
+                                                 self.contest_ballots,
+                                                 self.tally, self.num_winners,
+                                                 self.reported_winners,
+                                                 repr(self.contest_type))
+
+    def __str__(self):
+        """Human readable string representation of audit class."""
+        title_str = 'Contest\n-------\n'
+        ballot_str = 'Contest Ballots: {}\n'.format(self.contest_ballots)
+        tally_str = 'Reported Tallies: {}\n'.format(self.tally)
+        winner_str = 'Reported Winners: {}\n'.format(self.reported_winners)
+        type_str = 'Contest Type: {}\n'.format(self.contest_type)
+        return title_str + ballot_str + tally_str + winner_str + type_str + '\n'

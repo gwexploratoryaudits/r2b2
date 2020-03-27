@@ -19,6 +19,25 @@ def test_simple_contest():
     assert simplecontest.winner_prop == 0.6
 
 
+def test_repr():
+    """Tests __repr__ function."""
+    simplecontest1 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
+    simplecontest2 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
+    assert repr(simplecontest1) == repr(simplecontest2)
+    diffcontest1 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.MAJORITY)
+    assert repr(simplecontest1) != diffcontest1
+
+
+def test_str():
+    """Tests __str__ function."""
+    simplecontest1 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
+    contest1_str = 'Contest\n-------\nContest Ballots: 100\n'
+    contest1_str += 'Reported Tallies: {\'a\': 60, \'b\': 40}\n'
+    contest1_str += 'Reported Winners: [\'a\']\n'
+    contest1_str += 'Contest Type: ContestType.PLURALITY\n\n'
+    assert str(simplecontest1) == contest1_str
+
+
 def test_initialization_errors():
     """Tests exceptions raised correctly by __init__()."""
     tally = {'a': 20, 'b': 30, 'c': 40}
