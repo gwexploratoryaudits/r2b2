@@ -1,0 +1,24 @@
+Beginning interactive R2B2 auditing tool...
+
+
+
+Create a new Contest
+====================
+
+Enter number of contest ballots: Enter number of candidates: Enter candidate name: Enter number of votes reported for candidate: Enter candidate name: Enter number of votes reported for candidate: Enter number of winners: Enter winner name: 
+Contest Types
+-------------
+0 - PLURALITY
+1 - MAJORITY
+
+Select contest type from above: 
+Create a new Audit
+==================
+
+Enter the desired risk limit: Enter the maximum fraction of contest ballots you are willing to draw: 
+Audit Types
+-----------
+1 - Bayesian RLA without replacement
+
+Select an audit type: Beginning Audit...
+Enter next sample size (as a running total): Enter total number of votes for reported winner found in sample: Audit Complete: Stopping condition met.

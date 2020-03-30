@@ -1,0 +1,11 @@
+{
+        "contest_ballots" : 100,
+        "tally" : {
+                "CandidateA" : 50,
+                "CandidateB" : 50
+        },
+        "num_winners" : 1,
+        "reported_winners" : ["CandidateA"],
+        "contest_type" : "PLURALITY"
+
+}
