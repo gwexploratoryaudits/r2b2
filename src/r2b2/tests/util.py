@@ -56,6 +56,24 @@ def parse_contest_list(json_file):
     return contests
 
 
+def parse_contest(json_file):
+    """Parse a single Contest from a JSON file.
+
+    Note:
+        Template for Contest format in JSON in single_contest_template.json
+    """
+    with open(json_file, 'r') as json_data:
+        data = json.load(json_data)
+
+    contest_ballots = data['contest_ballots']
+    tally = data['tally']
+    num_winners = data['num_winners']
+    reported_winners = data['reported_winners']
+    contest_type = ContestType[data['contest_type']]
+    return Contest(contest_ballots, tally, num_winners, reported_winners,
+                   contest_type)
+
+
 def parse_election(json_file):
     """Parse an Eleciton from a JSON file.
 

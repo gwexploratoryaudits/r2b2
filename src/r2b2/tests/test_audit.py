@@ -151,7 +151,7 @@ def test_initialization_errors():
 
 
 def test_asn():
-    with open('src/r2b2/tests/asn_tests.json', 'r') as json_file:
+    with open('src/r2b2/tests/data/asn_tests.json', 'r') as json_file:
         data = json.load(json_file)
 
     for test in data:
