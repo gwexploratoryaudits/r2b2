@@ -21,14 +21,6 @@ def test_simple_brla():
     assert test_min_winner_ballots <= 20
     bulk_min_winner_ballots = simplebrla.compute_all_min_winner_ballots()
     assert len(bulk_min_winner_ballots) == (20 - simplebrla.min_sample_size) + 1
-    # FIXME: Following tests simply verify that the distribution functions do not modify the brla
-    # because it is without replacement
-    simplebrla.current_dist_null(18)
-    simplebrla.current_dist_reported(18)
-    assert simplebrla.distribution_null == [1.0]
-    assert simplebrla.distribution_reported_tally == [1.0]
-    assert len(simplebrla.risk_schedule) == 0
-    assert len(simplebrla.stopping_prob_schedule) == 0
 
 
 def test_exceptions():

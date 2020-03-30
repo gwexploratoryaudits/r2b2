@@ -1,10 +1,12 @@
 """Abstract module defining an Audit framework."""
+import math
 from abc import ABC
 from abc import abstractmethod
 from typing import List
 
 from scipy.signal import fftconvolve
 from scipy.stats import binom
+from scipy.stats import hypergeom
 
 from r2b2.contest import Contest
 
@@ -104,17 +106,53 @@ class Audit(ABC):
         else:
             round_draw = self.rounds[-1] - self.rounds[-2]
 
+        # Distribution updating is dependent on sampling with or without replacement
         if self.replacement:
             distribution_round_draw = binom.pmf(range(0, round_draw + 1),
                                                 round_draw, 0.5)
-            if len(self.rounds) < 2:
+            # Compute convolution to get new distribution (except 1st round)
+            if len(self.rounds) == 1:
                 self.distribution_null = distribution_round_draw
             else:
                 self.distribution_null = fftconvolve(self.distribution_null,
                                                      distribution_round_draw)
         else:
-            # TODO Implement updating distributions for without replacement
-            return
+            half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
+            if len(self.rounds) == 1:
+                # Simply compute hypergeometric for 1st round distribution
+                self.distribution_null = [
+                    hypergeom.pmf(k, self.contest.contest_ballots,
+                                  half_contest_ballots, round_draw)
+                    for k in range(round_draw + 1)
+                ]
+            else:
+                distribution_round_draw = [
+                    0 for i in range(self.rounds[-1] + 1)
+                ]
+                # Get relevant interval of previous round distribution
+                interval = self.__get_interval(self.distribution_null)
+                # For every possible number of winner ballots in previous rounds
+                # and every possibility in the current round
+                # compute probability of their simultaneity
+                for prev_round_possibility in range(interval[0],
+                                                    interval[1] + 1):
+                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[
+                        -2]
+                    unsampled_winner_ballots = half_contest_ballots - prev_round_possibility
+
+                    curr_round_draw = [
+                        hypergeom.pmf(k, unsampled_contest_ballots,
+                                      unsampled_winner_ballots, round_draw)
+                        for k in range(round_draw + 1)
+                    ]
+                    for curr_round_possibility in range(round_draw + 1):
+                        component_prob = self.distribution_null[
+                            prev_round_possibility] * curr_round_draw[
+                                curr_round_possibility]
+                        distribution_round_draw[
+                            prev_round_possibility +
+                            curr_round_possibility] = component_prob
+                self.distribution_null = distribution_round_draw
 
         self.risk_schedule.append(sum(self.distribution_null[kmin + 1:]))
         self.distribution_null = self.distribution_null[:kmin + 1]
@@ -131,14 +169,49 @@ class Audit(ABC):
             distribution_round_draw = binom.pmf(range(0, round_draw + 1),
                                                 round_draw,
                                                 self.contest.winner_prop)
-            if len(self.rounds) < 2:
+            if len(self.rounds) == 1:
                 self.distribution_reported_tally = distribution_round_draw
             else:
                 self.distribution_reported_tally = fftconvolve(
                     self.distribution_reported_tally, distribution_round_draw)
         else:
-            # TODO: Implement updating distributions for without replacement
-            return
+            reported_winner_ballots = int(self.contest.winner_prop *
+                                          self.contest.contest_ballots)
+            if len(self.rounds) == 1:
+                # Simply compute hypergeometric for 1st round distribution
+                self.distribution_reported_tally = [
+                    hypergeom.pmf(k, self.contest.contest_ballots,
+                                  reported_winner_ballots, round_draw)
+                    for k in range(round_draw + 1)
+                ]
+            else:
+                distribution_round_draw = [
+                    0 for i in range(self.rounds[-1] + 1)
+                ]
+                # Get relevant interval of previous round distribution
+                interval = self.__get_interval(self.distribution_reported_tally)
+                # For every possible number of winner ballots in previous rounds
+                # and every possibility in the current round
+                # compute probability of their simultaneity
+                for prev_round_possibility in range(interval[0],
+                                                    interval[1] + 1):
+                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[
+                        -2]
+                    unsampled_winner_ballots = reported_winner_ballots - prev_round_possibility
+
+                    curr_round_draw = [
+                        hypergeom.pmf(k, unsampled_contest_ballots,
+                                      unsampled_winner_ballots, round_draw)
+                        for k in range(round_draw + 1)
+                    ]
+                    for curr_round_possibility in range(round_draw + 1):
+                        component_prob = self.distribution_reported_tally[
+                            prev_round_possibility] * curr_round_draw[
+                                curr_round_possibility]
+                        distribution_round_draw[
+                            prev_round_possibility +
+                            curr_round_possibility] = component_prob
+                self.distribution_reported_tally = distribution_round_draw
 
         self.stopping_prob_schedule.append(
             sum(self.distribution_reported_tally[kmin + 1:]))
@@ -146,6 +219,44 @@ class Audit(ABC):
                                                                             kmin
                                                                             +
                                                                             1]
+
+    def __get_interval(self, dist):
+        """Get relevant interval [l, u] of given distribution.
+
+        Find levels l and u such that cdf(l) < tolerance and 1 - cdf(u) < tolerance. The purpose of
+        this is to improve efficiency in the current_dist_* functions for audits without
+        replacement where almost all of the hypergeometric distribution falls in a fraction of its
+        range, i.e. between l and u.
+
+        Note:
+            cdf() in this context does not require cdf(infinity) = 1, although the distribution
+            should sum very closely to 1.
+        """
+
+        tolerance = 0.0000001
+
+        # Handle the edge case of a small distribution
+        if sum(dist) < 2 * tolerance:
+            return [int(len(dist) / 2 - 1), int(len(dist) / 2 + 1)]
+
+        interval = [0, len(dist)]
+        lower_sum = 0
+        upper_sum = 0
+
+        for i in range(len(dist)):
+            lower_sum += dist[i]
+
+            if (lower_sum + dist[i + 1]) > tolerance:
+                interval[0] = i
+                break
+
+        for i in range(len(dist) - 1, -1, -1):
+            upper_sum += dist[i]
+
+            if (upper_sum + dist[i - 1]) > tolerance:
+                interval[1] = i
+                break
+        return interval
 
     def run(self):
         """Begin interactive audit execution.
