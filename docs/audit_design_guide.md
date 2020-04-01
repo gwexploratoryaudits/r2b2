@@ -24,7 +24,7 @@ $ git checkout master
 Finally, checkout your branch from `master` and create a remote version of that branch:
 ```
 $ git checkout -b sarah
-$ git push -u
+$ git push -u origin sarah
 ```
   - Feel free to create branches of of this base branch as you work on developing the audit, but keep in mind that branches should be used for larger changes/additions. For example, creating a branch for fixing documentation and comments probably isn't a good idea, but creating a branch for developing a comprehensive set of test cases could be useful.
   - Note: We will use the base branch for your audit when merging into `master`.
@@ -111,7 +111,7 @@ Even though you might be the only person working on your branch right now, your 
   - Create unit tests to verify the basic functionality of methods and ensure proper initialization occurs.
   - Create a set of tests to verify mathematical validity of the audit computations
     - *Note:* Test data sets will be created, so don't worry about these tests just yet.
-6. Debug! Ensure your test cases (and all other test cases that were previously passing) are passing. 
+6. Debug! Ensure your test cases (and all other test cases that were previously passing) are passing.
 
 ## Merging into `master`
 

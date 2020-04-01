@@ -1,10 +1,8 @@
 # r2b2 Library Design
 
-[Current UML Diagram](https://drive.google.com/file/d/1S77bx7u6bc-EUuhpQ-BkAnYARJkoAJL0/view?usp=sharing)
-contains:
+[UML Diagram](https://drive.google.com/file/d/1S77bx7u6bc-EUuhpQ-BkAnYARJkoAJL0/view?usp=sharing)
 
 - Class Structure UML Diagram
-- File Hierarchy Diagram
 
 ## Class Structure
 
@@ -17,16 +15,11 @@ implementations can be built as subclasses of the `Audit` class.
 ### Election
 
 Class for containing information about any given election, independent from an
-audit. The `Election` is using the results in whatever format is available
-(CVS w/ nos., CVR w/out nos., Tally).
+audit.
 
-This class is used for extracting/using necessary information from the reported
-results of the election. A better design for this class can be made with more
-information about how reported election results are input to the system.
-
-**Methods** \*incomplete
-
-- `__init__()`
+*Note*: This class is incomplete. Currently, an `Election` is simply created
+from a list of contests and has no methods other than initialization. In the
+future, it will be used within a larger structure which audits entire elections.
 
 
 ### Contest
@@ -42,63 +35,24 @@ election.
 ### Audit
 
 An abstract class to define a *general* audit. It will define attributes and
-parameters common to all audits:
+methods common to all audits. In the future, it will provide frameworks for an
+interactive audit execution and a 'bulk' execution given a data set.
 
-- risk limit (alpha)
-- beta
-- maximum number of ballots to draw during audit
-- object containing information about election/contest to be audited
-  - could be `Election` with set of `Contest`s
-  - could be a single `Contest`
-- replacement
+For the most up-to-date version of the `Audit` class, look
+[here](https://r2b2.readthedocs.io/en/latest/autoapi/r2b2/audit/index.html)
 
-*Note:* Some of the above will be provided by the users for each unique audit,
-but others might be defined by developers in the audit sub-classes and be
+*Note:* Some of the parameters will be provided by the users for each unique
+audit, but others might be defined by developers in the audit sub-classes and be
 constant values for each unique audit of that type.
 
-Example pseudocode:
+#### Audits to be Implemented
 
-```python
-class audit:
-  alpha: float
-  beta: float
-  max_num_ballots: int
-  replacement: bool
+- [X] Bayesian RLA
+- [ ] Bayesian RLA with replacement
+- [ ] BRAVO
+- [ ] BRAVOlike
+- [ ] Athena
 
-  def __init__(self, alpha, election, ...):
-    self.alpha = alpha
-    self.election = election
-    ...
-```
-
-
-**Methods** \**incomplete*
-
-- `__init__()`
-
-### Athena(Audit)
-
-A subclass of the audit class which defines the Athena audit.
-
-**Methods** \**incomplete*
-
-- `__init__()` (which also uses `super.__init__()`)
-- `stopping_prob()`
-  - takes previous round sizes and kmins as input
-- Function to generate kmins
-  - will take in all previous round sizes and kmins
-- Function to advise next round size?
-
-
-
-### BRLA(Audit)
-
-A subclass of the audit class which defines the BRLA audit.
-
-**Method** \**incomplete*
-
-- `__init__()` (which also uses `super.__init__()`)
-- `kmins(round_schedule)`
 
 
 ## Library File/Directory Hierarchy
@@ -331,7 +285,7 @@ for doctests, and tracked at our
 
 **Pushing, Merging, and Pulling**
 
-- **Commit** messages should have a short one-line summary of 50 characters or 
+- **Commit** messages should have a short one-line summary of 50 characters or
 less, followed by a detailed description of changes made
   - Commits should be modular (e.g. a complete method, passing current tests,
       passing linter)
