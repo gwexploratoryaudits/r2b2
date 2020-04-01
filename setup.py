@@ -29,7 +29,7 @@ setup(
     license='MIT',
     description='Round-by-Round and Ballot-by-Ballot election audits: a workbench for exploration of risk-limiting audits',
     long_description='%s\n%s' % (
-        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
+        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.md')),
         re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))
     ),
     author='R2B2 Team',

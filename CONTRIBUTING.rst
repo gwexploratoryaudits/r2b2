@@ -35,6 +35,12 @@ If you are proposing a feature:
 Development
 ===========
 
+For more specific development guidelines and standards see the 
+`Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/master/docs/audit_design_guide.md>`_.
+For guidelines specific to developing a new audit see the
+`Audit Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/master/docs/audit_design_guide.md>`_.
+
+
 To set up `r2b2` for local development:
 
 1. Fork `r2b2 <https://github.com/gwexploratoryaudits/r2b2>`_
@@ -55,8 +61,7 @@ To set up `r2b2` for local development:
 
 5. Commit your changes and push your branch to GitHub::
 
-    git add .
-    git commit -m "Your detailed description of your changes."
+    git commit -a
     git push origin name-of-your-bugfix-or-feature
 
 6. Submit a pull request through the GitHub website.
