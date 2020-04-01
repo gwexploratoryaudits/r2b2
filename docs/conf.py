@@ -12,6 +12,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.inheritance_diagram',
 ]
 source_suffix = '.rst'
 master_doc = 'index'
@@ -21,8 +23,19 @@ author = 'R2B2 Team'
 copyright = '{0}, {1}'.format(year, author)
 version = release = '0.1.0'
 
+# autoapi configuration
 autoapi_type = 'python'
-autoapi_dirs = ['../src']
+autoapi_dirs = ['../src/r2b2']
+autoapi_add_toctree_entry = False
+# Options: https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#customisation-options
+autoapi_options = [
+    'members',
+    'inherited-members',
+    'private-members',
+    'special-members',
+    'show-inheritance',
+]
+autoapi_python_class_content = 'both'
 
 pygments_style = 'trac'
 templates_path = ['.']
