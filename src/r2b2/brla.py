@@ -41,7 +41,7 @@ class BayesianRLA(Audit):
 
     def get_min_sample_size(self):
         left = 1
-        right  = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        right = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
 
         while left < right:
             proposed_min = (left + right) // 2
