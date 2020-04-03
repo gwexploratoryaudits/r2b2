@@ -24,6 +24,8 @@ class Audit(ABC):
             draw during the course of the audit.
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
+        min_sample_size (int): The smallest valid sample size. The minimum round size where
+            kmin < round size
         rounds (List[int]): List of round sizes (i.e. sample sizes).
         min_winner_ballots (List[int]): List of stopping sizes (kmin values) for each round size in
             rounds.
@@ -43,6 +45,7 @@ class Audit(ABC):
     beta: float
     max_fraction_to_draw: float
     replacement: bool
+    min_sample_size: int
     rounds: List[int]
     min_winner_ballots: List[int]
     sample_winner_ballots: List[int]
@@ -84,6 +87,7 @@ class Audit(ABC):
         self.max_fraction_to_draw = max_fraction_to_draw
         self.replacement = replacement
         self.contest = contest
+        self.min_sample_size = 1
         self.rounds = []
         self.min_winner_ballots = []
         self.sample_winner_ballots = []
@@ -173,6 +177,9 @@ class Audit(ABC):
                         'Invalid Input: Sample size must be greater than previous round.'
                     )
                     continue
+                if sample_size < self.min_sample_size:
+                    print('Invalid Input: Sample size must be larger than ', self.min_sample_size)
+                    continue
                 if sample_size > max_sample_size:
                     print('Invalid Input: Sample size cannot exceed ',
                           max_sample_size)
@@ -226,6 +233,12 @@ class Audit(ABC):
             self.sample_winner_ballots.append(votes_for_winner)
 
         print('Audit Complete: Reached max sample size.')
+
+    @abstractmethod
+    def get_min_sample_size(self):
+        """Get the smallest valid sample size."""
+
+        pass
 
     @abstractmethod
     def next_sample_size(self, *args, **kwargs):

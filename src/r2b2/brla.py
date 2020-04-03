@@ -37,6 +37,26 @@ class BayesianRLA(Audit):
 
         super().__init__(alpha, 0.0, max_fraction_to_draw, False, contest)
         self.prior = self.compute_prior()
+        self.min_sample_size = self.get_min_sample_size()
+
+    def get_min_sample_size(self):
+        left = 1
+        right = math.ceil(self.contest.contest_ballots/2)
+
+        while left < right:
+            proposed_min = (left + right) // 2
+            proposed_min_kmin = self.next_min_winner_ballots(proposed_min)
+
+            if proposed_min_kmin >= proposed_min:
+                left = proposed_min + 1
+            else:
+                previous_kmin = self.next_min_winner_ballots(proposed_min - 1)
+                if previous_kmin >= proposed_min - 1:
+                    return proposed_min
+                else:
+                    right = proposed_min - 1
+        # FIXME: need check for final size, if we reach this is the contest to small for the audit?
+        return left
 
     def stopping_condition(self, votes_for_winner: int) -> bool:
         if len(self.rounds) < 1:
@@ -55,13 +75,6 @@ class BayesianRLA(Audit):
             An int which represents the minimum number of votes cast for the reported winner in the
             current round size in order to stop the audit during that round.
         """
-
-        if sample_size < 1:
-            raise ValueError('Sample size must be at least 1.')
-        if sample_size > self.contest.contest_ballots * self.max_fraction_to_draw:
-            raise ValueError(
-                'Sample size cannot be larger than max fraction to draw of the contest ballots.'
-            )
 
         left = math.floor(sample_size / 2)
         right = sample_size
@@ -170,7 +183,11 @@ class BayesianRLA(Audit):
         self.rounds = rounds
         min_winner_ballots = []
         for sample_size in self.rounds:
-            min_winner_ballots.append(
-                self.next_min_winner_ballots(sample_size))
+            kmin = self.next_min_winner_ballots(sample_size)
+            # Handle invalid sample size edge case
+            if kmin >= sample_size:
+                min_winner_ballots.append(-1)
+            else:
+                min_winner_ballots.append(kmin)
 
         return min_winner_ballots
