@@ -34,10 +34,6 @@ def test_exceptions():
     with pytest.raises(Exception):
         simplebrla.stopping_condition(10)
     with pytest.raises(ValueError):
-        simplebrla.next_min_winner_ballots(0)
-    with pytest.raises(ValueError):
-        simplebrla.next_min_winner_ballots(100)
-    with pytest.raises(ValueError):
         simplebrla.compute_min_winner_ballots([])
     with pytest.raises(ValueError):
         simplebrla.compute_min_winner_ballots([0, 1])

@@ -14,6 +14,9 @@ class SimpleAudit(Audit):
         super().__init__(alpha, beta, max_fraction_to_draw, replacement,
                          contest)
 
+    def get_min_sample_size(self):
+        return 1
+
     def next_sample_size(self):
         return 20
 
@@ -38,6 +41,7 @@ def test_simple_audit():
     assert simpleaudit1.max_fraction_to_draw == 0.1
     assert simpleaudit1.replacement
     assert simpleaudit1.contest is default_contest
+    assert simpleaudit1.get_min_sample_size() == 1
     assert simpleaudit1.next_sample_size() == 20
     assert simpleaudit1.stopping_condition(10)
     assert simpleaudit1.next_min_winner_ballots() == 10
