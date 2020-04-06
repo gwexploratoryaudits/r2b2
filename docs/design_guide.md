@@ -38,8 +38,8 @@ An abstract class to define a *general* audit. It will define attributes and
 methods common to all audits. In the future, it will provide frameworks for an
 interactive audit execution and a 'bulk' execution given a data set.
 
-For the most up-to-date version of the `Audit` class, look
-[here](https://r2b2.readthedocs.io/en/latest/autoapi/r2b2/audit/index.html)
+For the most up-to-date version of the `Audit` class, look at
+[r2b2/audit](https://r2b2.readthedocs.io/en/latest/autoapi/r2b2/audit/index.html)
 
 *Note:* Some of the parameters will be provided by the users for each unique
 audit, but others might be defined by developers in the audit sub-classes and be
@@ -52,7 +52,8 @@ constant values for each unique audit of that type.
 - [ ] BRAVO
 - [ ] BRAVOlike
 - [ ] Athena
-
+- [ ] Minerva
+- [ ] Metis
 
 
 ## Library File/Directory Hierarchy

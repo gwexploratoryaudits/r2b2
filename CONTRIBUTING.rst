@@ -61,7 +61,7 @@ To set up `r2b2` for local development:
 
 5. Commit your changes and push your branch to GitHub::
 
-    git commit -a
+    git commit
     git push origin name-of-your-bugfix-or-feature
 
 6. Submit a pull request through the GitHub website.
