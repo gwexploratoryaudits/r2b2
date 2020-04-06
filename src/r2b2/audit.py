@@ -274,6 +274,12 @@ class Audit(ABC):
         pass
 
     @abstractmethod
+    def compute_all_min_winner_ballots(self, *args, **kwargs):
+        """Compute all stopping sizes from the minimum sample size on."""
+
+        pass
+
+    @abstractmethod
     def compute_risk(self, *args, **kwargs):
         """Compute the current risk level of the audit.
 

@@ -32,6 +32,9 @@ class SimpleAudit(Audit):
     def compute_min_winner_ballots(self):
         return 60
 
+    def compute_all_min_winner_ballots(self):
+        return [1, 2, 3, 4]
+
 
 def test_simple_audit():
     """Tests creation of a basic Audit object."""
@@ -49,6 +52,7 @@ def test_simple_audit():
     assert simpleaudit1.next_min_winner_ballots() == 10
     assert simpleaudit1.compute_risk() == 0.1
     assert simpleaudit1.compute_min_winner_ballots() == 60
+    assert simpleaudit1.compute_all_min_winner_ballots() == [1, 2, 3, 4]
     simpleaudit1.rounds.append(10)
     simpleaudit1.current_dist_null(8)
     assert len(simpleaudit1.risk_schedule) == 1

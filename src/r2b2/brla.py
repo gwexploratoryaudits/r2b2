@@ -41,7 +41,8 @@ class BayesianRLA(Audit):
 
     def get_min_sample_size(self):
         left = 1
-        right = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        right = math.ceil(self.contest.contest_ballots *
+                          self.max_fraction_to_draw)
 
         while left < right:
             proposed_min = (left + right) // 2
@@ -145,7 +146,8 @@ class BayesianRLA(Audit):
         if normalize > 0:
             posterior = posterior / normalize
 
-        return sum(posterior[range(math.floor(self.contest.contest_ballots / 2)+1)])
+        return sum(
+            posterior[range(math.floor(self.contest.contest_ballots / 2) + 1)])
 
     def next_sample_size(self):
         # TODO: Documentation
@@ -189,5 +191,43 @@ class BayesianRLA(Audit):
                 min_winner_ballots.append(-1)
             else:
                 min_winner_ballots.append(kmin)
+
+        return min_winner_ballots
+
+    def compute_all_min_winner_ballots(self,
+                                       max_sample_size: int = None,
+                                       *args,
+                                       **kwargs):
+        """Compute the minimum winner ballots for all possible sample sizes.
+
+        Args:
+            max_sample_size (int): Optional. Set maximum sample size to generate stopping sizes up
+                to. If not provided the maximum sample size is determined by max_fraction_to_draw
+                and the total contest ballots.
+
+        Returns:
+            List[int]: List of minimum winner ballots to meet the stopping condition for each round
+                size in the range [min_sample_size, max_sample_size].
+        """
+
+        if max_sample_size is None:
+            max_sample_size = math.ceil(self.contest.contest_ballots *
+                                        self.max_fraction_to_draw)
+        if max_sample_size < self.min_sample_size:
+            raise ValueError(
+                'Maximum sample size must be greater than or equal to minimum size.'
+            )
+        if max_sample_size > self.contest.contest_ballots:
+            raise ValueError(
+                'Maximum sample size cannot exceed total contest ballots.')
+
+        current_kmin = self.next_min_winner_ballots(self.min_sample_size)
+        min_winner_ballots = [current_kmin]
+
+        for sample_size in range(self.min_sample_size + 1,
+                                 max_sample_size + 1):
+            if self.compute_risk(current_kmin + 1, sample_size) <= self.alpha:
+                current_kmin += 1
+            min_winner_ballots.append(current_kmin)
 
         return min_winner_ballots
