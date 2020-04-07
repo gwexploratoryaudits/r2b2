@@ -125,3 +125,56 @@ Even though you might be the only person working on your branch right now, your 
   - [ ] Ensure there are no merge conflicts with the branch you are attempting to merge into. If there are conflicts, resolve them before merging.
 3. Merge your branch!
   - On GitHub, rebase and merge (this should be the default option in the PR).
+
+
+  #### What do I do if `master` is ahead of my branch?
+  > If `master` is ahead of your branch you might want to incorporate those changes into your branch for their functionality, making a PR easier, or simply because you like keeping up to date. To do this you will need rebase you branch  onto `master`.
+  > 1. Make sure your ***local*** copy of `master` is up to date
+  ```
+  $ git checkout master
+  $ git pull
+  ```
+  > 2. Checkout the branch you would like rebase onto master
+  ```
+  $ git checkout my-branch
+  ```
+  > 3. Begin an interactive rebase onto master.
+  ```
+  $ git rebase -i master
+  ```
+  > This will open a text editor (like below) with the commits from `my-branch` that will be moved to after the latest commit on `master` during the rebase. It also gives you options to edit these commits, do this with caution as it is very possible to lose commits!
+
+    pick 96c0a24 commit message 1
+    pick 450f3a1 commit message 2
+    pick e95dcdg commit message 3
+
+    # Rebase 89eb1f3..735b8ea onto 89eb1f3 (1 command)
+    #
+    # Commands:
+    # p, pick = use commit
+    # r, reword = use commit, but edit the commit message
+    # e, edit = use commit, but stop for amending
+    # s, squash = use commit, but meld into previous commit
+    # f, fixup = like "squash", but discard this commit's log message
+    # x, exec = run command (the rest of the line) using shell
+    # d, drop = remove commit
+    #
+    # These lines can be re-ordered; they are executed from top to bottom.
+    #
+    # If you remove a line here THAT COMMIT WILL BE LOST.
+    #
+    # However, if you remove everything, the rebase will be aborted.
+    #
+    # Note that empty commits are commented out
+
+> 4. Once you are satisfied with the changes, save and close the text editor. Now our local branch should be in the desired state. **This is you last chance to make sure the changes and commit history are correct!**
+>  - [ ] Check the `git log` and make sure the commit history is correct.
+>  - [ ] Re-run all the tests with `tox` to make sure nothing has broken
+> - *Note*: If you use an IDE or command line environment that provides `git` information such as how many commits there are to pull/push between the local and remote branches you will likely see a number of commits to pull (the number of commits you picked during the rebase) and a number of commits to push (the sum of the number of commits picked during the rebase and the number of commits added to the commit history from `master`). If this were not a rebase, you would pull the changes, resolve the merge conflict, and push your new changes, but **do not pull!!**
+> 5. Push the new commit history to the remote branch. **Be careful with this command, it cannot be undone!**  
+```
+git push --force
+```
+> Using the `--force` flag makes git capable of changing the commit history on the remote branch. Essentially, the rebase creates a conflict between the local and remote branches when it changes the commit history. As changing the history is the precise purpose of rebasing, we force push onto the remote branch. **Do not use `--force` in any other circumstance.**
+> 
+> For more information on merging vs. rebasing see this [post](https://www.atlassian.com/git/tutorials/merging-vs-rebasing)
