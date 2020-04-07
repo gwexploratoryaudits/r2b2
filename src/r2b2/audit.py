@@ -25,7 +25,7 @@ class Audit(ABC):
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
         min_sample_size (int): The smallest valid sample size. The minimum round size where
-            kmin < round size
+            kmin <= round size
         rounds (List[int]): List of round sizes (i.e. sample sizes).
         min_winner_ballots (List[int]): List of stopping sizes (kmin values) for each round size in
             rounds.

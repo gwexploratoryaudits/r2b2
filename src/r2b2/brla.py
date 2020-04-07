@@ -48,11 +48,11 @@ class BayesianRLA(Audit):
             proposed_min = (left + right) // 2
             proposed_min_kmin = self.next_min_winner_ballots(proposed_min)
 
-            if proposed_min_kmin >= proposed_min:
+            if proposed_min_kmin == -1:
                 left = proposed_min + 1
             else:
                 previous_kmin = self.next_min_winner_ballots(proposed_min - 1)
-                if previous_kmin >= proposed_min - 1:
+                if previous_kmin == -1:
                     return proposed_min
                 else:
                     right = proposed_min - 1
@@ -73,8 +73,8 @@ class BayesianRLA(Audit):
             sample_size (int): Current round size, i.e. number of ballots to be sampled in round
 
         Returns:
-            An int which represents the minimum number of votes cast for the reported winner in the
-            current round size in order to stop the audit during that round.
+            int: The minimum number of votes cast for the reported winner in the current round
+            size in order to stop the audit during that round. If round size is invalid, -1.
         """
 
         left = math.floor(sample_size / 2)
@@ -98,9 +98,12 @@ class BayesianRLA(Audit):
             else:
                 left = proposed_stop + 1
 
-        # FIXME: Should we test final size when left = right and return some default if
-        # round size is too small?
-        return left
+        # Handle case where kmin = sample_size
+        proposed_stop_risk = self.compute_risk(sample_size, sample_size)
+        if proposed_stop_risk <= self.alpha:
+            return sample_size
+        # Otherwise kmin > sample_size, so we return -1
+        return -1
 
     def compute_prior(self) -> np.ndarray:
         """Compute prior distribution of worst case election."""
@@ -185,12 +188,8 @@ class BayesianRLA(Audit):
         self.rounds = rounds
         min_winner_ballots = []
         for sample_size in self.rounds:
-            kmin = self.next_min_winner_ballots(sample_size)
-            # Handle invalid sample size edge case
-            if kmin >= sample_size:
-                min_winner_ballots.append(-1)
-            else:
-                min_winner_ballots.append(kmin)
+            # Append kmin for valid sample sizes, -1 for invalid sample sizes
+            min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
 
         return min_winner_ballots
 
@@ -224,10 +223,12 @@ class BayesianRLA(Audit):
         current_kmin = self.next_min_winner_ballots(self.min_sample_size)
         min_winner_ballots = [current_kmin]
 
+        # For each additional ballot, the kmin can only increase by
         for sample_size in range(self.min_sample_size + 1,
                                  max_sample_size + 1):
-            if self.compute_risk(current_kmin + 1, sample_size) <= self.alpha:
+            if self.compute_risk(current_kmin, sample_size) > self.alpha:
                 current_kmin += 1
+
             min_winner_ballots.append(current_kmin)
 
         return min_winner_ballots
