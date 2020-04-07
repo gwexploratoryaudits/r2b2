@@ -151,7 +151,7 @@ class Audit(ABC):
                                 curr_round_possibility]
                         distribution_round_draw[
                             prev_round_possibility +
-                            curr_round_possibility] = component_prob
+                            curr_round_possibility] += component_prob
                 self.distribution_null = distribution_round_draw
 
         self.risk_schedule.append(sum(self.distribution_null[kmin + 1:]))
@@ -210,7 +210,7 @@ class Audit(ABC):
                                 curr_round_possibility]
                         distribution_round_draw[
                             prev_round_possibility +
-                            curr_round_possibility] = component_prob
+                            curr_round_possibility] += component_prob
                 self.distribution_reported_tally = distribution_round_draw
 
         self.stopping_prob_schedule.append(
