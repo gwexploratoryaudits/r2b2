@@ -264,6 +264,7 @@ class Audit(ABC):
         round risk and stopping probability are stored.
         """
 
+        self.__reset()
         print('Beginning Audit...')
         sample_size = 0
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
@@ -340,6 +341,17 @@ class Audit(ABC):
             self.sample_winner_ballots.append(votes_for_winner)
 
         print('Audit Complete: Reached max sample size.')
+
+    def __reset(self):
+        """Reset attributes modified during run()."""
+
+        self.rounds = []
+        self.min_winner_ballots = []
+        self.sample_winner_ballots = []
+        self.risk_schedule = []
+        self.stopping_prob_schedule = []
+        self.distribution_null = [1.0]
+        self.distribution_reported_tally = [1.0]
 
     @abstractmethod
     def get_min_sample_size(self):
