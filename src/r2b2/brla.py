@@ -139,11 +139,9 @@ class BayesianRLA(Audit):
             float: Value for risk of given sample and round size.
         """
 
-        posterior = np.array([
-            hg.pmf(votes_for_winner, self.contest.contest_ballots, x,
-                   current_round)
-            for x in range(self.contest.contest_ballots + 1)
-        ])
+        posterior = np.array(
+            hg.pmf(votes_for_winner, self.contest.contest_ballots,
+                   np.arange(self.contest.contest_ballots + 1), current_round))
         posterior = self.prior * posterior
         normalize = sum(posterior)
         if normalize > 0:
@@ -189,7 +187,8 @@ class BayesianRLA(Audit):
         min_winner_ballots = []
         for sample_size in self.rounds:
             # Append kmin for valid sample sizes, -1 for invalid sample sizes
-            min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
+            min_winner_ballots.append(
+                self.next_min_winner_ballots(sample_size))
 
         return min_winner_ballots
 
