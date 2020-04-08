@@ -12,17 +12,17 @@ Building an audit into the R2B2 library includes:
 1. Create a base branch for working on the new audit.
   - Example: If your audit was named Sarah, first create a branch named `sarah` off of master.
   First check what branch you are working on:
-```
+```bash
 $ git status
 On branch master
 ...
 ```
 If you are not on `master`, run:
-```
+```bash
 $ git checkout master
 ```
 Finally, checkout your branch from `master` and create a remote version of that branch:
-```
+```bash
 $ git checkout -b sarah
 $ git push -u origin sarah
 ```
@@ -35,8 +35,8 @@ $ git push -u origin sarah
   - For more details and information on the style guide, see the design guide document.
 3. Ensure all tests are passing on the shiny new branch.
   - From the root directory of the repo, run:
-  ```
-  tox
+  ```bash
+  $ tox
   ```
   You should see a message like this:
   ```
@@ -72,9 +72,9 @@ Even though you might be the only person working on your branch right now, your 
     - Updated and complete documentation for a class or module.
     - A new set of test cases (which are hopefully passing).
   - Write useful commits messages. **Do not** use `git commit -m`. Instead, use one of
-    ```
-    git commit -a   // to stage and commit all tracked files, or
-    git commit      // to commit all staged files
+    ```bash
+    $ git commit -a   // to stage and commit all tracked files, or
+    $ git commit      // to commit all staged files
     ```
     to commit your changes and open a text editor where you can write you commit message. Commit messages should be a short, one-line summary (no more than 50 characters) followed by a blank line, then a detailed summary of changes:
     ```
@@ -130,16 +130,16 @@ Even though you might be the only person working on your branch right now, your 
   #### What do I do if `master` is ahead of my branch?
   > If `master` is ahead of your branch you might want to incorporate those changes into your branch for their functionality, making a PR easier, or simply because you like keeping up to date. To do this you will need rebase you branch  onto `master`.
   > 1. Make sure your ***local*** copy of `master` is up to date
-  ```
+  ```bash
   $ git checkout master
   $ git pull
   ```
   > 2. Checkout the branch you would like rebase onto master
-  ```
+  ```bash
   $ git checkout my-branch
   ```
   > 3. Begin an interactive rebase onto master.
-  ```
+  ```bash
   $ git rebase -i master
   ```
   > This will open a text editor (like below) with the commits from `my-branch` that will be moved to after the latest commit on `master` during the rebase. It also gives you options to edit these commits, do this with caution as it is very possible to lose commits!
@@ -167,14 +167,29 @@ Even though you might be the only person working on your branch right now, your 
     #
     # Note that empty commits are commented out
 
+> - (3.5) You may run into conflicts during the rebase. If you save and close the text editor and see that there are conflicts within the rebase, go through these steps to resolve them.
+  - Determine what files have conflicts, the output should appear similar to the output you might get during a merge conflict
+```bash
+$ git status
+```
+  - Go into the files with conflicts and resolve them. The files will look exactly like files with a merge conflict with lines indicating where both branches have changes and what they are.
+  - Make sure you have resolved these conflicts correctly by testing
+  ```bash
+  $ tox
+  ```
+  - If everything is working correctly, mark the conflict as resolved and continue with the rebase.
+  ```bash
+  $ git add .  # Or simply add each file you fixed individually
+  $ git rebase --continue
+  ```
 > 4. Once you are satisfied with the changes, save and close the text editor. Now our local branch should be in the desired state. **This is you last chance to make sure the changes and commit history are correct!**
 >  - [ ] Check the `git log` and make sure the commit history is correct.
 >  - [ ] Re-run all the tests with `tox` to make sure nothing has broken
 > - *Note*: If you use an IDE or command line environment that provides `git` information such as how many commits there are to pull/push between the local and remote branches you will likely see a number of commits to pull (the number of commits you picked during the rebase) and a number of commits to push (the sum of the number of commits picked during the rebase and the number of commits added to the commit history from `master`). If this were not a rebase, you would pull the changes, resolve the merge conflict, and push your new changes, but **do not pull!!**
 > 5. Push the new commit history to the remote branch. **Be careful with this command, it cannot be undone!**  
-```
-git push --force
+```bash
+$ git push --force
 ```
 > Using the `--force` flag makes git capable of changing the commit history on the remote branch. Essentially, the rebase creates a conflict between the local and remote branches when it changes the commit history. As changing the history is the precise purpose of rebasing, we force push onto the remote branch. **Do not use `--force` in any other circumstance.**
-> 
+>
 > For more information on merging vs. rebasing see this [post](https://www.atlassian.com/git/tutorials/merging-vs-rebasing)
