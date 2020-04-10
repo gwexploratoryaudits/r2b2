@@ -1,0 +1,62 @@
+{
+        "1":{
+                "ballots": 10000,
+                "winner_ballots": 9000,
+                "alpha": 0.1,
+                "asn": 8
+        },
+        "2":{
+                "ballots": 10000,
+                "winner_ballots": 8000,
+                "alpha": 0.1,
+                "asn": 14
+        },
+        "3":{
+                "ballots": 10000,
+                "winner_ballots": 7000,
+                "alpha": 0.1,
+                "asn": 31
+        },
+        "4":{
+                "ballots": 10000,
+                "winner_ballots": 6000,
+                "alpha": 0.1,
+                "asn": 119 
+        },
+        "5":{
+                "ballots": 10000,
+                "winner_ballots": 5500,
+                "alpha": 0.1,
+                "asn": 470
+        }, 
+        "6":{
+                "ballots": 10000,
+                "winner_ballots": 9000,
+                "alpha": 0.05,
+                "asn": 9
+        },
+        "7":{
+                "ballots": 10000,
+                "winner_ballots": 8000,
+                "alpha": 0.05,
+                "asn": 17
+        },
+        "8":{
+                "ballots": 10000,
+                "winner_ballots": 7000,
+                "alpha": 0.05,
+                "asn": 39
+        },
+        "9":{
+                "ballots": 10000,
+                "winner_ballots": 6000,
+                "alpha": 0.05,
+                "asn": 154
+        },
+        "10":{
+                "ballots": 10000,
+                "winner_ballots": 5500,
+                "alpha": 0.05,
+                "asn": 608
+        }
+}

@@ -1,8 +1,11 @@
+import json
+
 import pytest
 
 import r2b2.tests.util as util
 from r2b2.audit import Audit
 from r2b2.contest import Contest
+from r2b2.contest import ContestType
 
 default_contest = util.generate_contest(100)
 
@@ -133,6 +136,18 @@ def test_initialization_errors():
         SimpleAudit(0.1, 0.05, -0.1, True, default_contest)
     with pytest.raises(ValueError):
         SimpleAudit(0.1, 0.05, 1.5, True, default_contest)
+
+
+def test_asn():
+    with open('src/r2b2/tests/asn_tests.json', 'r') as json_file:
+        data = json.load(json_file)
+
+    for test in data:
+        contest_ballots = data[test]['ballots']
+        winner_ballots = data[test]['winner_ballots']
+        contest = Contest(contest_ballots, {'A': winner_ballots, 'B': contest_ballots - winner_ballots}, 1, ['A'], ContestType.PLURALITY)
+        audit = SimpleAudit(data[test]['alpha'], 0.0, 1.0, True, contest)
+        assert audit.asn() == data[test]['asn']
 
 
 def test_get_interval():

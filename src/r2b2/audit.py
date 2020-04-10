@@ -267,8 +267,9 @@ class Audit(ABC):
         margin = (2 * winner_prop) - 1
         z_w = math.log(margin + 1)
         z_l = math.log(1 - margin)
-        return (math.log(1.0 / self.alpha) +
-                (z_w / 2.0)) / ((winner_prop * z_w) + (loser_prop * z_l))
+        top = (math.log(1.0/self.alpha) + (z_w / 2.0))
+        bottom = (winner_prop * z_w) + (loser_prop * z_l)
+        return math.ceil(top / bottom)
 
     def run(self):
         """Begin interactive audit execution.
