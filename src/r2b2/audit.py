@@ -253,6 +253,23 @@ class Audit(ABC):
                 break
         return interval
 
+    def asn(self):
+        """Compute ASN as described in BRAVO paper.
+
+        Given the fractional margin for the reported winner and the risk limit (alpha) produce the
+        average number of ballots sampled during the audit.
+
+        Returns:
+            int: ASN value.
+        """
+        winner_prop = self.contest.winner_prop
+        loser_prop = 1.0 - winner_prop
+        margin = (2 * winner_prop) - 1
+        z_w = math.log(margin + 1)
+        z_l = math.log(1 - margin)
+        return (math.log(1.0 / self.alpha) +
+                (z_w / 2.0)) / ((winner_prop * z_w) + (loser_prop * z_l))
+
     def run(self):
         """Begin interactive audit execution.
 
