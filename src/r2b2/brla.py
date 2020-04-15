@@ -82,7 +82,6 @@ class BayesianRLA(Audit):
 
         while left <= right:
             proposed_stop = (left + right) // 2
-            print(proposed_stop)
             proposed_stop_risk = self.compute_risk(proposed_stop, sample_size)
 
             if proposed_stop_risk == self.alpha:
