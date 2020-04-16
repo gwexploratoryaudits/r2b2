@@ -15,7 +15,7 @@ jobs:
       env:
         - TOXENV=docs
     - env:
-        - TOXENV=py37,codecov
+        - TOXENV=py37full,codecov
       python: '3.7'
 before_install:
   - python --version
