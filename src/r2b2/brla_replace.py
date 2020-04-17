@@ -142,7 +142,7 @@ class BayesianRLAReplace(Audit):
             float: Value for risk of given sample and round size.
         """
 
-        N = self.contest.total_ballots_cast
+        N = self.contest.contest_ballots
         posterior = np.array([
             np.power(x / N, votes_for_winner) * np.power(1 - x / N, current_round - votes_for_winner)
             for x in range(N + 1)
