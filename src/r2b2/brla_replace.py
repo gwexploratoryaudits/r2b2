@@ -8,7 +8,7 @@ from r2b2.audit import Audit
 from r2b2.contest import Contest
 
 
-class BayesianRLA(Audit):
+class BayesianRLAReplace(Audit):
     """Baysian Risk-Limiting Audit implementation.
 
     A Bayesian Risk-Limit Audit with Replacement implementation as defined by Vora, et. al. for auditing 2-candidate
