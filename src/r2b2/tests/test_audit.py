@@ -61,27 +61,33 @@ def test_simple_audit_execution():
     simpleaudit2 = SimpleAudit(0.1, 0.05, 0.1, False, default_contest)
     for i in range(1, 6):
         simpleaudit1.rounds.append(10 * i)
-        simpleaudit1.current_dist_null((10 * i) - 5)
+        simpleaudit1.min_winner_ballots.append((10 * i) - 5)
+        simpleaudit1.current_dist_null()
+        simpleaudit1.truncate_dist_null()
         assert len(simpleaudit1.risk_schedule) == i
         assert simpleaudit1.risk_schedule[i - 1] >= 0.0
         assert simpleaudit1.risk_schedule[i - 1] <= 1.0
-        assert len(simpleaudit1.distribution_null) == (10 * i) - 4
-        simpleaudit1.current_dist_reported((10 * i) - 5)
+        assert len(simpleaudit1.distribution_null) == (10 * i) - 5
+        simpleaudit1.current_dist_reported()
+        simpleaudit1.truncate_dist_reported()
         assert len(simpleaudit1.stopping_prob_schedule) == i
         assert simpleaudit1.stopping_prob_schedule[i - 1] >= 0.0
-        assert simpleaudit1.stopping_prob_schedule[i - 1] <= 1.0
-        assert len(simpleaudit1.distribution_reported_tally) == (10 * i) - 4
+        assert simpleaudit1.stopping_prob_schedule[i - 1] <= 1.0000001
+        assert len(simpleaudit1.distribution_reported_tally) == (10 * i) - 5
         simpleaudit2.rounds.append(10 * i)
-        simpleaudit2.current_dist_null((10 * i) - 5)
+        simpleaudit2.min_winner_ballots.append((10 * i) - 5)
+        simpleaudit2.current_dist_null()
+        simpleaudit2.truncate_dist_null()
         assert len(simpleaudit2.risk_schedule) == i
         assert simpleaudit2.risk_schedule[i - 1] >= 0.0
         assert simpleaudit2.risk_schedule[i - 1] <= 1.0
-        assert len(simpleaudit2.distribution_null) == (10 * i) - 4
-        simpleaudit2.current_dist_reported((10 * i) - 5)
+        assert len(simpleaudit2.distribution_null) == (10 * i) - 5
+        simpleaudit2.current_dist_reported()
+        simpleaudit2.truncate_dist_reported()
         assert len(simpleaudit2.stopping_prob_schedule) == i
         assert simpleaudit2.stopping_prob_schedule[i - 1] >= 0.0
-        assert simpleaudit2.stopping_prob_schedule[i - 1] <= 1.0
-        assert len(simpleaudit2.distribution_reported_tally) == (10 * i) - 4
+        assert simpleaudit2.stopping_prob_schedule[i - 1] <= 1.0000001
+        assert len(simpleaudit2.distribution_reported_tally) == (10 * i) - 5
 
 
 def test_repr():

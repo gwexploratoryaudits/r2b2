@@ -120,7 +120,7 @@ class Audit(ABC):
         replacement_str = 'Replacement: {}\n\n'.format(self.replacement)
         return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest)
 
-    def current_dist_null(self, kmin: int):
+    def current_dist_null(self):
         """Update distribution null and risk schedule for current round."""
 
         if len(self.rounds) == 1:
@@ -160,10 +160,7 @@ class Audit(ABC):
                         distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
                 self.distribution_null = distribution_round_draw
 
-        self.risk_schedule.append(sum(self.distribution_null[kmin + 1:]))
-        self.distribution_null = self.distribution_null[:kmin + 1]
-
-    def current_dist_reported(self, kmin: int):
+    def current_dist_reported(self):
         """Update distribution_reported_tally and stopping probability schedule for round."""
 
         if len(self.rounds) == 1:
@@ -201,8 +198,17 @@ class Audit(ABC):
                         distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
                 self.distribution_reported_tally = distribution_round_draw
 
-        self.stopping_prob_schedule.append(sum(self.distribution_reported_tally[kmin + 1:]))
-        self.distribution_reported_tally = self.distribution_reported_tally[:kmin + 1]
+    def truncate_dist_null(self):
+        """Truncate null distribution and update the stopping probability schedule."""
+        self.risk_schedule.append(sum(self.distribution_null[self.min_winner_ballots[-1]:]))
+        self.distribution_null = self.distribution_null[:self.min_winner_ballots[-1]]
+
+    def truncate_dist_reported(self):
+        """Truncate reported distribution and update the stopping probability schedule."""
+        self.stopping_prob_schedule.append(
+            sum(self.distribution_reported_tally[self.min_winner_ballots[-1]:]))
+        self.distribution_reported_tally = self.distribution_reported_tally[
+            :self.min_winner_ballots[-1]]
 
     def __get_interval(self, dist):
         """Get relevant interval [l, u] of given distribution.
@@ -219,13 +225,13 @@ class Audit(ABC):
 
         tolerance = 0.0000001
 
-        # Handle the edge case of a small distribution
-        if sum(dist) < 2 * tolerance:
-            return [int(len(dist) / 2 - 1), int(len(dist) / 2 + 1)]
-
         interval = [0, len(dist) - 1]
         lower_sum = 0
         upper_sum = 0
+
+        # Handle the edge case of a small distribution
+        if sum(dist) < 2 * tolerance:
+            return interval
 
         for i in range(len(dist) - 1):
             lower_sum += dist[i]
@@ -323,8 +329,10 @@ class Audit(ABC):
 
             kmin = self.next_min_winner_ballots(sample_size)
             self.min_winner_ballots.append(kmin)
-            self.current_dist_null(kmin)
-            self.current_dist_reported(kmin)
+            self.current_dist_null()
+            self.truncate_dist_null()
+            self.current_dist_reported()
+            self.truncate_dist_reported()
             previous_votes_for_winner = votes_for_winner
             self.sample_winner_ballots.append(votes_for_winner)
 

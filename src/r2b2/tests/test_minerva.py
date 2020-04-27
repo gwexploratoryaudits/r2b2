@@ -27,3 +27,12 @@ def test_min_sample_size():
     assert minerva1.min_sample_size == 13
     assert minerva2.min_sample_size == 5
     assert minerva3.min_sample_size == 152
+
+
+def test_minerva_kmins():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva(.1, .1, contest)
+    minerva.compute_min_winner_ballots([100, 200, 400])
+    assert minerva.min_winner_ballots == [58, 113, 221]
+
+# TODO: Test Minerva errors.
