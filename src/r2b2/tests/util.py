@@ -70,8 +70,7 @@ def parse_contest(json_file):
     num_winners = data['num_winners']
     reported_winners = data['reported_winners']
     contest_type = ContestType[data['contest_type']]
-    return Contest(contest_ballots, tally, num_winners, reported_winners,
-                   contest_type)
+    return Contest(contest_ballots, tally, num_winners, reported_winners, contest_type)
 
 
 def parse_election(json_file):

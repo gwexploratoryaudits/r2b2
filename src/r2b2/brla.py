@@ -60,8 +60,7 @@ class BayesianRLA(Audit):
     def __str__(self):
         title_str = 'BayesianRLA without replacement\n-------------------------------\n'
         alpha_str = 'Risk Limit: {}\n'.format(self.alpha)
-        max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(
-            self.max_fraction_to_draw)
+        max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
         return title_str + alpha_str + max_frac_str + str(self.contest)
 
     def stopping_condition(self, votes_for_winner: int) -> bool:

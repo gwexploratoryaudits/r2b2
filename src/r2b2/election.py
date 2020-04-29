@@ -30,8 +30,7 @@ class Election:
         else:
             for c in contests:
                 if type(c) is not Contest:
-                    raise TypeError(
-                        'contests must be a list of Contest objects.')
+                    raise TypeError('contests must be a list of Contest objects.')
         if total_ballots < 1:
             raise ValueError('total_ballots must be greater than 0.')
 
@@ -45,8 +44,7 @@ class Election:
             contests_str += repr(contest)
             contests_str += ', '
         contests_str += ']'
-        return '{}: [{}, {}, {}]'.format(self.__class__.__name__, self.name,
-                                         self.total_ballots, contests_str)
+        return '{}: [{}, {}, {}]'.format(self.__class__.__name__, self.name, self.total_ballots, contests_str)
 
     def __str__(self):
         title_str = 'Election\n--------\n'
