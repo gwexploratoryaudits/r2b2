@@ -259,7 +259,7 @@ class Audit(ABC):
         bottom = (winner_prop * z_w) + (loser_prop * z_l)
         return math.ceil(top / bottom)
 
-    def run(self):
+    def run(self, verbose: bool=False):
         """Begin interactive audit execution.
 
         Begins the interactive version of the audit. While computations for different audits will
@@ -271,19 +271,35 @@ class Audit(ABC):
         """
 
         self.__reset()
-        print('Beginning Audit...')
+        print('\n==================\nBeginning Audit...\n==================\n')
         sample_size = 0
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
         previous_votes_for_winner = 0
+        curr_round = 0
 
         while sample_size < max_sample_size:
+            curr_round += 1
+            print('\n----------\n{:^10}\n----------\n'.format('Round {}'.format(curr_round)))
+
+            if verbose and curr_round > 1:
+                print('\n+--------------------------------------------------+')
+                print('|{:^50}|'.format('Audit Statistics'))
+                print('|{:50}|'.format(' '))
+                print('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
+                print('|{:<50}|'.format('Maximum Sample Size: {}'.format(max_sample_size)))
+                print('|{:50}|'.format(' '))
+                print('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk'))
+                print('|----------------|----------------|----------------|')
+                for r in range(1, curr_round):
+                    print('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r-1]), '{:.12f}'.format(self.risk_schedule[r-1])))
+                print('+--------------------------------------------------+')
+                # TODO: print risk schedule
+                # TODO: print stopping prob schedule
+
             self.next_sample_size()
 
             while True:
-                sample_size = int(input('Enter next sample size (as a running total): '))
-                if sample_size < 1:
-                    print('Invalid Input: Sample size must be greater than 1.')
-                    continue
+                sample_size = int(input('\nEnter next sample size (as a running total): '))
                 if len(self.rounds) > 0 and sample_size <= self.rounds[-1]:
                     print('Invalid Input: Sample size must be greater than previous round.')
                     continue
@@ -294,10 +310,6 @@ class Audit(ABC):
                     print('Invalid Input: Sample size cannot exceed ', max_sample_size)
                     continue
                 break
-
-            while sample_size < 1 or sample_size > max_sample_size:
-                print('Invalid sample size! Please enter a sample size between 1 and ', max_sample_size)
-                sample_size = int(input('Enter next sample size (as a running total): '))
 
             self.rounds.append(sample_size)
             while True:
@@ -313,14 +325,18 @@ class Audit(ABC):
                     continue
                 break
 
-            if self.stopping_condition(votes_for_winner):
-                print('Audit Complete: Stopping condition met.')
+            stopping_condition_met = self.stopping_condition(votes_for_winner)
+            print('\n\n+----------------------------------------+')
+            print('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
+            print('+----------------------------------------+')
+
+            if stopping_condition_met:
+                print('\n\nAudit Complete.')
                 return
             else:
-                print('Stopping condition not met!!')
-                force_stop = input('Would you like to force stop the audit [y/n]: ')
+                force_stop = input('\nWould you like to force stop the audit y/[n]: ')
                 if force_stop == 'y':
-                    print('Audit Complete: User stopped.')
+                    print('\n\nAudit Complete: User stopped.')
                     return
 
             kmin = self.next_min_winner_ballots(sample_size)
@@ -330,7 +346,7 @@ class Audit(ABC):
             previous_votes_for_winner = votes_for_winner
             self.sample_winner_ballots.append(votes_for_winner)
 
-        print('Audit Complete: Reached max sample size.')
+        print('\n\nAudit Complete: Reached max sample size.')
 
     def __reset(self):
         """Reset attributes modified during run()."""

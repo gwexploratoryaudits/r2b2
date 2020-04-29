@@ -89,6 +89,12 @@ parser.add_argument('-o',
                     help='Write output to a given file in bulk mode.',
                     dest='output',
                     default=None)
+parser.add_argument('-v',
+                    '--verbose',
+                    help='Get verbose output. Provides additional audit statistics in interactive.',
+                    dest='verbose',
+                    action='store_true',
+                    default=False)
 
 
 def main(args=None):
@@ -107,7 +113,7 @@ def main(args=None):
                 contest = input_contest()
 
             audit = input_audit(contest, args.alpha, args.max_fraction_to_draw, args.audit_type)
-            audit.run()
+            audit.run(args.verbose)
     elif args.election_mode:
         print('Bulk Election mode is currently unavailable.')
         # TODO: implement election auditing
