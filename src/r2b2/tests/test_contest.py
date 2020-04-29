@@ -6,10 +6,7 @@ from r2b2.contest import ContestType
 
 def test_simple_contest():
     """Tests creation of a simple Contest object."""
-    simplecontest = Contest(100, {
-        'a': 60,
-        'b': 40
-    }, 1, ['a'], ContestType.PLURALITY)
+    simplecontest = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
     assert simplecontest.contest_ballots == 100
     assert simplecontest.num_candidates == 2
     assert simplecontest.num_winners == 1

@@ -38,8 +38,7 @@ class Contest:
     tally: Dict[str, int]
     winner_prop: float
 
-    def __init__(self, contest_ballots: int, tally: Dict[str, int],
-                 num_winners: int, reported_winners: List[str],
+    def __init__(self, contest_ballots: int, tally: Dict[str, int], num_winners: int, reported_winners: List[str],
                  contest_type: ContestType):
 
         if type(contest_ballots) is not int:
@@ -51,18 +50,15 @@ class Contest:
         else:
             for k, v in tally.items():
                 if type(k) is not str or type(v) is not int:
-                    raise TypeError(
-                        'tally must contain str keys and int values')
+                    raise TypeError('tally must contain str keys and int values')
         if sum(tally.values()) > contest_ballots:
             raise ValueError('tally total is greater than contest_ballots.')
         if sum(tally.values()) < 1:
-            raise ValueError(
-                'tally must contain a total of at least 1 ballot.')
+            raise ValueError('tally must contain a total of at least 1 ballot.')
         if type(num_winners) is not int:
             raise TypeError('num_winners must be integer.')
         if num_winners < 1 or num_winners > len(tally):
-            raise ValueError(
-                'num_winners must be between 1 and number of candidates.')
+            raise ValueError('num_winners must be between 1 and number of candidates.')
         if type(reported_winners) is not list:
             raise TypeError('reported_winners must be a list[str].')
         elif len(reported_winners) != num_winners:
@@ -83,5 +79,4 @@ class Contest:
         self.candidates = list(tally.keys())
         self.num_candidates = len(self.candidates)
         self.contest_type = contest_type
-        self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(
-            self.contest_ballots)
+        self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(self.contest_ballots)
