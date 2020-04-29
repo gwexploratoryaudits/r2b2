@@ -58,8 +58,7 @@ class Audit(ABC):
     distribution_reported_tally: List[float]
     contest: Contest
 
-    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float,
-                 replacement: bool, contest: Contest):
+    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float, replacement: bool, contest: Contest):
         """Create an instance of an Audit.
 
         Note:
@@ -76,8 +75,7 @@ class Audit(ABC):
         if beta < 0 or beta > 1.0:
             raise ValueError('beta must be between 0 and 1.')
         if type(max_fraction_to_draw) is not float:
-            raise TypeError(
-                'max_fraction_to_draw must be a fraction (i.e. float).')
+            raise TypeError('max_fraction_to_draw must be a fraction (i.e. float).')
         if max_fraction_to_draw < 0 or max_fraction_to_draw > 1:
             raise ValueError('max_fraction_to_draw must be between 0 and 1')
         if type(replacement) is not bool:
@@ -109,47 +107,34 @@ class Audit(ABC):
 
         # Distribution updating is dependent on sampling with or without replacement
         if self.replacement:
-            distribution_round_draw = binom.pmf(range(0, round_draw + 1),
-                                                round_draw, 0.5)
+            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, 0.5)
             # Compute convolution to get new distribution (except 1st round)
             if len(self.rounds) == 1:
                 self.distribution_null = distribution_round_draw
             else:
-                self.distribution_null = fftconvolve(self.distribution_null,
-                                                     distribution_round_draw)
+                self.distribution_null = fftconvolve(self.distribution_null, distribution_round_draw)
         else:
             half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_null = hypergeom.pmf(
-                    np.arange(round_draw + 1), self.contest.contest_ballots,
-                    half_contest_ballots, round_draw)
+                self.distribution_null = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots, half_contest_ballots,
+                                                       round_draw)
             else:
-                distribution_round_draw = [
-                    0 for i in range(self.rounds[-1] + 1)
-                ]
+                distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
                 interval = self.__get_interval(self.distribution_null)
                 # For every possible number of winner ballots in previous rounds
                 # and every possibility in the current round
                 # compute probability of their simultaneity
-                for prev_round_possibility in range(interval[0],
-                                                    interval[1] + 1):
-                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[
-                        -2]
+                for prev_round_possibility in range(interval[0], interval[1] + 1):
+                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
                     unsampled_winner_ballots = half_contest_ballots - prev_round_possibility
 
-                    curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1),
-                                                    unsampled_contest_ballots,
-                                                    unsampled_winner_ballots,
+                    curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
                                                     round_draw)
                     for curr_round_possibility in range(round_draw + 1):
-                        component_prob = self.distribution_null[
-                            prev_round_possibility] * curr_round_draw[
-                                curr_round_possibility]
-                        distribution_round_draw[
-                            prev_round_possibility +
-                            curr_round_possibility] += component_prob
+                        component_prob = self.distribution_null[prev_round_possibility] * curr_round_draw[curr_round_possibility]
+                        distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
                 self.distribution_null = distribution_round_draw
 
         self.risk_schedule.append(sum(self.distribution_null[kmin + 1:]))
@@ -164,56 +149,37 @@ class Audit(ABC):
             round_draw = self.rounds[-1] - self.rounds[-2]
 
         if self.replacement:
-            distribution_round_draw = binom.pmf(range(0, round_draw + 1),
-                                                round_draw,
-                                                self.contest.winner_prop)
+            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, self.contest.winner_prop)
             if len(self.rounds) == 1:
                 self.distribution_reported_tally = distribution_round_draw
             else:
-                self.distribution_reported_tally = fftconvolve(
-                    self.distribution_reported_tally, distribution_round_draw)
+                self.distribution_reported_tally = fftconvolve(self.distribution_reported_tally, distribution_round_draw)
         else:
-            reported_winner_ballots = int(self.contest.winner_prop *
-                                          self.contest.contest_ballots)
+            reported_winner_ballots = int(self.contest.winner_prop * self.contest.contest_ballots)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_reported_tally = hypergeom.pmf(
-                    np.arange(round_draw + 1), self.contest.contest_ballots,
-                    reported_winner_ballots, round_draw)
+                self.distribution_reported_tally = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots,
+                                                                 reported_winner_ballots, round_draw)
             else:
-                distribution_round_draw = [
-                    0 for i in range(self.rounds[-1] + 1)
-                ]
+                distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
-                interval = self.__get_interval(
-                    self.distribution_reported_tally)
+                interval = self.__get_interval(self.distribution_reported_tally)
                 # For every possible number of winner ballots in previous rounds
                 # and every possibility in the current round
                 # compute probability of their simultaneity
-                for prev_round_possibility in range(interval[0],
-                                                    interval[1] + 1):
+                for prev_round_possibility in range(interval[0], interval[1] + 1):
                     unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
                     unsampled_winner_ballots = reported_winner_ballots - prev_round_possibility
 
-                    curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1),
-                                                    unsampled_contest_ballots,
-                                                    unsampled_winner_ballots,
+                    curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
                                                     round_draw)
                     for curr_round_possibility in range(round_draw + 1):
-                        component_prob = self.distribution_reported_tally[
-                            prev_round_possibility] * curr_round_draw[
-                                curr_round_possibility]
-                        distribution_round_draw[
-                            prev_round_possibility +
-                            curr_round_possibility] += component_prob
+                        component_prob = self.distribution_reported_tally[prev_round_possibility] * curr_round_draw[curr_round_possibility]
+                        distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
                 self.distribution_reported_tally = distribution_round_draw
 
-        self.stopping_prob_schedule.append(
-            sum(self.distribution_reported_tally[kmin + 1:]))
-        self.distribution_reported_tally = self.distribution_reported_tally[:
-                                                                            kmin
-                                                                            +
-                                                                            1]
+        self.stopping_prob_schedule.append(sum(self.distribution_reported_tally[kmin + 1:]))
+        self.distribution_reported_tally = self.distribution_reported_tally[:kmin + 1]
 
     def __get_interval(self, dist):
         """Get relevant interval [l, u] of given distribution.
@@ -267,7 +233,7 @@ class Audit(ABC):
         margin = (2 * winner_prop) - 1
         z_w = math.log(margin + 1)
         z_l = math.log(1 - margin)
-        top = (math.log(1.0/self.alpha) + (z_w / 2.0))
+        top = (math.log(1.0 / self.alpha) + (z_w / 2.0))
         bottom = (winner_prop * z_w) + (loser_prop * z_l)
         return math.ceil(top / bottom)
 
@@ -292,51 +258,36 @@ class Audit(ABC):
             self.next_sample_size()
 
             while True:
-                sample_size = int(
-                    input('Enter next sample size (as a running total): '))
+                sample_size = int(input('Enter next sample size (as a running total): '))
                 if sample_size < 1:
                     print('Invalid Input: Sample size must be greater than 1.')
                     continue
                 if len(self.rounds) > 0 and sample_size <= self.rounds[-1]:
-                    print(
-                        'Invalid Input: Sample size must be greater than previous round.'
-                    )
+                    print('Invalid Input: Sample size must be greater than previous round.')
                     continue
                 if sample_size < self.min_sample_size:
-                    print('Invalid Input: Sample size must be larger than ',
-                          self.min_sample_size)
+                    print('Invalid Input: Sample size must be larger than ', self.min_sample_size)
                     continue
                 if sample_size > max_sample_size:
-                    print('Invalid Input: Sample size cannot exceed ',
-                          max_sample_size)
+                    print('Invalid Input: Sample size cannot exceed ', max_sample_size)
                     continue
                 break
 
             while sample_size < 1 or sample_size > max_sample_size:
-                print(
-                    'Invalid sample size! Please enter a sample size between 1 and ',
-                    max_sample_size)
-                sample_size = int(
-                    input('Enter next sample size (as a running total): '))
+                print('Invalid sample size! Please enter a sample size between 1 and ', max_sample_size)
+                sample_size = int(input('Enter next sample size (as a running total): '))
 
             self.rounds.append(sample_size)
             while True:
-                votes_for_winner = int(
-                    input(
-                        'Enter total number of votes for reported winner found in sample: '
-                    ))
+                votes_for_winner = int(input('Enter total number of votes for reported winner found in sample: '))
                 if votes_for_winner < 0:
-                    print(
-                        'Invalid Input: Votes for winner must be non-negative.'
-                    )
+                    print('Invalid Input: Votes for winner must be non-negative.')
                     continue
                 if votes_for_winner < previous_votes_for_winner:
                     print('Invalid Input: Votes for winner cannot decrease.')
                     continue
                 if votes_for_winner > sample_size:
-                    print(
-                        'Invalid Input: Votes for winner cannot exceed sample size.'
-                    )
+                    print('Invalid Input: Votes for winner cannot exceed sample size.')
                     continue
                 break
 
@@ -345,8 +296,7 @@ class Audit(ABC):
                 return
             else:
                 print('Stopping condition not met!!')
-                force_stop = input(
-                    'Would you like to force stop the audit [y/n]: ')
+                force_stop = input('Would you like to force stop the audit [y/n]: ')
                 if force_stop == 'y':
                     print('Audit Complete: User stopped.')
                     return

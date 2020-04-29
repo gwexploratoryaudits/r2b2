@@ -31,8 +31,7 @@ class BayesianRLA(Audit):
 
     prior: np.ndarray
 
-    def __init__(self, alpha: float, max_fraction_to_draw: float,
-                 contest: Contest):
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize a Bayesian RLA."""
 
         super().__init__(alpha, 0.0, max_fraction_to_draw, False, contest)
@@ -41,8 +40,7 @@ class BayesianRLA(Audit):
 
     def get_min_sample_size(self):
         left = 1
-        right = math.ceil(self.contest.contest_ballots *
-                          self.max_fraction_to_draw)
+        right = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
 
         while left < right:
             proposed_min = (left + right) // 2
@@ -61,10 +59,8 @@ class BayesianRLA(Audit):
 
     def stopping_condition(self, votes_for_winner: int) -> bool:
         if len(self.rounds) < 1:
-            raise Exception(
-                'Attempted to call stopping condition without any rounds.')
-        return self.compute_risk(votes_for_winner,
-                                 self.rounds[-1]) <= self.alpha
+            raise Exception('Attempted to call stopping condition without any rounds.')
+        return self.compute_risk(votes_for_winner, self.rounds[-1]) <= self.alpha
 
     def next_min_winner_ballots(self, sample_size: int) -> int:
         """Compute the stopping size requirement for a given round.
@@ -88,8 +84,7 @@ class BayesianRLA(Audit):
                 return proposed_stop
 
             if proposed_stop_risk < self.alpha:
-                previous_stop_risk = self.compute_risk(proposed_stop - 1,
-                                                       sample_size)
+                previous_stop_risk = self.compute_risk(proposed_stop - 1, sample_size)
                 if previous_stop_risk == self.alpha:
                     return proposed_stop - 1
                 if previous_stop_risk > self.alpha:
@@ -111,18 +106,11 @@ class BayesianRLA(Audit):
         half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
         left = np.zeros(half_contest_ballots, dtype=float)
         mid = np.array([0.5])
-        right = np.array([
-            (0.5 / float(half_contest_ballots))
-            for i in range(self.contest.contest_ballots - half_contest_ballots)
-        ],
+        right = np.array([(0.5 / float(half_contest_ballots)) for i in range(self.contest.contest_ballots - half_contest_ballots)],
                          dtype=float)
         return np.concatenate((left, mid, right))
 
-    def compute_risk(self,
-                     votes_for_winner: int = None,
-                     current_round: int = None,
-                     *args,
-                     **kwargs) -> float:
+    def compute_risk(self, votes_for_winner: int = None, current_round: int = None, *args, **kwargs) -> float:
         """Compute the risk level given current round size and votes for winner in sample
 
         The risk level is computed using the normalized product of the prior and posterior
@@ -140,15 +128,13 @@ class BayesianRLA(Audit):
         """
 
         posterior = np.array(
-            hg.pmf(votes_for_winner, self.contest.contest_ballots,
-                   np.arange(self.contest.contest_ballots + 1), current_round))
+            hg.pmf(votes_for_winner, self.contest.contest_ballots, np.arange(self.contest.contest_ballots + 1), current_round))
         posterior = self.prior * posterior
         normalize = sum(posterior)
         if normalize > 0:
             posterior = posterior / normalize
 
-        return sum(
-            posterior[range(math.floor(self.contest.contest_ballots / 2) + 1)])
+        return sum(posterior[range(math.floor(self.contest.contest_ballots / 2) + 1)])
 
     def next_sample_size(self):
         # TODO: Documentation
@@ -176,9 +162,7 @@ class BayesianRLA(Audit):
             if sample_size < 1:
                 raise ValueError('Sample size must be at least 1.')
             if sample_size > self.contest.contest_ballots * self.max_fraction_to_draw:
-                raise ValueError(
-                    'Sample size cannot be larger than max fraction to draw of the contest ballots.'
-                )
+                raise ValueError('Sample size cannot be larger than max fraction to draw of the contest ballots.')
             if sample_size <= previous_round:
                 raise ValueError('Sample sizes must be in increasing order.')
             previous_round = sample_size
@@ -187,15 +171,11 @@ class BayesianRLA(Audit):
         min_winner_ballots = []
         for sample_size in self.rounds:
             # Append kmin for valid sample sizes, -1 for invalid sample sizes
-            min_winner_ballots.append(
-                self.next_min_winner_ballots(sample_size))
+            min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
 
         return min_winner_ballots
 
-    def compute_all_min_winner_ballots(self,
-                                       max_sample_size: int = None,
-                                       *args,
-                                       **kwargs):
+    def compute_all_min_winner_ballots(self, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum winner ballots for all possible sample sizes.
 
         Args:
@@ -209,22 +189,17 @@ class BayesianRLA(Audit):
         """
 
         if max_sample_size is None:
-            max_sample_size = math.ceil(self.contest.contest_ballots *
-                                        self.max_fraction_to_draw)
+            max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
         if max_sample_size < self.min_sample_size:
-            raise ValueError(
-                'Maximum sample size must be greater than or equal to minimum size.'
-            )
+            raise ValueError('Maximum sample size must be greater than or equal to minimum size.')
         if max_sample_size > self.contest.contest_ballots:
-            raise ValueError(
-                'Maximum sample size cannot exceed total contest ballots.')
+            raise ValueError('Maximum sample size cannot exceed total contest ballots.')
 
         current_kmin = self.next_min_winner_ballots(self.min_sample_size)
         min_winner_ballots = [current_kmin]
 
         # For each additional ballot, the kmin can only increase by
-        for sample_size in range(self.min_sample_size + 1,
-                                 max_sample_size + 1):
+        for sample_size in range(self.min_sample_size + 1, max_sample_size + 1):
             if self.compute_risk(current_kmin, sample_size) > self.alpha:
                 current_kmin += 1
 

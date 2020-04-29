@@ -12,10 +12,8 @@ default_contest = util.generate_contest(100)
 
 class SimpleAudit(Audit):
     """For testing purposes only."""
-    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: int,
-                 replacement: bool, contest: Contest):
-        super().__init__(alpha, beta, max_fraction_to_draw, replacement,
-                         contest)
+    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: int, replacement: bool, contest: Contest):
+        super().__init__(alpha, beta, max_fraction_to_draw, replacement, contest)
 
     def get_min_sample_size(self):
         return 5
