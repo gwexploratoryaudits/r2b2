@@ -106,8 +106,7 @@ def main(args=None):
             else:
                 contest = input_contest()
 
-            audit = input_audit(contest, args.alpha, args.max_fraction_to_draw,
-                                args.audit_type)
+            audit = input_audit(contest, args.alpha, args.max_fraction_to_draw, args.audit_type)
             audit.run()
     elif args.election_mode:
         print('Bulk Election mode is currently unavailable.')
@@ -142,12 +141,12 @@ def main(args=None):
         elif args.max_size is not None:
             kmins = audit.compute_all_min_winner_ballots(args.max_size)
             for r in range(audit.min_sample_size, args.max_size + 1):
-                out += '{:^20}|{:^20}\n'.format(r, kmins[r-audit.min_sample_size])
+                out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
         else:
             max_size = math.ceil(audit.max_fraction_to_draw * audit.contest.contest_ballots)
             kmins = audit.compute_all_min_winner_ballots()
             for r in range(audit.min_sample_size, max_size + 1):
-                out += '{:^20}|{:^20}\n'.format(r, kmins[r-audit.min_sample_size])
+                out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
         # Either print output or write to given file
         if args.output is not None:
             with open(args.output, 'w') as out_file:
@@ -157,10 +156,7 @@ def main(args=None):
             print(out)
 
 
-def input_audit(contest: Contest,
-                alpha: float = None,
-                max_fraction_to_draw: float = None,
-                audit_type: str = None) -> Audit:
+def input_audit(contest: Contest, alpha: float = None, max_fraction_to_draw: float = None, audit_type: str = None) -> Audit:
     """Create an audit from user-input."""
     print('\nCreate a new Audit')
     print('==================\n')
@@ -172,16 +168,10 @@ def input_audit(contest: Contest,
         alpha = float(input('Enter the desired risk limit: '))
 
     if max_fraction_to_draw is None:
-        max_fraction_to_draw = float(
-            input(
-                'Enter the maximum fraction of contest ballots you are willing to draw: '
-            ))
+        max_fraction_to_draw = float(input('Enter the maximum fraction of contest ballots you are willing to draw: '))
     while max_fraction_to_draw <= 0.0 or max_fraction_to_draw > 1.0:
         print('Invalid Input: Max Fraction must be between 0 and 1.')
-        max_fraction_to_draw = float(
-            input(
-                'Enter the maximum fraction of contest ballots you are willing to draw: '
-            ))
+        max_fraction_to_draw = float(input('Enter the maximum fraction of contest ballots you are willing to draw: '))
 
     if audit_type is None:
         print('\nAudit Types')
@@ -223,12 +213,10 @@ def input_contest() -> Contest:
         running_total = 0
         for i in range(num_candidates):
             candidate = input('Enter candidate name: ')
-            candidate_votes = int(
-                input('Enter number of votes reported for candidate: '))
+            candidate_votes = int(input('Enter number of votes reported for candidate: '))
             while candidate_votes < 0:
                 print('Invalid Input: Votes must be non-negative')
-                candidate_votes = int(
-                    input('Enter number of votes reported for candidate: '))
+                candidate_votes = int(input('Enter number of votes reported for candidate: '))
             running_total += candidate_votes
             if running_total > contest_ballots:
                 print('Invalid Input: Exceeded total ballots cast in contest.')
@@ -247,9 +235,7 @@ def input_contest() -> Contest:
     for i in range(num_winners):
         winner = input('Enter winner name: ')
         while winner not in candidates or winner in reported_winners:
-            print(
-                'Invalid Input: Must be a candidate who is not already a reported winner.'
-            )
+            print('Invalid Input: Must be a candidate who is not already a reported winner.')
             winner = input('Enter winner name:')
         reported_winners.append(winner)
 
@@ -265,5 +251,4 @@ def input_contest() -> Contest:
         contest_type_in = int(input('Select contest type from above: '))
     contest_type = ContestType(contest_type_in)
 
-    return Contest(contest_ballots, tally, num_winners, reported_winners,
-                   contest_type)
+    return Contest(contest_ballots, tally, num_winners, reported_winners, contest_type)

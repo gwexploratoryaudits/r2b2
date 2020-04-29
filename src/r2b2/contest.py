@@ -83,11 +83,8 @@ class Contest:
 
     def __repr__(self):
         """String representation of Contest class."""
-        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__,
-                                                 self.contest_ballots,
-                                                 self.tally, self.num_winners,
-                                                 self.reported_winners,
-                                                 repr(self.contest_type))
+        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__, self.contest_ballots, self.tally, self.num_winners,
+                                                 self.reported_winners, repr(self.contest_type))
 
     def __str__(self):
         """Human readable string representation of audit class."""

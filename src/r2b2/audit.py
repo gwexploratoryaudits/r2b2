@@ -103,11 +103,8 @@ class Audit(ABC):
         Note:
             Can (and perhaps should) be overwritten in subclass.
         """
-        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__,
-                                                 self.alpha, self.beta,
-                                                 self.max_fraction_to_draw,
-                                                 self.replacement,
-                                                 repr(self.contest))
+        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__, self.alpha, self.beta, self.max_fraction_to_draw,
+                                                 self.replacement, repr(self.contest))
 
     def __str__(self):
         """Human readable string (i.e. printable) representation of Audit class.
@@ -118,11 +115,9 @@ class Audit(ABC):
         title_str = 'Audit\n-----\n'
         alpha_str = 'Alpha: {}\n'.format(self.alpha)
         beta_str = 'Beta: {}\n'.format(self.beta)
-        max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(
-            self.max_fraction_to_draw)
+        max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
         replacement_str = 'Replacement: {}\n\n'.format(self.replacement)
-        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(
-            self.contest)
+        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest)
 
     def current_dist_null(self, kmin: int):
         """Update distribution null and risk schedule for current round."""
