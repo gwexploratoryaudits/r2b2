@@ -4,6 +4,7 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
+import click
 import numpy as np
 from scipy.signal import fftconvolve
 from scipy.stats import binom
@@ -259,7 +260,7 @@ class Audit(ABC):
         bottom = (winner_prop * z_w) + (loser_prop * z_l)
         return math.ceil(top / bottom)
 
-    def run(self, verbose: bool=False):
+    def run(self, verbose: bool = False):
         """Begin interactive audit execution.
 
         Begins the interactive version of the audit. While computations for different audits will
@@ -271,8 +272,8 @@ class Audit(ABC):
         """
 
         self.__reset()
-        print('\n==================\nBeginning Audit...\n==================\n')
-        sample_size = 0
+        click.echo('\n==================\nBeginning Audit...\n==================\n')
+        sample_size = self.min_sample_size
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
         previous_votes_for_winner = 0
         curr_round = 0
@@ -282,61 +283,41 @@ class Audit(ABC):
             print('\n----------\n{:^10}\n----------\n'.format('Round {}'.format(curr_round)))
 
             if verbose and curr_round > 1:
-                print('\n+--------------------------------------------------+')
-                print('|{:^50}|'.format('Audit Statistics'))
-                print('|{:50}|'.format(' '))
-                print('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
-                print('|{:<50}|'.format('Maximum Sample Size: {}'.format(max_sample_size)))
-                print('|{:50}|'.format(' '))
-                print('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk'))
-                print('|----------------|----------------|----------------|')
+                click.echo('\n+--------------------------------------------------+')
+                click.echo('|{:^50}|'.format('Audit Statistics'))
+                click.echo('|{:50}|'.format(' '))
+                click.echo('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
+                click.echo('|{:<50}|'.format('Maximum Sample Size: {}'.format(max_sample_size)))
+                click.echo('|{:50}|'.format(' '))
+                click.echo('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk'))
+                click.echo('|----------------|----------------|----------------|')
                 for r in range(1, curr_round):
-                    print('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r-1]), '{:.12f}'.format(self.risk_schedule[r-1])))
-                print('+--------------------------------------------------+')
-                # TODO: print risk schedule
-                # TODO: print stopping prob schedule
+                    click.echo('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r - 1]),
+                                                               '{:.12f}'.format(self.risk_schedule[r - 1])))
+                click.echo('+--------------------------------------------------+')
 
             self.next_sample_size()
 
-            while True:
-                sample_size = int(input('\nEnter next sample size (as a running total): '))
-                if len(self.rounds) > 0 and sample_size <= self.rounds[-1]:
-                    print('Invalid Input: Sample size must be greater than previous round.')
-                    continue
-                if sample_size < self.min_sample_size:
-                    print('Invalid Input: Sample size must be larger than ', self.min_sample_size)
-                    continue
-                if sample_size > max_sample_size:
-                    print('Invalid Input: Sample size cannot exceed ', max_sample_size)
-                    continue
-                break
-
+            prev_sample_size = sample_size
+            sample_size = click.prompt('Enter next sample size (as a running total)',
+                                       type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
-            while True:
-                votes_for_winner = int(input('Enter total number of votes for reported winner found in sample: '))
-                if votes_for_winner < 0:
-                    print('Invalid Input: Votes for winner must be non-negative.')
-                    continue
-                if votes_for_winner < previous_votes_for_winner:
-                    print('Invalid Input: Votes for winner cannot decrease.')
-                    continue
-                if votes_for_winner > sample_size:
-                    print('Invalid Input: Votes for winner cannot exceed sample size.')
-                    continue
-                break
+
+            votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
+                                            type=click.IntRange(previous_votes_for_winner, sample_size))
 
             stopping_condition_met = self.stopping_condition(votes_for_winner)
-            print('\n\n+----------------------------------------+')
-            print('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
-            print('+----------------------------------------+')
+            click.echo('\n\n+----------------------------------------+')
+            click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
+            click.echo('+----------------------------------------+')
 
             if stopping_condition_met:
-                print('\n\nAudit Complete.')
+                click.echo('\n\nAudit Complete.')
                 return
             else:
                 force_stop = input('\nWould you like to force stop the audit y/[n]: ')
                 if force_stop == 'y':
-                    print('\n\nAudit Complete: User stopped.')
+                    click.echo('\n\nAudit Complete: User stopped.')
                     return
 
             kmin = self.next_min_winner_ballots(sample_size)
@@ -346,7 +327,7 @@ class Audit(ABC):
             previous_votes_for_winner = votes_for_winner
             self.sample_winner_ballots.append(votes_for_winner)
 
-        print('\n\nAudit Complete: Reached max sample size.')
+        click.echo('\n\nAudit Complete: Reached max sample size.')
 
     def __reset(self):
         """Reset attributes modified during run()."""

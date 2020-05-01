@@ -65,6 +65,7 @@ setup(
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        'Click',
     ],
     extras_require={
         # eg:
@@ -73,7 +74,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'r2b2 = r2b2.cli:main',
+            'r2b2 = r2b2.cli:cli',
         ]
     },
 )
