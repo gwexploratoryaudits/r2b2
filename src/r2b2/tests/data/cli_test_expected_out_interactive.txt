@@ -1,24 +1,69 @@
-Beginning interactive R2B2 auditing tool...
 
+Welcome to the R2B2 auditing tool!
 
+Select an audit type (brla): brla
+Enter desired risk limit (e.g. use 0.1 for 10%): 0.1
+Enter maximum fraction of ballots to draw during audit: 0.2
 
 Create a new Contest
 ====================
 
-Enter number of contest ballots: Enter number of candidates: Enter candidate name: Enter number of votes reported for candidate: Enter candidate name: Enter number of votes reported for candidate: Enter number of winners: Enter winner name: 
-Contest Types
--------------
-0 - PLURALITY
-1 - MAJORITY
+Enter number of contest ballots: 1000
+Enter number of candidates: 2
+Enter candidate name: A
+Enter number of votes reported for A: 700
+Enter candidate name: B
+Enter number of votes reported for B: 300
+Enter number of winners: 1
+Enter winner name (A, B): A
+Select contest type (PLURALITY, MAJORITY): PLURALITY
 
-Select contest type from above: 
+
+Contest
+-------
+Contest Ballots: 1000
+Reported Tallies: {'A': 700, 'B': 300}
+Reported Winners: ['A']
+Contest Type: ContestType.PLURALITY
+
+
+
+Use the above contest data? [y/N]: y
+
 Create a new Audit
 ==================
 
-Enter the desired risk limit: Enter the maximum fraction of contest ballots you are willing to draw: 
-Audit Types
------------
-1 - Bayesian RLA without replacement
+BayesianRLA without replacement
+-------------------------------
+Risk Limit: 0.1
+Maximum Fraction to Draw: 0.2
+Contest
+-------
+Contest Ballots: 1000
+Reported Tallies: {'A': 700, 'B': 300}
+Reported Winners: ['A']
+Contest Type: ContestType.PLURALITY
 
-Select an audit type: Beginning Audit...
-Enter next sample size (as a running total): Enter total number of votes for reported winner found in sample: Audit Complete: Stopping condition met.
+
+
+Are the audit parameters correct? [y/N]: y
+
+==================
+Beginning Audit...
+==================
+
+
+----------
+ Round 1  
+----------
+
+Enter next sample size (as a running total): 200
+Enter total number of votes for reported winner found in sample: 175
+
+
++----------------------------------------+
+|      Stopping Condition Met? True      |
++----------------------------------------+
+
+
+Audit Complete.
