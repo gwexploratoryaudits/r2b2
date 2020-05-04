@@ -21,8 +21,8 @@ class SimpleAudit(Audit):
     def next_sample_size(self):
         return 20
 
-    def stopping_condition(self, votes_for_winner: int) -> bool:
-        return True
+    def pairwise_stopping_condition(self, votes_for_winner: int, votes_for_loser) -> bool:
+        return 0.0
 
     def next_min_winner_ballots(self):
         return 10
@@ -49,7 +49,7 @@ def test_simple_audit():
     simpleaudit1.min_sample_size = simpleaudit1.get_min_sample_size()
     assert simpleaudit1.min_sample_size == 5
     assert simpleaudit1.next_sample_size() == 20
-    assert simpleaudit1.stopping_condition(10)
+    assert simpleaudit1.stopping_condition(10, [10])
     assert simpleaudit1.next_min_winner_ballots() == 10
     assert simpleaudit1.compute_risk() == 0.1
     assert simpleaudit1.compute_min_winner_ballots() == 60

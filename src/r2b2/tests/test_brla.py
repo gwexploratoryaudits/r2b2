@@ -14,8 +14,8 @@ def test_simple_brla():
     assert not simplebrla.replacement
     assert simplebrla.contest is default_contest
     simplebrla.rounds.append(20)
-    assert simplebrla.stopping_condition(20)
-    assert not simplebrla.stopping_condition(0)
+    assert simplebrla.stopping_condition(20, [0])
+    assert not simplebrla.stopping_condition(0, [20])
     test_min_winner_ballots = simplebrla.next_min_winner_ballots(20)
     assert test_min_winner_ballots >= 10
     assert test_min_winner_ballots <= 20

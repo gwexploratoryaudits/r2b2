@@ -62,7 +62,8 @@ Beginning Audit...
 ----------
 
 Enter next sample size (as a running total): 200
-Enter total number of votes for reported winner found in sample: 175
+Enter total number of votes for A (reported winner) in sample: 175
+Enter total number of votes for B in sample: 25
 
 
 +----------------------------------------+

@@ -46,7 +46,8 @@ Beginning Audit...
 ----------
 
 Enter next sample size (as a running total): 100
-Enter total number of votes for reported winner found in sample: 63
+Enter total number of votes for CandidateA (reported winner) in sample: 63
+Enter total number of votes for CandidateB in sample: 37
 
 
 +----------------------------------------+
@@ -60,7 +61,8 @@ Would you like to force stop the audit [y/N]: n
 ----------
 
 Enter next sample size (as a running total): 200
-Enter total number of votes for reported winner found in sample: 119
+Enter total number of votes for CandidateA (reported winner) in sample: 119
+Enter total number of votes for CandidateB in sample: 81
 
 
 +----------------------------------------+
@@ -74,7 +76,8 @@ Would you like to force stop the audit [y/N]: n
 ----------
 
 Enter next sample size (as a running total): 300
-Enter total number of votes for reported winner found in sample: 175
+Enter total number of votes for CandidateA (reported winner) in sample: 175
+Enter total number of votes for CandidateB in sample: 125
 
 
 +----------------------------------------+

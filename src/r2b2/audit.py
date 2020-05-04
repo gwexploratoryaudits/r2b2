@@ -305,11 +305,26 @@ class Audit(ABC):
                                        type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
 
-            votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
-                                            type=click.IntRange(previous_votes_for_winner,
-                                                                previous_votes_for_winner + (sample_size - prev_sample_size)))
+            votes_for_losers = []
+            while len(votes_for_losers) == 0:
+                for candidate in self.contest.candidates:
+                    if candidate == self.contest.reported_winners[0]:
+                        votes_for_winner = click.prompt('Enter total number of votes for {} (reported winner) in sample'.format(candidate),
+                                                        type=click.IntRange(previous_votes_for_winner,
+                                                                            previous_votes_for_winner + (sample_size - prev_sample_size)))
+                    else:
+                        loser = click.prompt('Enter total number of votes for {} in sample'.format(candidate),
+                                             type=click.IntRange(0, sample_size - (sum(votes_for_losers) + votes_for_winner)))
+                        votes_for_losers.append(loser)
+                if sum(votes_for_losers) + votes_for_winner > sample_size:
+                    click.echo('\nINVALID INPUT: Total tally exceeds sample size, restarting tally entry...\n')
+                    votes_for_winner = 0
+                    votes_for_losers = []
+                    continue
+                break
 
-            stopping_condition_met = self.stopping_condition(votes_for_winner, verbose)
+            stopping_condition_met = self.stopping_condition(votes_for_winner, votes_for_losers)
+
             click.echo('\n\n+----------------------------------------+')
             click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
             click.echo('+----------------------------------------+')
@@ -356,12 +371,32 @@ class Audit(ABC):
 
         pass
 
-    @abstractmethod
-    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
+    def stopping_condition(self, votes_for_winner, votes_for_losers: List[int], verbose: bool = False) -> bool:
         """Determine if the audits stopping condition has been met.
+
+        Given the vote_distribution, stopping condition will call pairwise_stopping_condition() to
+        perform a pairwise comparison of the winner to each loser. If all pairwise stopping
+        conditions are met, then the audits stopping condition is met.
 
         Note: To be used during live/interactive audit execution.
         """
+        p_values = []
+        stop = True
+
+        for loser in votes_for_losers:
+            p_val = self.pairwise_stopping_condition(votes_for_winner, loser)
+            p_values.append(p_val)
+            if p_val > self.alpha:
+                stop = False
+
+        if verbose:
+            click.echo('\np-value: {}  [must be <= {}]'.format(max(p_values), self.alpha))
+
+        return stop
+
+    @abstractmethod
+    def pairwise_stopping_condition(self, votes_for_winner: int, votes_for_loser) -> bool:
+        """Determine if candidate pair met stopping condition."""
 
         pass
 
