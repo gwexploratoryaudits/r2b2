@@ -1,0 +1,12 @@
+
+Welcome to the R2B2 auditing tool!
+
+
+    Round Sizes     |   Stopping Sizes   
+--------------------|--------------------
+        100         |         64         
+        200         |        120         
+        300         |        175         
+        400         |        229         
+        500         |        283         
+
