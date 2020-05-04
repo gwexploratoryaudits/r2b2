@@ -1,0 +1,81 @@
+
+Welcome to the R2B2 auditing tool!
+
+
+
+Contest
+-------
+Contest Ballots: 10000
+Reported Tallies: {'CandidateA': 6000, 'CandidateB': 4000}
+Reported Winners: ['CandidateA']
+Contest Type: ContestType.PLURALITY
+
+
+
+Use the above contest data? [y/N]: y
+
+Create a new Audit
+==================
+
+BayesianRLA without replacement
+-------------------------------
+Risk Limit: 0.1
+Maximum Fraction to Draw: 0.1
+Contest
+-------
+Contest Ballots: 10000
+Reported Tallies: {'CandidateA': 6000, 'CandidateB': 4000}
+Reported Winners: ['CandidateA']
+Contest Type: ContestType.PLURALITY
+
+
+
+Are the audit parameters correct? [y/N]: y
+
+==================
+Beginning Audit...
+==================
+
+
+----------
+ Round 1  
+----------
+
+Enter next sample size (as a running total): 100
+Enter total number of votes for reported winner found in sample: 63
+
+
++----------------------------------------+
+|     Stopping Condition Met? False      |
++----------------------------------------+
+
+Would you like to force stop the audit [y/N]: n
+
+----------
+ Round 2  
+----------
+
+Enter next sample size (as a running total): 200
+Enter total number of votes for reported winner found in sample: 119
+
+
++----------------------------------------+
+|     Stopping Condition Met? False      |
++----------------------------------------+
+
+Would you like to force stop the audit [y/N]: n
+
+----------
+ Round 3  
+----------
+
+Enter next sample size (as a running total): 300
+Enter total number of votes for reported winner found in sample: 175
+
+
++----------------------------------------+
+|      Stopping Condition Met? True      |
++----------------------------------------+
+
+
+Audit Complete.

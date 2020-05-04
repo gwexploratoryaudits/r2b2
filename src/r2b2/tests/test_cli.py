@@ -70,6 +70,18 @@ def test_interactive_given_both():
     output_file.close()
 
 
+def test_interactive_multi_round():
+    """Testing `r2b2 interactive -a blra -r 0.1 -m 0.1 --contest-file=/.../basic_contest.json`"""
+
+    runner = CliRunner()
+    user_in = 'y\ny\n100\n63\nn\n200\n119\nn\n300\n175\n'
+    result = runner.invoke(cli, 'interactive --contest-file src/r2b2/tests/data/basic_contest.json -a brla -r 0.1 -m 0.1', input=user_in)
+    output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_multiround_.txt', 'r')
+    expected_out = output_file.read()
+    assert result.output == expected_out
+    output_file.close()
+
+
 def test_bulk_min_to_max():
     """Testing `r2b2 bulk /.../single_contest_template.json brla -r 0.1 -m 0.4`"""
     runner = CliRunner()
