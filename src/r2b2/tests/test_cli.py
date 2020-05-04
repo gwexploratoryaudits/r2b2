@@ -71,10 +71,20 @@ def test_interactive_given_both():
 
 
 def test_bulk_min_to_max():
-    """Testing `r2b2 /.../single_contest_template.json brla -r 0.1 -m 0.4`"""
+    """Testing `r2b2 bulk /.../single_contest_template.json brla -r 0.1 -m 0.4`"""
     runner = CliRunner()
     result = runner.invoke(cli, 'bulk src/r2b2/tests/data/single_contest_template.json brla 0.1 0.4')
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_bulk_min_to_max.txt', 'r')
+    expected_out = output_file.read()
+    assert result.output == expected_out
+    output_file.close()
+
+
+def test_bulk_round_list():
+    """Testing `r2b2 bulk -l '100 200 300' /.../basic_contest.json brla 0.1 0.05 `"""
+    runner = CliRunner()
+    result = runner.invoke(cli, 'bulk -l \'100 200 300 400 500\' src/r2b2/tests/data/basic_contest.json brla 0.1 0.05')
+    output_file = open('src/r2b2/tests/data/cli_test_expected_out_bulk_rounds.txt', 'r')
     expected_out = output_file.read()
     assert result.output == expected_out
     output_file.close()
