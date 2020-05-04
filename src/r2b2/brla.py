@@ -2,6 +2,7 @@
 import math
 from typing import List
 
+import click
 import numpy as np
 from scipy.stats import hypergeom as hg
 
@@ -147,7 +148,7 @@ class BayesianRLA(Audit):
         # TODO: Implement
         pass
 
-    def compute_min_winner_ballots(self, rounds: List[int], *args, **kwargs):
+    def compute_min_winner_ballots(self, rounds: List[int], progress: bool = False, *args, **kwargs):
         """Compute the minimum number of winner ballots for a list of round sizes.
 
         Compute a list of minimum number of winner ballots that must be found in the
@@ -155,6 +156,7 @@ class BayesianRLA(Audit):
 
         Args:
             rounds (List[int]): List of round sizes.
+            progress (bool): If True, a progress bar will display.
 
         Returns:
             List[int]: List of minimum winner ballots to meet the stopping conditions for each
@@ -175,19 +177,26 @@ class BayesianRLA(Audit):
 
         self.rounds = rounds
         min_winner_ballots = []
-        for sample_size in self.rounds:
-            # Append kmin for valid sample sizes, -1 for invalid sample sizes
-            min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
+
+        if progress:
+            with click.progressbar(self.rounds) as bar:
+                for sample_size in bar:
+                    min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
+        else:
+            for sample_size in self.rounds:
+                # Append kmin for valid sample sizes, -1 for invalid sample sizes
+                min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
 
         return min_winner_ballots
 
-    def compute_all_min_winner_ballots(self, max_sample_size: int = None, *args, **kwargs):
+    def compute_all_min_winner_ballots(self, max_sample_size: int = None, progress: bool = False, *args, **kwargs):
         """Compute the minimum winner ballots for all possible sample sizes.
 
         Args:
             max_sample_size (int): Optional. Set maximum sample size to generate stopping sizes up
                 to. If not provided the maximum sample size is determined by max_fraction_to_draw
                 and the total contest ballots.
+            progress (bool): If True, a progress bar will display.
 
         Returns:
             List[int]: List of minimum winner ballots to meet the stopping condition for each round
@@ -205,10 +214,18 @@ class BayesianRLA(Audit):
         min_winner_ballots = [current_kmin]
 
         # For each additional ballot, the kmin can only increase by
-        for sample_size in range(self.min_sample_size + 1, max_sample_size + 1):
-            if self.compute_risk(current_kmin, sample_size) > self.alpha:
-                current_kmin += 1
+        if progress:
+            with click.progressbar(range(self.min_sample_size + 1, max_sample_size + 1)) as bar:
+                for sample_size in bar:
+                    if self.compute_risk(current_kmin, sample_size) > self.alpha:
+                        current_kmin += 1
 
-            min_winner_ballots.append(current_kmin)
+                    min_winner_ballots.append(current_kmin)
+        else:
+            for sample_size in range(self.min_sample_size + 1, max_sample_size + 1):
+                if self.compute_risk(current_kmin, sample_size) > self.alpha:
+                    current_kmin += 1
+
+                min_winner_ballots.append(current_kmin)
 
         return min_winner_ballots

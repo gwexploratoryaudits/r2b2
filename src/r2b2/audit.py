@@ -374,13 +374,13 @@ class Audit(ABC):
         pass
 
     @abstractmethod
-    def compute_min_winner_ballots(self, *args, **kwargs):
+    def compute_min_winner_ballots(self, progress: bool = False, *args, **kwargs):
         """Compute the stopping size(s) for any number of sample sizes."""
 
         pass
 
     @abstractmethod
-    def compute_all_min_winner_ballots(self, *args, **kwargs):
+    def compute_all_min_winner_ballots(self, progress: bool = False, *args, **kwargs):
         """Compute all stopping sizes from the minimum sample size on."""
 
         pass
