@@ -315,7 +315,7 @@ class Audit(ABC):
                 click.echo('\n\nAudit Complete.')
                 return
             else:
-                force_stop = input('\nWould you like to force stop the audit y/[n]: ')
+                force_stop = click.confirm('\nWould you like to force stop the audit')
                 if force_stop == 'y':
                     click.echo('\n\nAudit Complete: User stopped.')
                     return
