@@ -200,7 +200,7 @@ class Audit(ABC):
         if sum(dist) < 2 * tolerance:
             return [int(len(dist) / 2 - 1), int(len(dist) / 2 + 1)]
 
-        interval = [0, len(dist)]
+        interval = [0, len(dist) - 1]
         lower_sum = 0
         upper_sum = 0
 
