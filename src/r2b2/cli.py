@@ -162,19 +162,17 @@ def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, rou
     out = '\n{:^20}|{:^20}\n'.format('Round Sizes', 'Stopping Sizes')
     out += '--------------------|--------------------\n'
     if round_list is not None:
-        kmins = audit.compute_min_winner_ballots(round_list)
+        kmins = audit.compute_min_winner_ballots(round_list, progress=verbose)
         for i in range(len(kmins)):
             out += '{:^20}|{:^20}\n'.format(round_list[i], kmins[i])
     elif full_audit_limit is not None:
-        kmins = audit.compute_all_min_winner_ballots(full_audit_limit)
+        kmins = audit.compute_all_min_winner_ballots(full_audit_limit, progress=verbose)
         for r in range(audit.min_sample_size, full_audit_limit + 1):
             out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
     else:
-        kmins = audit.compute_all_min_winner_ballots()
+        kmins = audit.compute_all_min_winner_ballots(progress=verbose)
         for r in range(audit.min_sample_size, math.ceil(max_fraction_to_draw * contest.contest_ballots) + 1):
             out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
-
-    # TODO: what does verbose mean for bulk?
 
     # Write or print output
     if output is not None:
