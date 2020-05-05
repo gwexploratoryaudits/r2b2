@@ -280,6 +280,7 @@ def template(style, output):
         raise click.BadArgumentUsage('No valid template style found')
     if output is not None:
         output.write(template)
+        click.echo('Template written to {}'.format(output.name))
     else:
         click.echo(template)
 

@@ -1,3 +1,5 @@
+import os
+
 from click.testing import CliRunner
 
 from r2b2.cli import cli
@@ -99,4 +101,54 @@ def test_bulk_round_list():
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_bulk_rounds.txt', 'r')
     expected_out = output_file.read()
     assert result.output == expected_out
+    output_file.close()
+
+
+def test_template_contest():
+    """Testing `r2b2 template contest`"""
+    runner = CliRunner()
+    result = runner.invoke(cli, 'template contest')
+    output_file = open('src/r2b2/tests/data/single_contest_template.json', 'r')
+    expected_out = '\nWelcome to the R2B2 auditing tool!\n\n' + str(output_file.read()) + '\n'
+    assert result.output == expected_out
+    output_file.close()
+
+
+def test_tempalte_election():
+    """Testing `r2b2 template election`"""
+    runner = CliRunner()
+    result = runner.invoke(cli, 'template election')
+    output_file = open('src/r2b2/tests/data/election_template.json', 'r')
+    expected_out = '\nWelcome to the R2B2 auditing tool!\n\n' + str(output_file.read()) + '\n'
+    assert result.output == expected_out
+    output_file.close()
+
+
+def test_template_contest_output_file():
+    """Testing `r2b2 template -o test_contest.json contest`"""
+    runner = CliRunner()
+    result = runner.invoke(cli, 'template -o test_contest.json contest')
+    output_file = open('src/r2b2/tests/data/single_contest_template.json', 'r')
+    test_output_file = open('test_contest.json', 'r')
+    expected_out = '\nWelcome to the R2B2 auditing tool!\n\nTemplate written to test_contest.json\n'
+    expected_out_file = output_file.read()
+    result_output_file = test_output_file.read()
+    assert result.output == expected_out
+    assert result_output_file == expected_out_file
+    os.remove('test_contest.json')
+    output_file.close()
+
+
+def test_tempalte_election_output_file():
+    """Testing `r2b2 template -o test_election.json election`"""
+    runner = CliRunner()
+    result = runner.invoke(cli, 'template -o test_election.json election')
+    output_file = open('src/r2b2/tests/data/election_template.json', 'r')
+    test_output_file = open('test_election.json', 'r')
+    expected_out = '\nWelcome to the R2B2 auditing tool!\n\nTemplate written to test_election.json\n'
+    expected_out_file = output_file.read()
+    result_output_file = test_output_file.read()
+    assert result.output == expected_out
+    assert result_output_file == expected_out_file
+    os.remove('test_election.json')
     output_file.close()
