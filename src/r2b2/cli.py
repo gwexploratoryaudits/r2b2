@@ -241,20 +241,37 @@ def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, rou
     else:
         raise click.BadArgumentUsage('No valid audit type found.')
 
-    out = '\n{:^20}|{:^20}\n'.format('Round Sizes', 'Stopping Sizes')
-    out += '--------------------|--------------------\n'
+    out = '\n| Round |'
+    underline = '\n|-------|'
+    winner = contest.reported_winners[0]
+    for candidate in contest.candidates:
+        if candidate == winner:
+            continue
+        out += '{:^30}|'.format('{} vs {}'.format(winner, candidate))
+        underline += '------------------------------|'
+    out += underline + '\n'
+    # TODO: formatting for multiple candidates
     if round_list is not None:
         kmins = audit.compute_min_winner_ballots(round_list, progress=verbose)
         for i in range(len(kmins)):
-            out += '{:^20}|{:^20}\n'.format(round_list[i], kmins[i])
+            out += '|{:^7}|'.format(round_list[i])
+            for k in kmins[i].values():
+                out += '{:^30}|'.format(k)
+            out += '\n'
     elif full_audit_limit is not None:
         kmins = audit.compute_all_min_winner_ballots(full_audit_limit, progress=verbose)
         for r in range(audit.min_sample_size, full_audit_limit + 1):
-            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
+            out += '|{:^7}|'.format(r)
+            for k in kmins.values():
+                out += '{:^30}|'.format(k[r-audit.min_sample_size])
+            out += '\n'
     else:
         kmins = audit.compute_all_min_winner_ballots(progress=verbose)
         for r in range(audit.min_sample_size, math.ceil(max_fraction_to_draw * contest.contest_ballots) + 1):
-            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.min_sample_size])
+            out += '|{:^7}|'.format(r)
+            for k in kmins.values():
+                out += '{:^30}|'.format(k[r-audit.min_sample_size])
+            out += '\n'
 
     # Write or print output
     if output is not None:

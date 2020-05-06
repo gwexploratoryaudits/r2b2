@@ -2,6 +2,7 @@
 import math
 from abc import ABC
 from abc import abstractmethod
+from typing import Dict
 from typing import List
 
 import click
@@ -305,7 +306,7 @@ class Audit(ABC):
                                        type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
 
-            votes_for_losers = []
+            votes_for_losers = {}
             while len(votes_for_losers) == 0:
                 for candidate in self.contest.candidates:
                     if candidate == self.contest.reported_winners[0]:
@@ -314,9 +315,9 @@ class Audit(ABC):
                                                                             previous_votes_for_winner + (sample_size - prev_sample_size)))
                     else:
                         loser = click.prompt('Enter total number of votes for {} in sample'.format(candidate),
-                                             type=click.IntRange(0, sample_size - (sum(votes_for_losers) + votes_for_winner)))
-                        votes_for_losers.append(loser)
-                if sum(votes_for_losers) + votes_for_winner > sample_size:
+                                             type=click.IntRange(0, sample_size - (sum(votes_for_losers.values()) + votes_for_winner)))
+                        votes_for_losers[candidate] = loser
+                if sum(votes_for_losers.values()) + votes_for_winner > sample_size:
                     click.echo('\nINVALID INPUT: Total tally exceeds sample size, restarting tally entry...\n')
                     votes_for_winner = 0
                     votes_for_losers = []
@@ -371,7 +372,7 @@ class Audit(ABC):
 
         pass
 
-    def stopping_condition(self, votes_for_winner, votes_for_losers: List[int], verbose: bool = False) -> bool:
+    def stopping_condition(self, votes_for_winner, votes_for_losers: Dict[str, int], verbose: bool = False) -> bool:
         """Determine if the audits stopping condition has been met.
 
         Given the vote_distribution, stopping condition will call pairwise_stopping_condition() to
@@ -383,8 +384,8 @@ class Audit(ABC):
         p_values = []
         stop = True
 
-        for loser in votes_for_losers:
-            p_val = self.pairwise_stopping_condition(votes_for_winner, loser)
+        for candidate, tally in votes_for_losers.items():
+            p_val = self.pairwise_stopping_condition(votes_for_winner, candidate, tally)
             p_values.append(p_val)
             if p_val > self.alpha:
                 stop = False
@@ -395,7 +396,7 @@ class Audit(ABC):
         return stop
 
     @abstractmethod
-    def pairwise_stopping_condition(self, votes_for_winner: int, votes_for_loser) -> bool:
+    def pairwise_stopping_condition(self, votes_for_winner: int, loser: str, votes_for_loser: int) -> bool:
         """Determine if candidate pair met stopping condition."""
 
         pass

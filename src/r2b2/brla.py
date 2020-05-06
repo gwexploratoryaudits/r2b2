@@ -64,15 +64,17 @@ class BayesianRLA(Audit):
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
         return title_str + alpha_str + max_frac_str + str(self.contest)
 
-    def pairwise_stopping_condition(self, votes_for_winner: int, votes_for_loser: int) -> bool:
+    def pairwise_stopping_condition(self, votes_for_winner: int, loser: str, votes_for_loser: int) -> bool:
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
 
         # TODO: This pairwise comparison assumes no invalid votes as the invalid votes method has not
         # been proven, should this be changed?
-        return self.compute_risk(votes_for_winner, votes_for_winner + votes_for_loser)
+        sample_size = votes_for_loser + votes_for_winner
+        relevant_ballots = self.contest.tally[self.contest.reported_winners[0]] + self.contest.tally[loser]
+        return self.compute_risk(votes_for_winner, sample_size, relevant_ballots)
 
-    def next_min_winner_ballots(self, sample_size: int) -> int:
+    def next_min_winner_ballots(self, sample_size: int, relevant_ballots: int = None) -> int:
         """Compute the stopping size requirement for a given round.
 
         Args:
@@ -86,15 +88,18 @@ class BayesianRLA(Audit):
         left = math.floor(sample_size / 2)
         right = sample_size
 
+        if relevant_ballots is None:
+            relevant_ballots = self.contest.contest_ballots
+
         while left <= right:
             proposed_stop = (left + right) // 2
-            proposed_stop_risk = self.compute_risk(proposed_stop, sample_size)
+            proposed_stop_risk = self.compute_risk(proposed_stop, sample_size, relevant_ballots)
 
             if proposed_stop_risk == self.alpha:
                 return proposed_stop
 
             if proposed_stop_risk < self.alpha:
-                previous_stop_risk = self.compute_risk(proposed_stop - 1, sample_size)
+                previous_stop_risk = self.compute_risk(proposed_stop - 1, sample_size, relevant_ballots)
                 if previous_stop_risk == self.alpha:
                     return proposed_stop - 1
                 if previous_stop_risk > self.alpha:
@@ -104,23 +109,26 @@ class BayesianRLA(Audit):
                 left = proposed_stop + 1
 
         # Handle case where kmin = sample_size
-        proposed_stop_risk = self.compute_risk(sample_size, sample_size)
+        proposed_stop_risk = self.compute_risk(sample_size, sample_size, relevant_ballots)
         if proposed_stop_risk <= self.alpha:
             return sample_size
         # Otherwise kmin > sample_size, so we return -1
         return -1
 
-    def compute_prior(self) -> np.ndarray:
+    def compute_prior(self, relevant_ballots: int = None) -> np.ndarray:
         """Compute prior distribution of worst case election."""
 
-        half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
-        left = np.zeros(half_contest_ballots, dtype=float)
+        if relevant_ballots is None:
+            relevant_ballots = self.contest.contest_ballots
+
+        half_relevant_ballots = math.floor(relevant_ballots / 2)
+        left = np.zeros(half_relevant_ballots, dtype=float)
         mid = np.array([0.5])
-        right = np.array([(0.5 / float(half_contest_ballots)) for i in range(self.contest.contest_ballots - half_contest_ballots)],
+        right = np.array([(0.5 / float(half_relevant_ballots)) for i in range(relevant_ballots - half_relevant_ballots)],
                          dtype=float)
         return np.concatenate((left, mid, right))
 
-    def compute_risk(self, votes_for_winner: int = None, current_round: int = None, *args, **kwargs) -> float:
+    def compute_risk(self, votes_for_winner: int = None, current_round: int = None, relevant_ballots: int = None, *args, **kwargs) -> float:
         """Compute the risk level given current round size and votes for winner in sample
 
         The risk level is computed using the normalized product of the prior and posterior
@@ -137,14 +145,22 @@ class BayesianRLA(Audit):
             float: Value for risk of given sample and round size.
         """
 
+        if relevant_ballots is None:
+            relevant_ballots = self.contest.contest_ballots
+
+        if relevant_ballots == self.contest.contest_ballots:
+            prior = self.prior
+        else:
+            prior = self.compute_prior(relevant_ballots)
+
         posterior = np.array(
-            hg.pmf(votes_for_winner, self.contest.contest_ballots, np.arange(self.contest.contest_ballots + 1), current_round))
-        posterior = self.prior * posterior
+            hg.pmf(votes_for_winner, relevant_ballots, np.arange(relevant_ballots + 1), current_round))
+        posterior = prior * posterior
         normalize = sum(posterior)
         if normalize > 0:
             posterior = posterior / normalize
 
-        return sum(posterior[range(math.floor(self.contest.contest_ballots / 2) + 1)])
+        return sum(posterior[range(math.floor(relevant_ballots / 2) + 1)])
 
     def next_sample_size(self):
         # TODO: Documentation
@@ -180,15 +196,29 @@ class BayesianRLA(Audit):
 
         self.rounds = rounds
         min_winner_ballots = []
+        winner_tally = self.contest.tally[self.contest.reported_winners[0]]
 
         if progress:
             with click.progressbar(self.rounds) as bar:
                 for sample_size in bar:
-                    min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
+                    round_stopping_sizes = {}
+                    # For each sample size, compute pairwise minimums
+                    for candidate, tally in self.contest.tally.items():
+                        if candidate == self.contest.reported_winners[0]:
+                            continue
+                        relevant_ballots = tally + winner_tally
+                        round_stopping_sizes[candidate] = self.next_min_winner_ballots(sample_size, relevant_ballots)
+                    min_winner_ballots.append(round_stopping_sizes)
         else:
             for sample_size in self.rounds:
-                # Append kmin for valid sample sizes, -1 for invalid sample sizes
-                min_winner_ballots.append(self.next_min_winner_ballots(sample_size))
+                round_stopping_sizes = {}
+                # For each sample size, compute pairwise minimums
+                for candidate, tally in self.contest.tally.items():
+                    if candidate == self.contest.reported_winners[0]:
+                        continue
+                    relevant_ballots = tally + winner_tally
+                    round_stopping_sizes[candidate] = self.next_min_winner_ballots(sample_size, relevant_ballots)
+                min_winner_ballots.append(round_stopping_sizes)
 
         return min_winner_ballots
 
@@ -213,22 +243,32 @@ class BayesianRLA(Audit):
         if max_sample_size > self.contest.contest_ballots:
             raise ValueError('Maximum sample size cannot exceed total contest ballots.')
 
-        current_kmin = self.next_min_winner_ballots(self.min_sample_size)
-        min_winner_ballots = [current_kmin]
+        losers = self.contest.tally.copy()
+        del losers[self.contest.reported_winners[0]]
+        winner_tally = self.contest.tally[self.contest.reported_winners[0]]
+
+        current_kmins = {}
+        min_winner_ballots = {}
+        for candidate, tally in losers.items():
+            kmin = self.next_min_winner_ballots(self.min_sample_size, tally + winner_tally)
+            current_kmins[candidate] = kmin
+            min_winner_ballots[candidate] = [kmin]
 
         # For each additional ballot, the kmin can only increase by
         if progress:
             with click.progressbar(range(self.min_sample_size + 1, max_sample_size + 1)) as bar:
                 for sample_size in bar:
-                    if self.compute_risk(current_kmin, sample_size) > self.alpha:
-                        current_kmin += 1
-
-                    min_winner_ballots.append(current_kmin)
+                    # For each sample size, compute pairwise minimum
+                    for candidate, tally in losers.items():
+                        if self.compute_risk(current_kmins[candidate], sample_size, winner_tally+tally) > self.alpha:
+                            current_kmins[candidate] += 1
+                        min_winner_ballots[candidate].append(current_kmins[candidate])
         else:
             for sample_size in range(self.min_sample_size + 1, max_sample_size + 1):
-                if self.compute_risk(current_kmin, sample_size) > self.alpha:
-                    current_kmin += 1
-
-                min_winner_ballots.append(current_kmin)
+                # For each sample size, compute pairwise minimum
+                for candidate, tally in losers.items():
+                    if self.compute_risk(current_kmins[candidate], sample_size, winner_tally+tally) > self.alpha:
+                        current_kmins[candidate] += 1
+                    min_winner_ballots[candidate].append(current_kmins[candidate])
 
         return min_winner_ballots
