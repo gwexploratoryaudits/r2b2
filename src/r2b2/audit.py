@@ -306,7 +306,7 @@ class Audit(ABC):
             votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
                                             type=click.IntRange(previous_votes_for_winner, sample_size))
 
-            stopping_condition_met = self.stopping_condition(votes_for_winner)
+            stopping_condition_met = self.stopping_condition(votes_for_winner, verbose)
             click.echo('\n\n+----------------------------------------+')
             click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
             click.echo('+----------------------------------------+')
@@ -356,7 +356,7 @@ class Audit(ABC):
         pass
 
     @abstractmethod
-    def stopping_condition(self, votes_for_winner: int) -> bool:
+    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
         """Determine if the audits stopping condition has been met.
 
         Note: To be used during live/interactive audit execution.

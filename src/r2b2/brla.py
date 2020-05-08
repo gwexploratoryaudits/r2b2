@@ -64,10 +64,13 @@ class BayesianRLA(Audit):
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
         return title_str + alpha_str + max_frac_str + str(self.contest)
 
-    def stopping_condition(self, votes_for_winner: int) -> bool:
+    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
-        return self.compute_risk(votes_for_winner, self.rounds[-1]) <= self.alpha
+        risk = self.compute_risk(votes_for_winner, self.rounds[-1])
+        if verbose:
+            click.echo('\np-value: {}'.format(risk))
+        return risk <= self.alpha
 
     def next_min_winner_ballots(self, sample_size: int) -> int:
         """Compute the stopping size requirement for a given round.
