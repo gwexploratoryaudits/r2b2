@@ -19,7 +19,9 @@ Select contest type (PLURALITY, MAJORITY): PLURALITY
 Contest
 -------
 Contest Ballots: 1000
-Reported Tallies: {'A': 700, 'B': 300}
+Reported Tallies:
+     A               700
+     B               300
 Reported Winners: ['A']
 Contest Type: ContestType.PLURALITY
 
@@ -37,7 +39,9 @@ Maximum Fraction to Draw: 0.2
 Contest
 -------
 Contest Ballots: 1000
-Reported Tallies: {'A': 700, 'B': 300}
+Reported Tallies:
+     A               700
+     B               300
 Reported Winners: ['A']
 Contest Type: ContestType.PLURALITY
 

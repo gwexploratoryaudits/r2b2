@@ -6,7 +6,9 @@ Welcome to the R2B2 auditing tool!
 Contest
 -------
 Contest Ballots: 10000
-Reported Tallies: {'CandidateA': 6000, 'CandidateB': 4000}
+Reported Tallies:
+     CandidateA      6000
+     CandidateB      4000
 Reported Winners: ['CandidateA']
 Contest Type: ContestType.PLURALITY
 
@@ -24,7 +26,9 @@ Maximum Fraction to Draw: 0.1
 Contest
 -------
 Contest Ballots: 10000
-Reported Tallies: {'CandidateA': 6000, 'CandidateB': 4000}
+Reported Tallies:
+     CandidateA      6000
+     CandidateB      4000
 Reported Winners: ['CandidateA']
 Contest Type: ContestType.PLURALITY
 
