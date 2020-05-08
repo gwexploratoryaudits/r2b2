@@ -90,7 +90,9 @@ class Contest:
         """Human readable string representation of audit class."""
         title_str = 'Contest\n-------\n'
         ballot_str = 'Contest Ballots: {}\n'.format(self.contest_ballots)
-        tally_str = 'Reported Tallies: {}\n'.format(self.tally)
+        tally_str = 'Reported Tallies:\n'
+        for k, v in self.tally.items():
+            tally_str += '     {:<15} {}\n'.format(k, v)
         winner_str = 'Reported Winners: {}\n'.format(self.reported_winners)
         type_str = 'Contest Type: {}\n'.format(self.contest_type)
         return title_str + ballot_str + tally_str + winner_str + type_str + '\n'

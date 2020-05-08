@@ -5,9 +5,9 @@ from r2b2.election import Election
 
 
 def test_simple_election():
-    contests = []
+    contests = {}
     for i in range(10):
-        contests.append(util.generate_contest(100))
+        contests[str(i)] = util.generate_contest(100)
     simple_election = Election('test_simple_election', 1000, contests)
     assert simple_election.name == 'test_simple_election'
     assert simple_election.total_ballots == 1000
@@ -15,31 +15,32 @@ def test_simple_election():
 
 
 def test_repr():
-    contests = []
+    contests = {}
     for i in range(10):
-        contests.append(util.generate_contest(100))
+        contests[str(i)] = util.generate_contest(100)
     simple_election1 = Election('Example Election', 100, contests)
     simple_election2 = Election('Example Election', 100, contests)
     assert repr(simple_election1) == repr(simple_election2)
 
 
 def test_str():
-    contests = []
+    contests = {}
     for i in range(10):
-        contests.append(util.generate_contest(100))
+        contests[str(i)] = util.generate_contest(100)
     simple_election = Election('Example Election', 100, contests)
     election_str = 'Election\n--------\nName: Example Election\n'
     election_str += 'Total Ballots: 100\nList of Contests:\n'
-    for contest in contests:
+    for name, contest in contests.items():
+        election_str += '\n' + name + '\n'
         election_str += str(contest)
     assert str(simple_election) == election_str
 
 
 def test_initialization_errors():
     name = 'BadElection'
-    contests = []
+    contests = {}
     for i in range(10):
-        contests.append(util.generate_contest(100))
+        contests[str(i)] = util.generate_contest(100)
     single_contest = util.generate_contest(100)
 
     # name TypeError
@@ -66,6 +67,6 @@ def test_initialization_errors():
         Election(name, 100, single_contest)
     with pytest.raises(TypeError):
         Election(name, 100, None)
-    contests.append('120')
+    contests['test1'] = '120'
     with pytest.raises(TypeError):
         Election(name, 100, contests)

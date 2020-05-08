@@ -32,7 +32,7 @@ def test_str():
     """Tests __str__ function."""
     simplecontest1 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
     contest1_str = 'Contest\n-------\nContest Ballots: 100\n'
-    contest1_str += 'Reported Tallies: {\'a\': 60, \'b\': 40}\n'
+    contest1_str += 'Reported Tallies:\n     {:<15} {}\n     {:<15} {}\n'.format('a', 60, 'b', 40)
     contest1_str += 'Reported Winners: [\'a\']\n'
     contest1_str += 'Contest Type: ContestType.PLURALITY\n\n'
     assert str(simplecontest1) == contest1_str

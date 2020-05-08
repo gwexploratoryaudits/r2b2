@@ -1,5 +1,5 @@
 """Election module handles data associated with an Election or collection of Contests."""
-from typing import List
+from typing import Dict
 
 from r2b2.contest import Contest
 
@@ -13,24 +13,24 @@ class Election:
     Attributes:
         name (str): Election name.
         total_ballots (int): Total ballots cast in entire election.
-        contests (List[Contest]): list of contests within the election.
+        contests (Dict[str, Contest]): dict of contests within the election with names as keys.
     """
 
     name: str
     total_ballots: int
-    contests: List[Contest]
+    contests: Dict[str, Contest]
 
-    def __init__(self, name: str, total_ballots: int, contests: List[Contest]):
+    def __init__(self, name: str, total_ballots: int, contests: Dict[str, Contest]):
         if type(name) is not str:
             raise TypeError('name must be a string')
         if type(total_ballots) is not int:
             raise TypeError('total_ballots must be an integer value.')
-        if type(contests) is not list:
-            raise TypeError('contests must be a list of Contest objects.')
+        if type(contests) is not dict:
+            raise TypeError('contests must be a dict of Contest objects.')
         else:
-            for c in contests:
+            for c in contests.values():
                 if type(c) is not Contest:
-                    raise TypeError('contests must be a list of Contest objects.')
+                    raise TypeError('contests must be a dict of Contest objects.')
         if total_ballots < 1:
             raise ValueError('total_ballots must be greater than 0.')
 
@@ -40,7 +40,7 @@ class Election:
 
     def __repr__(self):
         contests_str = '['
-        for contest in self.contests:
+        for contest in self.contests.values():
             contests_str += repr(contest)
             contests_str += ', '
         contests_str += ']'
@@ -51,7 +51,8 @@ class Election:
         name_str = 'Name: {}\n'.format(self.name)
         ballot_str = 'Total Ballots: {}\n'.format(self.total_ballots)
         contests_str = 'List of Contests:\n'
-        for contest in self.contests:
+        for name, contest in self.contests.items():
+            contests_str += '\n' + name + '\n'
             contests_str += str(contest)
         return title_str + name_str + ballot_str + contests_str
 

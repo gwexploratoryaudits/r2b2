@@ -27,9 +27,9 @@ def generate_election(max_size, max_contests=None):
     if max_contests is None:
         max_contests = 20
     num_contests = randint(1, max_contests)
-    contests = list()
+    contests = {}
     for i in range(num_contests):
-        contests.append(generate_contest(total_ballots))
+        contests[str(i)] = generate_contest(total_ballots)
 
     return Election(name, total_ballots, contests)
 
@@ -84,7 +84,7 @@ def parse_election(json_file):
 
     name = data['name']
     total_ballots = data['total_ballots']
-    contests = []
+    contests = {}
 
     for contest in data['contests']:
         contest_ballots = data['contests'][contest]['contest_ballots']
@@ -92,6 +92,6 @@ def parse_election(json_file):
         num_winners = data['contests'][contest]['num_winners']
         reported_winners = data['contests'][contest]['reported_winners']
         contest_type = ContestType[data['contests'][contest]['contest_type']]
-        contests.append(Contest(contest_ballots, tally, num_winners, reported_winners, contest_type))
+        contests[contest] = Contest(contest_ballots, tally, num_winners, reported_winners, contest_type)
 
     return Election(name, total_ballots, contests)
