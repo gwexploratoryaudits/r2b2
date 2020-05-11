@@ -26,6 +26,7 @@ from r2b2.audit import Audit
 from r2b2.brla import BayesianRLA as BRLA
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
+from r2b2.election import Election
 from r2b2.tests import util
 
 
@@ -64,7 +65,7 @@ def cli():
               flag_value=True,
               show_default=True,
               help='Use election mode instead of single-contest mode.')
-@click.option('--election-file', type=click.File(), help='Pass election data as JSON file.')  # TODO: provide format
+@click.option('--election-file', type=str, help='Pass election data as JSON file.')  # TODO: provide format
 @click.option('--contest-file', type=str, help='Pass contest data as JSON file.')  # TODO: provide format
 @click.option('-a', '--audit-type', type=audit_types, prompt='Select an audit type', help='Type of audit to execute on given contest.')
 @click.option('-r',
@@ -118,23 +119,41 @@ def interactive(election_mode, election_file, contest_file, audit_type, risk_lim
             $ r2b2 interactive --audit-type brla --risk-limit 0.1 --max-fraction-to-draw 0.2
             $ r2b2 interactive -a brla -r 0.1 -m 0.2    // Shortened equivalent
 
+    Example:
+        Election mode allows users to enter all the results from an election then select a contest
+        from the election to audit::
+
+            $ r2b2 interactive -e
+            $ r2b2 interactive -e --election-file // pass election results as JSON file.
+
     Warning:
-        Election mode is not yet implemented.
+        Election mode simply allows you to enter an entire election's data, then select one
+        one contest from that election to run. Auditing multiple contests from an election
+        concurrently is not implemented.
     """
 
     if election_mode:
-        click.echo('Election mode is currently unavailable.')
-        # TODO: Implement interactive election mode
-        return
+        if election_file is not None:
+            election = util.parse_election(str(election_file))
+        else:
+            election = input_election()
+
+        contest_choices = click.Choice(election.contests.keys(), case_sensitive=True)
+        click.echo('\n')
+        click.echo(election)
+        contest_name = click.prompt('Select a contest from the above election', type=contest_choices)
+        contest = election.contests[contest_name]
 
     # Check contest file if provided, otherwise request contest input
-    if contest_file is not None:
+    elif contest_file is not None:
         contest = util.parse_contest(str(contest_file))
     else:
         contest = input_contest()
 
     # Confirm contest, if incorrect get new input
     click.echo('\n')
+    if election_mode:
+        click.echo(contest_name)
     click.echo(contest)
     while not click.confirm('\nUse the above contest data?'):
         contest = input_contest()
@@ -338,6 +357,25 @@ def input_contest() -> Contest:
     contest_type = ContestType[contest_type_in]
 
     return Contest(contest_ballots, tally, num_winners, reported_winners, contest_type)
+
+
+def input_election() -> Election:
+    # Creates an election from user input
+    click.echo('\nCreate a new Election')
+    click.echo('=====================\n')
+
+    name = click.prompt('Enter election name', type=str)
+    total_ballots = click.prompt('Enter total ballots cast in election', type=click.IntRange(min=1))
+    contests = {}
+
+    while True:
+        contest_name = click.prompt('\nEnter new contest name', type=str)
+        contest = input_contest()
+        contests[contest_name] = contest
+        if not click.confirm('\nWould you like to enter another contest? '):
+            break
+
+    return Election(name, total_ballots, contests)
 
 
 def input_warning(msg):
