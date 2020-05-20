@@ -276,6 +276,7 @@ class Audit(ABC):
         sample_size = self.min_sample_size
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
         previous_votes_for_winner = 0
+        prev_sample_size = 0
         curr_round = 0
 
         while sample_size < max_sample_size:
@@ -298,13 +299,15 @@ class Audit(ABC):
 
             self.next_sample_size()
 
-            prev_sample_size = sample_size
+            if curr_round > 1:
+                prev_sample_size = sample_size
             sample_size = click.prompt('Enter next sample size (as a running total)',
                                        type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
 
             votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
-                                            type=click.IntRange(previous_votes_for_winner, sample_size))
+                                            type=click.IntRange(previous_votes_for_winner,
+                                                                previous_votes_for_winner + (sample_size - prev_sample_size)))
 
             stopping_condition_met = self.stopping_condition(votes_for_winner, verbose)
             click.echo('\n\n+----------------------------------------+')
@@ -314,11 +317,9 @@ class Audit(ABC):
             if stopping_condition_met:
                 click.echo('\n\nAudit Complete.')
                 return
-            else:
-                force_stop = click.confirm('\nWould you like to force stop the audit')
-                if force_stop == 'y':
-                    click.echo('\n\nAudit Complete: User stopped.')
-                    return
+            elif click.confirm('\nWould you like to force stop the audit'):
+                click.echo('\n\nAudit Complete: User stopped.')
+                return
 
             kmin = self.next_min_winner_ballots(sample_size)
             self.min_winner_ballots.append(kmin)
