@@ -1,0 +1,104 @@
+
+Welcome to the R2B2 auditing tool!
+
+Select an audit type (brla, minerva): minerva
+Enter desired risk limit (e.g. use 0.1 for 10%): 0.1
+Enter maximum fraction of ballots to draw during audit: 0.1
+
+Create a new Contest
+====================
+
+Enter number of contest ballots: 100000
+Enter number of candidates: 2
+Enter candidate name: A
+Enter number of votes reported for A: 60000
+Enter candidate name: B
+Enter number of votes reported for B: 40000
+Enter number of winners: 1
+Enter winner name (A, B): A
+Select contest type (PLURALITY, MAJORITY): MAJORITY
+
+
+Contest
+-------
+Contest Ballots: 100000
+Reported Tallies:
+     A               60000
+     B               40000
+Reported Winners: ['A']
+Contest Type: ContestType.MAJORITY
+
+
+
+Use the above contest data? [y/N]: y
+
+Create a new Audit
+==================
+
+Audit
+-----
+Alpha: 0.1
+Beta: 0.0
+Maximum Fraction to Draw: 0.1
+Replacement: True
+
+Contest
+-------
+Contest Ballots: 100000
+Reported Tallies:
+     A               60000
+     B               40000
+Reported Winners: ['A']
+Contest Type: ContestType.MAJORITY
+
+
+
+Are the audit parameters correct? [y/N]: y
+
+==================
+Beginning Audit...
+==================
+
+
+----------
+ Round 1  
+----------
+
+Enter next sample size (as a running total): 100
+Enter total number of votes for reported winner found in sample: 57
+
+
++----------------------------------------+
+|     Stopping Condition Met? False      |
++----------------------------------------+
+
+Would you like to force stop the audit [y/N]: n
+
+----------
+ Round 2  
+----------
+
+Enter next sample size (as a running total): 200
+Enter total number of votes for reported winner found in sample: 112
+
+
++----------------------------------------+
+|     Stopping Condition Met? False      |
++----------------------------------------+
+
+Would you like to force stop the audit [y/N]: n
+
+----------
+ Round 3  
+----------
+
+Enter next sample size (as a running total): 400
+Enter total number of votes for reported winner found in sample: 221
+
+
++----------------------------------------+
+|      Stopping Condition Met? True      |
++----------------------------------------+
+
+
+Audit Complete.

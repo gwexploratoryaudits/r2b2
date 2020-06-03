@@ -2,6 +2,8 @@
 import math
 from typing import List
 
+import click
+
 from r2b2.audit import Audit
 from r2b2.contest import Contest
 
@@ -51,12 +53,22 @@ class Minerva(Audit):
     def next_sample_size(self, *args, **kwargs):
         pass
 
-    def stopping_condition(self, votes_for_winner: int) -> bool:
-        # NOTE: Before computation of kmin.
-        pass
+    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
+        """Check, without finding the kmin, whether the audit is complete."""
+        if len(self.rounds) < 1:
+            raise Exception('Attempted to call stopping condition without any rounds.')
+
+        tail_null = sum(self.distribution_null[votes_for_winner:])
+        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
+
+        if verbose:
+            click.echo('\np-value: {}'.format(tail_null / tail_reported))
+
+        return self.alpha * tail_reported > tail_null
 
     def next_min_winner_ballots(self, sample_size) -> int:
-        pass
+        """Compute kmin in interactive context."""
+        return self.find_kmin(False)
 
     def compute_min_winner_ballots(self, rounds: List[int], *args, **kwargs):
         """Compute the minimum number of winner ballots for a round schedule.
@@ -87,11 +99,11 @@ class Minerva(Audit):
             self.rounds.append(sample_size)
             self.current_dist_null()
             self.current_dist_reported()
-            self.find_kmin()
+            self.find_kmin(True)
             self.truncate_dist_null()
             self.truncate_dist_reported()
 
-    def find_kmin(self):
+    def find_kmin(self, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria."""
 
         for possible_kmin in range(self.rounds[-1] // 2 + 1, len(self.distribution_null)):
@@ -99,12 +111,15 @@ class Minerva(Audit):
             tail_reported = sum(self.distribution_reported_tally[possible_kmin:])
 
             # Minerva's stopping criterion: tail_reported / tail_null > 1 / alpha.
-            if self.alpha * tail_reported >= tail_null:
-                self.min_winner_ballots.append(possible_kmin)
-                return
+            if self.alpha * tail_reported > tail_null:
+                if append:
+                    self.min_winner_ballots.append(possible_kmin)
+                return possible_kmin
 
         # Sentinel of None plays nice with truncation.
-        self.min_winner_ballots.append(None)
+        if append:
+            self.min_winner_ballots.append(None)
+        return None
 
     def compute_all_min_winner_ballots(self, *args, **kwargs):
         pass
