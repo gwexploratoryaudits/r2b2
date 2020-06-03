@@ -27,6 +27,7 @@ from r2b2.brla import BayesianRLA as BRLA
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.election import Election
+from r2b2.minerva import Minerva
 from r2b2.tests import util
 
 
@@ -46,7 +47,7 @@ INT_LIST = IntList()
 
 # Audit type choices
 # TODO: add new audit types when they become available
-audit_types = click.Choice(['brla'], case_sensitive=False)
+audit_types = click.Choice(['brla', 'minerva'], case_sensitive=False)
 # Contest type choice
 contest_types = click.Choice(['PLURALITY', 'MAJORITY'])
 
@@ -318,6 +319,8 @@ def input_audit(contest: Contest, alpha: float = None, max_fraction_to_draw: flo
 
     if audit_type == 'brla':
         return BRLA(alpha, max_fraction_to_draw, contest)
+    elif audit_type == 'minerva':
+        return Minerva(alpha, max_fraction_to_draw, contest)
     # TODO: add creation for other types of audits.
     return None
 

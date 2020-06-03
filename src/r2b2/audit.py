@@ -311,6 +311,9 @@ class Audit(ABC):
                                        type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
 
+            self.current_dist_null()
+            self.current_dist_reported()
+
             votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
                                             type=click.IntRange(previous_votes_for_winner,
                                                                 previous_votes_for_winner + (sample_size - prev_sample_size)))
@@ -329,9 +332,7 @@ class Audit(ABC):
 
             kmin = self.next_min_winner_ballots(sample_size)
             self.min_winner_ballots.append(kmin)
-            self.current_dist_null()
             self.truncate_dist_null()
-            self.current_dist_reported()
             self.truncate_dist_reported()
             previous_votes_for_winner = votes_for_winner
             self.sample_winner_ballots.append(votes_for_winner)
