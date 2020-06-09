@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from click.testing import CliRunner
 
@@ -50,6 +52,25 @@ def test_interactive_minerva():
     expected_out = output_file.read()
     assert result.output == expected_out
     output_file.close()
+
+
+def test_bulk_minerva():
+    # Ballot-by-ballot Minerva should yield identical stopping rules to BRAVO.
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva(.1, .01, contest)
+    minerva.compute_all_min_winner_ballots()
+    # p0 not hardcoded as .5 for scalability with odd total contest ballots.
+    p0 = (minerva.contest.contest_ballots // 2) / minerva.contest.contest_ballots
+    log_winner_multiplier = math.log(minerva.contest.winner_prop / p0)
+    log_loser_multiplier = math.log((1 - minerva.contest.winner_prop) / p0)
+    log_rhs = math.log(1 / minerva.alpha)
+
+    for i in range(len(minerva.rounds)):
+        n = minerva.rounds[i]
+        kmin = minerva.min_winner_ballots[i]
+        # Assert this kmin satisfies ratio, but a kmin one less does not.
+        assert kmin * log_winner_multiplier + (n - kmin) * log_loser_multiplier > log_rhs
+        assert (kmin - 1) * log_winner_multiplier + (n - kmin + 1) * log_loser_multiplier <= log_rhs
 
 
 def test_sentinel():

@@ -121,7 +121,7 @@ class Audit(ABC):
         return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest)
 
     def current_dist_null(self):
-        """Update distribution null and risk schedule for current round."""
+        """Update distribution_null for current round."""
 
         if len(self.rounds) == 1:
             round_draw = self.rounds[0]
@@ -161,7 +161,7 @@ class Audit(ABC):
                 self.distribution_null = distribution_round_draw
 
     def current_dist_reported(self):
-        """Update distribution_reported_tally and stopping probability schedule for round."""
+        """Update distribution_reported_tally for current round."""
 
         if len(self.rounds) == 1:
             round_draw = self.rounds[0]
@@ -296,7 +296,7 @@ class Audit(ABC):
                 click.echo('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
                 click.echo('|{:<50}|'.format('Maximum Sample Size: {}'.format(max_sample_size)))
                 click.echo('|{:50}|'.format(' '))
-                click.echo('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk'))
+                click.echo('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk Expended'))
                 click.echo('|----------------|----------------|----------------|')
                 for r in range(1, curr_round):
                     click.echo('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r - 1]),
