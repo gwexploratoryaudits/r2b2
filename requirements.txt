@@ -2,3 +2,4 @@ numpy
 scipy
 typing
 click
+pymongo
