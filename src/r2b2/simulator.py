@@ -12,7 +12,7 @@ client = MongoClient()
 db = client.r2b2
 
 
-def audit_lookup(audit_type: str, alpha: float, *args, **kwargs):
+def audit_lookup(audit_type: str, alpha: float, qapp: dict = None, *args, **kwargs):
     """Find/Create an audit in database.
 
     Searches through database for an existing audit entry with the given parameters.
@@ -21,12 +21,15 @@ def audit_lookup(audit_type: str, alpha: float, *args, **kwargs):
     Args:
         audit_type (str): Name of audit, for example: 'minerva', 'brla', etc.
         alpha (float): Risk-limit of audit.
+        qapp (dict): Optional parameter that appends dict to mongo query.
 
     Returns:
         ObjectID of new or existing audit entry.
     """
     audits = db.audits
     query = {'audit_type': audit_type, 'alpha': alpha}
+    if qapp is not None:
+        query.update(qapp)
     # TODO: handle additional arguments
 
     audit = audits.find_one(query)
@@ -36,7 +39,7 @@ def audit_lookup(audit_type: str, alpha: float, *args, **kwargs):
     return audits.insert_one(query).inserted_id
 
 
-def contest_lookup(contest, *args, **kwargs):
+def contest_lookup(contest: Contest, qapp: dict = None, *args, **kwargs):
     """Find/Create a contest in database.
 
     Searches through database for an existing contest entry with the given parameters.
@@ -44,6 +47,7 @@ def contest_lookup(contest, *args, **kwargs):
 
     Args:
         contest (r2b2.contest.Contest): Contest with attributes to be used in the database query.
+        qapp (dict): Optional parameter that appends dict to mongo query.
 
     Returns:
         ObjectID of new of existing contest entry.
@@ -55,6 +59,8 @@ def contest_lookup(contest, *args, **kwargs):
         'num_winners': contest.num_winners,
         'reported_winners': contest.reported_winners
     }
+    if qapp is not None:
+        query.update(qapp)
     # TODO: handle additional things
     contest = contests.find_one(query)
     if contest is not None:
@@ -62,7 +68,7 @@ def contest_lookup(contest, *args, **kwargs):
     return contests.insert_one(query).inserted_id
 
 
-def simulation_lookup(audit, reported, underlying, *args, **kwargs):
+def simulation_lookup(audit, reported, underlying, qapp: dict = None, *args, **kwargs):
     """Find/Create a simulation in database.
 
     Searches through database for an existing simulation entry with the given parameters.
@@ -75,12 +81,15 @@ def simulation_lookup(audit, reported, underlying, *args, **kwargs):
         underlying: Description of the underlying contest used in the simulation. Could be an
             ObjectID from the contests table, could simply be a string indicating a tie,
             depends on the specific simulation.
+        qapp (dict): Optional parameter that appends dict to mongo query.
 
     Returns:
         ObjectID of new or existing simulation entry.
     """
     simulations = db.simulations
     query = {'reported': reported, 'underlying': underlying, 'audit': audit}
+    if qapp is not None:
+        query.update(qapp)
     # TODO: Handle additional things
     simulation = simulations.find_one(query)
     if simulation is not None:
@@ -123,14 +132,23 @@ class Simulation(ABC):
     underlying: str
     sim_id: str
 
-    def __init__(self, audit_type: str, alpha: float, reported: Contest, underlying):
+    def __init__(self, audit_type: str, alpha: float, reported: Contest, underlying, *args, **kwargs):
         self.audit_type = audit_type
         self.alpha = alpha
-        self.audit_id = audit_lookup(audit_type, alpha)
+        if 'audit_args' in kwargs:
+            self.audit_id = audit_lookup(audit_type, alpha, qapp=kwargs['audit_args'])
+        else:
+            self.audit_id = audit_lookup(audit_type, alpha)
         self.reported = reported
-        self.reported_id = contest_lookup(reported)
+        if 'reported_args' in kwargs:
+            self.reported_id = contest_lookup(reported, qapp=kwargs['reported_args'])
+        else:
+            self.reported_id = contest_lookup(reported)
         self.underlying = underlying
-        self.sim_id = simulation_lookup(self.audit_id, self.reported_id, self.underlying)
+        if 'sim_args' in kwargs:
+            self.sim_id = simulation_lookup(self.audit_id, self.reported_id, self.underlying, qapp=kwargs['sim_args'])
+        else:
+            self.sim_id = simulation_lookup(self.audit_id, self.reported_id, self.underlying)
 
     def run(self, n: int):
         """Execute n trials of the simulation.
