@@ -1,5 +1,6 @@
 """R2B2 Simulation Module."""
 
+import os
 from abc import ABC
 from abc import abstractmethod
 
@@ -165,6 +166,15 @@ class Simulation(ABC):
             trial_entry.update(self.trial(curr_seed))
             write_trial(trial_entry)
 
+    def get_seed(self):
+        """Generate a random seed.
+
+        Note:
+            This method generates 8 random bytes using os sources of randomness. If a different
+            source of randomness is desired, overwrite the method per implementation.
+        """
+        return os.urandom(8)
+
     @abstractmethod
     def trial(self, seed):
         """Execute a single trial given a random seed."""
@@ -173,9 +183,4 @@ class Simulation(ABC):
     @abstractmethod
     def analyze(self, *args, **kwargs):
         """Analyze the simulation trials."""
-        pass
-
-    @abstractmethod
-    def get_seed(self):
-        """Generate a random seed."""
         pass
