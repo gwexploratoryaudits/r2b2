@@ -1,117 +1,117 @@
 """R2B2 Simulation Module."""
 
+import json
 import os
 from abc import ABC
 from abc import abstractmethod
+from typing import List
 
 from pymongo import MongoClient
 
 from r2b2.contest import Contest
 
-# FIXME: simply connects to local host
-client = MongoClient()
-db = client.r2b2
 
+class DBInterface():
+    def __init__(self, host='localhost', port=27017, name='r2b2'):
+        self.client = MongoClient(host, port)
+        self.db = self.client[name]
 
-def audit_lookup(audit_type: str, alpha: float, qapp: dict = None, *args, **kwargs):
-    """Find/Create an audit in database.
+    def audit_lookup(self, audit_type: str, alpha: float, qapp: dict = None, *args, **kwargs):
+        """Find/Create an audit in database.
 
-    Searches through database for an existing audit entry with the given parameters.
-    If none exists, an audit entry is created for the parameters.
+        Searches through database for an existing audit entry with the given parameters.
+        If none exists, an audit entry is created for the parameters.
 
-    Args:
-        audit_type (str): Name of audit, for example: 'minerva', 'brla', etc.
-        alpha (float): Risk-limit of audit.
-        qapp (dict): Optional parameter that appends dict to mongo query.
+        Args:
+            audit_type (str): Name of audit, for example: 'minerva', 'brla', etc.
+            alpha (float): Risk-limit of audit.
+            qapp (dict): Optional parameter that appends dict to mongo query.
 
-    Returns:
-        ObjectID of new or existing audit entry.
-    """
-    audits = db.audits
-    query = {'audit_type': audit_type, 'alpha': alpha}
-    if qapp is not None:
-        query.update(qapp)
-    # TODO: handle additional arguments
+        Returns:
+            ObjectID of new or existing audit entry.
+        """
+        audits = self.db.audits
+        query = {'audit_type': audit_type, 'alpha': alpha}
+        if qapp is not None:
+            query.update(qapp)
+        # TODO: handle additional arguments
 
-    audit = audits.find_one(query)
-    if audit is not None:
-        return audit['_id']
+        audit = audits.find_one(query)
+        if audit is not None:
+            return audit['_id']
 
-    return audits.insert_one(query).inserted_id
+        return audits.insert_one(query).inserted_id
 
+    def contest_lookup(self, contest: Contest, qapp: dict = None, *args, **kwargs):
+        """Find/Create a contest in database.
 
-def contest_lookup(contest: Contest, qapp: dict = None, *args, **kwargs):
-    """Find/Create a contest in database.
+        Searches through database for an existing contest entry with the given parameters.
+        If none exists, a contest entry is created.
 
-    Searches through database for an existing contest entry with the given parameters.
-    If none exists, a contest entry is created.
+        Args:
+            contest (r2b2.contest.Contest): Contest with attributes to be used in the database query.
+            qapp (dict): Optional parameter that appends dict to mongo query.
 
-    Args:
-        contest (r2b2.contest.Contest): Contest with attributes to be used in the database query.
-        qapp (dict): Optional parameter that appends dict to mongo query.
+        Returns:
+            ObjectID of new of existing contest entry.
+        """
+        contests = self.db.contests
+        query = {
+            'contest_ballots': contest.contest_ballots,
+            'tally': contest.tally,
+            'num_winners': contest.num_winners,
+            'reported_winners': contest.reported_winners
+        }
+        if qapp is not None:
+            query.update(qapp)
+        # TODO: handle additional things
+        contest = contests.find_one(query)
+        if contest is not None:
+            return contest['_id']
+        return contests.insert_one(query).inserted_id
 
-    Returns:
-        ObjectID of new of existing contest entry.
-    """
-    contests = db.contests
-    query = {
-        'contest_ballots': contest.contest_ballots,
-        'tally': contest.tally,
-        'num_winners': contest.num_winners,
-        'reported_winners': contest.reported_winners
-    }
-    if qapp is not None:
-        query.update(qapp)
-    # TODO: handle additional things
-    contest = contests.find_one(query)
-    if contest is not None:
-        return contest['_id']
-    return contests.insert_one(query).inserted_id
+    def simulation_lookup(self, audit, reported, underlying, qapp: dict = None, *args, **kwargs):
+        """Find/Create a simulation in database.
 
+        Searches through database for an existing simulation entry with the given parameters.
+        If none exists, a simulation entry is created.
 
-def simulation_lookup(audit, reported, underlying, qapp: dict = None, *args, **kwargs):
-    """Find/Create a simulation in database.
+        Args:
+            audit: ObjectID of audit entry (from audits collection) used in the simulation.
+            reported: ObjectID of reported contest entry (from contests collection) used in the
+                simulation.
+            underlying: Description of the underlying contest used in the simulation. Could be an
+                ObjectID from the contests table, could simply be a string indicating a tie,
+                depends on the specific simulation.
+            qapp (dict): Optional parameter that appends dict to mongo query.
 
-    Searches through database for an existing simulation entry with the given parameters.
-    If none exists, a simulation entry is created.
+        Returns:
+            ObjectID of new or existing simulation entry.
+        """
+        simulations = self.db.simulations
+        query = {'reported': reported, 'underlying': underlying, 'audit': audit}
+        if qapp is not None:
+            query.update(qapp)
+        # TODO: Handle additional things
+        simulation = simulations.find_one(query)
+        if simulation is not None:
+            return simulation['_id']
+        return simulations.insert_one(query).inserted_id
 
-    Args:
-        audit: ObjectID of audit entry (from audits collection) used in the simulation.
-        reported: ObjectID of reported contest entry (from contests collection) used in the
-            simulation.
-        underlying: Description of the underlying contest used in the simulation. Could be an
-            ObjectID from the contests table, could simply be a string indicating a tie,
-            depends on the specific simulation.
-        qapp (dict): Optional parameter that appends dict to mongo query.
+    def trial_lookup(self, sim_id, *args, **kwargs):
+        """Find all trials for a given simulation ObjectID"""
+        return self.db.trials.find({'simulation': sim_id})
 
-    Returns:
-        ObjectID of new or existing simulation entry.
-    """
-    simulations = db.simulations
-    query = {'reported': reported, 'underlying': underlying, 'audit': audit}
-    if qapp is not None:
-        query.update(qapp)
-    # TODO: Handle additional things
-    simulation = simulations.find_one(query)
-    if simulation is not None:
-        return simulation['_id']
-    return simulations.insert_one(query).inserted_id
-
-
-def trial_lookup(sim_id, *args, **kwargs):
-    """Find all trials for a given simulation ObjectID"""
-    return db.trials.find({'simulation': sim_id})
-
-
-def write_trial(entry):
-    """Write a trial document into the trials collection."""
-    db.trials.insert_one(entry)
+    def write_trial(self, entry):
+        """Write a trial document into the trials collection."""
+        self.db.trials.insert_one(entry)
 
 
 class Simulation(ABC):
     """Abstract Base Class to define a simulation.
 
     Attributes:
+        db_mode (bool): Indicates if simulation is running in Database mode or local mode.
         audit_type (str): Indicates what type of audit is simulated.
         alpha (float): Risk-limit of simulation.
         audit_id (str): ObjectID of audit entry from audits collection in MongoDB.
@@ -123,8 +123,12 @@ class Simulation(ABC):
             specified by a specific simulation implementation.
         sim_id (str): ObjectID of simulation from simulations collection in MongoDB defined by the
             reported contest, underlying contest, and audit.
+        trials: List of trials performed in run() method. Trials are dicts formatted for
+            JSON output or MongoDB document entry.
     """
 
+    db_mode: bool
+    db: DBInterface
     audit_type: str
     alpha: float
     audit_id: str
@@ -132,24 +136,45 @@ class Simulation(ABC):
     reported_id: str
     underlying: str
     sim_id: str
+    trials: List
 
-    def __init__(self, audit_type: str, alpha: float, reported: Contest, underlying, *args, **kwargs):
+    def __init__(self,
+                 audit_type: str,
+                 alpha: float,
+                 reported: Contest,
+                 underlying,
+                 db_mode=True,
+                 db_host='localhost',
+                 db_port=27017,
+                 db_name='r2b2',
+                 *args,
+                 **kwargs):
         self.audit_type = audit_type
         self.alpha = alpha
-        if 'audit_args' in kwargs:
-            self.audit_id = audit_lookup(audit_type, alpha, qapp=kwargs['audit_args'])
-        else:
-            self.audit_id = audit_lookup(audit_type, alpha)
         self.reported = reported
-        if 'reported_args' in kwargs:
-            self.reported_id = contest_lookup(reported, qapp=kwargs['reported_args'])
-        else:
-            self.reported_id = contest_lookup(reported)
         self.underlying = underlying
-        if 'sim_args' in kwargs:
-            self.sim_id = simulation_lookup(self.audit_id, self.reported_id, self.underlying, qapp=kwargs['sim_args'])
+        self.db_mode = db_mode
+        self.trials = []
+        if not self.db_mode:
+            self.db = None
+            self.audit_id = None
+            self.reported_id = None
+            self.sim_id = None
+
         else:
-            self.sim_id = simulation_lookup(self.audit_id, self.reported_id, self.underlying)
+            self.db = DBInterface(db_host, db_port, db_name)
+            if 'audit_args' in kwargs:
+                self.audit_id = self.db.audit_lookup(audit_type, alpha, qapp=kwargs['audit_args'])
+            else:
+                self.audit_id = self.db.audit_lookup(audit_type, alpha)
+            if 'reported_args' in kwargs:
+                self.reported_id = self.db.contest_lookup(reported, qapp=kwargs['reported_args'])
+            else:
+                self.reported_id = self.db.contest_lookup(reported)
+            if 'sim_args' in kwargs:
+                self.sim_id = self.db.simulation_lookup(self.audit_id, self.reported_id, self.underlying, qapp=kwargs['sim_args'])
+            else:
+                self.sim_id = self.db.simulation_lookup(self.audit_id, self.reported_id, self.underlying)
 
     def run(self, n: int):
         """Execute n trials of the simulation.
@@ -160,11 +185,14 @@ class Simulation(ABC):
         Args:
             n (int): Number of trials to execute and write to database.
         """
+
         for i in range(n):
             curr_seed = self.get_seed()
-            trial_entry = {'simulation': self.sim_id, 'seed': curr_seed}
+            trial_entry = {'simulation': self.sim_id, 'seed': str(curr_seed)}
             trial_entry.update(self.trial(curr_seed))
-            write_trial(trial_entry)
+            self.trials.append(trial_entry)
+            if self.db_mode:
+                self.db.write_trial(trial_entry)
 
     def get_seed(self):
         """Generate a random seed.
@@ -174,6 +202,40 @@ class Simulation(ABC):
             source of randomness is desired, overwrite the method per implementation.
         """
         return os.urandom(8)
+
+    def output(self, fd: str = None):
+        """Write output of simulation to JSON file.
+
+        Args:
+            fd (str): filename to write output to. If no file is passed, formatted JSON is
+                simply printed.
+        """
+        if self.db_mode:
+            raise Exception('output() should only be called in local mode.')
+
+        output = {}
+        output['audit'] = self.output_audit()
+        output['reported'] = self.reported.to_json()
+        if type(self.underlying) is Contest:
+            output['underlying'] = self.underlying.to_json()
+        else:
+            output['underlying'] = self.underlying
+        output['trials'] = self.trials
+        if fd is None:
+            print(json.dumps(output, indent=4))
+            return
+
+        with open(fd, 'w') as outfile:
+            json.dump(output, outfile, indent=4)
+
+    def output_audit(self):
+        """Create audit output in JSON format.
+
+        Note:
+            This functionality is separated into a method so specific audit implementations may
+            override it and customize their output in non-database mode.
+        """
+        return {'audit_type': self.audit_type, 'alpha': self.alpha}
 
     @abstractmethod
     def trial(self, seed):
