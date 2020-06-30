@@ -133,3 +133,13 @@ class Contest:
         winner_str = 'Reported Winners: {}\n'.format(self.reported_winners)
         type_str = 'Contest Type: {}\n'.format(self.contest_type)
         return title_str + ballot_str + tally_str + winner_str + type_str + '\n'
+
+    def to_json(self):
+        """Generate dict representation of Contest for use in a JSON file."""
+        return {
+            'contest_ballots': self.contest_ballots,
+            'tally': self.tally,
+            'num_winners': self.num_winners,
+            'reported_winners': self.reported_winners,
+            'contest_type': self.contest_type.name
+        }
