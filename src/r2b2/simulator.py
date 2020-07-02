@@ -6,12 +6,15 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
+import matplotlib.pyplot as plt
 from pymongo import MongoClient
 
 from r2b2.contest import Contest
 
 
 class DBInterface():
+    """Class for handling MongoDB operations."""
+
     def __init__(self, host='localhost', port=27017, name='r2b2'):
         self.client = MongoClient(host, port)
         self.db = self.client[name]
@@ -246,3 +249,12 @@ class Simulation(ABC):
     def analyze(self, *args, **kwargs):
         """Analyze the simulation trials."""
         pass
+
+
+def histogram(values: List, xlabel: str, bins='auto'):
+    """Create a histogram for a given dataset."""
+    plt.hist(values, bins=bins, rwidth=0.9)
+    plt.grid(axis='y')
+    plt.xlabel(xlabel)
+    plt.ylabel('Frequency')
+    plt.show()
