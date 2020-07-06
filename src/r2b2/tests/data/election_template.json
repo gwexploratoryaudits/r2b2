@@ -5,8 +5,8 @@
                 "contest1": {
                           "contest_ballots" : 100,
                           "tally" : {
-                                  "CandidateA" : 50,
-                                  "CandidateB" : 50
+                                  "CandidateA" : 60,
+                                  "CandidateB" : 40
                           },
                           "num_winners" : 1,
                           "reported_winners" : ["CandidateA"],
