@@ -2,10 +2,10 @@ import json
 
 import pytest
 
-import r2b2.tests.util as util
 from r2b2.audit import Audit
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
+from r2b2.tests import util as util
 
 default_contest = util.generate_contest(100)
 

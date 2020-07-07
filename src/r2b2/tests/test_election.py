@@ -1,7 +1,7 @@
 import pytest
 
-import r2b2.tests.util as util
 from r2b2.election import Election
+from r2b2.tests import util as util
 
 
 def test_simple_election():
