@@ -7,6 +7,7 @@ contest_name = 'contest1'
 election = parse_election(election_file)
 contest = election.contests[contest_name]
 
+
 def test_creation():
     sim = FZMR(0.1, contest, 10, election_file, contest_name, db_mode=False)
     assert(len(sim.trials) == 0)
@@ -18,6 +19,7 @@ def test_creation():
     assert(sim.audit_id is None)
     assert(sim.reported_id is None)
     assert(sim.sim_id is None)
+
 
 def test_one_trial():
     sim = FZMR(0.1, contest, 10, election_file, contest_name, db_mode=False)
