@@ -19,7 +19,6 @@ class FZMinervaOneRoundRisk(Simulation):
     election_file: str
     reported_name: str
 
-    # FIXME: change database name to r2b2 when ready
     def __init__(self,
                  alpha,
                  reported,
@@ -28,9 +27,11 @@ class FZMinervaOneRoundRisk(Simulation):
                  reported_name,
                  db_mode=True,
                  db_host='localhost',
-                 db_name='r2b2filipdemo',
-                 db_port=27017):
-        super().__init__('fz_minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, reported_args={'name': reported_name})
+                 db_name='r2b2',
+                 db_port=27017,
+                 *args,
+                 **kwargs):
+        super().__init__('fz_minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, args, kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
 
