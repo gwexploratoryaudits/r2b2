@@ -4,4 +4,4 @@ typing
 click
 pymongo
 matplotlib
--e git+https://github.com/sarahmorin/athena.git#egg=athena
+-e git+https://github.com/filipzz/athena.git#egg=athena
