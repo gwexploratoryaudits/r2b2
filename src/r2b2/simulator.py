@@ -14,7 +14,6 @@ from r2b2.contest import Contest
 
 class DBInterface():
     """Class for handling MongoDB operations."""
-
     def __init__(self, host='localhost', port=27017, name='r2b2'):
         self.client = MongoClient(host, port)
         self.db = self.client[name]
