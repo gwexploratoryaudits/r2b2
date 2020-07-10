@@ -36,6 +36,9 @@ class SimpleAudit(Audit):
     def compute_all_min_winner_ballots(self):
         return [1, 2, 3, 4]
 
+    def get_risk_level(self):
+        pass
+
 
 def test_simple_audit():
     """Tests creation of a basic Audit object."""
