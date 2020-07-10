@@ -3,11 +3,11 @@ import math
 import pytest
 from click.testing import CliRunner
 
-import r2b2.tests.util as util
 from r2b2.cli import cli
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.minerva import Minerva
+import r2b2.tests.util as util
 
 default_contest = util.generate_contest(100000)
 
@@ -29,10 +29,9 @@ def test_min_sample_size():
     contest3 = Contest(100000, {'A': 51000, 'B': 49000}, 1, ['A'], ContestType.MAJORITY)
     minerva3 = Minerva(.05, .05, contest3)
 
-    # Numbers x below satisfy: (p1 / p0)^x > 1 / alpha yet (p1 / p0)^(x-1) <= 1 / alpha.
     assert minerva1.min_sample_size == 13
     assert minerva2.min_sample_size == 5
-    assert minerva3.min_sample_size == 152
+    assert minerva3.min_sample_size == 830
 
 
 def test_minerva_kmins():
