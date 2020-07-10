@@ -32,7 +32,6 @@ class Minerva(Audit):
         self.min_sample_size = self.get_min_sample_size()
         self.rounds = []
         self.min_winner_ballots = []
-        self.realized_risks = []
 
     def get_min_sample_size(self):
         """Computes the minimum sample size that has a stopping size (kmin).
@@ -62,9 +61,10 @@ class Minerva(Audit):
         tail_null = sum(self.distribution_null[votes_for_winner:])
         tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
 
+        self.pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
             click.echo('\np-value: {}'.format(tail_null / tail_reported))
-        self.realized_risks.append(tail_null / tail_reported)
+            click.echo('\nRisk Level: {}'.format(self.get_risk_level()))
 
         return self.alpha * tail_reported > tail_null
 
@@ -89,7 +89,7 @@ class Minerva(Audit):
         if len(self.rounds) > 0 and rounds[0] <= self.rounds[-1]:
             raise ValueError('Sample sizes must exceed past sample sizes.')
 
-        for i in range(0, len(rounds)):
+        for i in range(len(rounds)):
             if rounds[i] < self.min_sample_size:
                 raise ValueError('Sample size must be >= minimum sample size.')
             if rounds[i] > self.contest.contest_ballots * self.max_fraction_to_draw:
@@ -174,11 +174,14 @@ class Minerva(Audit):
             self.truncate_dist_reported()
 
     def compute_risk(self, *args, **kwargs):
-        """Return the current risk level of an interactive Minerva audit. Non-interactive and bulk
-        Minerva audits are not considered here since the sampled number of reported winner ballots
-        is not available.
+        pass
+
+    def get_risk_level(self):
+        """Return the risk level of an interactive Minerva audit. Non-interactive and bulk Minerva
+        audits are not considered here since the sampled number of reported winner ballots is not
+        available.
         """
 
-        if len(self.realized_risks) < 1:
+        if len(self.pvalue_schedule) < 1:
             return None
-        return min(self.realized_risks)
+        return min(self.pvalue_schedule)

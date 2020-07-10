@@ -232,3 +232,6 @@ class BayesianRLA(Audit):
                 min_winner_ballots.append(current_kmin)
 
         return min_winner_ballots
+
+    def get_risk_level(self, *args, **kwargs):
+        pass

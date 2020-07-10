@@ -95,6 +95,7 @@ class Audit(ABC):
         self.sample_winner_ballots = []
         self.risk_schedule = []
         self.stopping_prob_schedule = []
+        self.pvalue_schedule = []
         self.distribution_null = [1.0]
         self.distribution_reported_tally = [1.0]
 
@@ -401,6 +402,17 @@ class Audit(ABC):
 
         Returns:
             Current risk level of the audit (as defined per audit implementation).
+        """
+
+        pass
+
+    @abstractmethod
+    def get_risk_level(self, *args, **kwargs):
+        """Find the risk level of the audit, that is, the smallest risk limit for which the audit
+        as it has panned out would have already stopped.
+
+        Returns:
+            Risk level of the realization of the audit.
         """
 
         pass
