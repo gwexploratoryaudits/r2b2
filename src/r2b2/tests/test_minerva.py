@@ -7,9 +7,9 @@ from r2b2.cli import cli
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.minerva import Minerva
-import r2b2.tests.util as util
+from r2b2.tests import util as util
 
-default_contest = util.generate_contest(100000)
+default_contest = util.generate_contest(10000)
 
 
 def test_simple_minerva():

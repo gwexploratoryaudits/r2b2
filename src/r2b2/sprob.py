@@ -48,11 +48,11 @@ class Sprob():
         if self.min_winner_ballots[0] < 1:
             raise ValueError("Kmins must be >= 1.")
         if self.min_winner_ballots[0] > self.rounds[0]:
-            raise ValueError("Kmins cannot exceed respective round sizes.")
+            raise ValueError("Kmins cannot exceed respective round sizes; first kmin must exist.")
         for i in range(1, len(self.rounds)):
             if self.rounds[i] <= self.rounds[i-1]:
                 raise ValueError("Round schedule must strictly increase.")
-            if self.min_winner_ballots[i] > self.rounds[i]:
+            if self.min_winner_ballots[i] is not None and self.min_winner_ballots[i] > self.rounds[i]:
                 raise ValueError("Kmins cannot exceed respective round sizes.")
 
         self.sprobs = []
@@ -76,6 +76,10 @@ class Sprob():
 
     def truncate_dist(self, round_index):
         """Sums and truncates the distribution at the kmin."""
+        # Support for some sentinels.
+        if self.min_winner_ballots[round_index] is None or self.min_winner_ballots[round_index] < 1:
+            self.sprobs.append(0)
+            return
         self.sprobs.append(sum(self.distribution[self.min_winner_ballots[round_index]:]))
         self.distribution = self.distribution[:self.min_winner_ballots[round_index]]
 
