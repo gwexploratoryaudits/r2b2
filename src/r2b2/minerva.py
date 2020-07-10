@@ -3,6 +3,7 @@ import math
 from typing import List
 
 import click
+from scipy.stats import binom
 
 from r2b2.audit import Audit
 from r2b2.contest import Contest
@@ -33,22 +34,52 @@ class Minerva(Audit):
         self.rounds = []
         self.min_winner_ballots = []
 
-    def get_min_sample_size(self):
-        """Computes the minimum sample size that has a stopping size (kmin).
+    def get_min_sample_size(self, min_sprob: float = 10 ** (-6)):
+        """Computes the minimum sample size that has a stopping size (kmin). Here we find a
+        practical minimum instead of the theoretical minimum (BRAVO's minimum) to avoid
+        floating-point imprecisions in the later convolution process.
 
+        Args:
+            min_sprob (float): Round sizes with below min_sprob stopping probability are excluded.
         Returns:
-            int: The minimum sample size of the audit.
+            int: The minimum sample size of the audit, adherent to the min_sprob.
         """
-
-        # TODO: Implement "meaningful minimum" sample size, perhaps with tolerance 10^-18.
 
         # p0 is not .5 for contests with odd total ballots.
         p0 = (self.contest.contest_ballots // 2) / self.contest.contest_ballots
+        p1 = self.contest.winner_prop
+        max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
 
-        num = math.log(1 / self.alpha)
-        denom = math.log(self.contest.winner_prop / p0)
+        # There may not be a point n' such that all n >= n' are acceptable round sizes and all
+        # n < n' are unacceptable round sizes.
+        for n in range(1, max_sample_size):
+            num_dist = binom.pmf(range(n+1), n, p1)
+            denom_dist = binom.pmf(range(n+1), n, p0)
+            if self.satisfactory_sample_size(n // 2, n+1, min_sprob, num_dist, denom_dist):
+                return n
 
-        return math.ceil(num / denom)
+        return max_sample_size
+
+    def satisfactory_sample_size(self, left, right, sprob, num_dist, denom_dist):
+        """Helper method that returns True if the round size satisfies the stopping probability."""
+        if left >= right:
+            return False
+
+        mid = (left + right) // 2
+
+        sum_num = sum(num_dist[mid:])
+        sum_denom = sum(denom_dist[mid:])
+        satisfies_risk = self.alpha * sum_num > sum_denom and sum_denom > 0
+        satisfies_sprob = sum_num > sprob
+
+        if satisfies_risk and satisfies_sprob:
+            return True
+        elif satisfies_risk and not satisfies_sprob:
+            return self.satisfactory_sample_size(left, mid - 1, sprob, num_dist, denom_dist)
+        elif not satisfies_risk and satisfies_sprob:
+            return self.satisfactory_sample_size(mid + 1, right, sprob, num_dist, denom_dist)
+        else:
+            return False
 
     def next_sample_size(self, *args, **kwargs):
         pass

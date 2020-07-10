@@ -69,10 +69,10 @@ class Sprob():
         p = self.contest.winner_prop
         if round_index == 0:
             n = self.rounds[round_index]
-            self.distribution = binom.pmf(range(0, n + 1), n, p)
+            self.distribution = binom.pmf(range(n+1), n, p)
         else:
             n = self.rounds[round_index] - self.rounds[round_index - 1]
-            self.distribution = fftconvolve(self.distribution, binom.pmf(range(0, n + 1), n, p))
+            self.distribution = fftconvolve(self.distribution, binom.pmf(range(n+1), n, p))
 
     def truncate_dist(self, round_index):
         """Sums and truncates the distribution at the kmin."""
