@@ -38,6 +38,19 @@ def test_sprob_minerva_agreement():
         assert abs(sprob_sched[i] - calc_sprob_sched[i]) < .0000001
 
 
+def test_sprob_sentinel():
+    contest = Contest(100000, {'A': 95000, 'B': 5000}, 1, ['A'], ContestType.MAJORITY)
+    round_sched = [20, 21, 22]
+    kmin_sched = [20, 21, 21]
+    kmin_sched_sentinel = [20, None, 21]
+    sprob_obj = Sprob(round_sched, kmin_sched, contest)
+    sprob_sentinel_obj = Sprob(round_sched, kmin_sched_sentinel, contest)
+    calc_sprobs = sprob_obj.compute_sprobs()
+    calc_sentinel_sprobs = sprob_sentinel_obj.compute_sprobs()
+    for i in range(len(calc_sprobs)):
+        assert abs(calc_sprobs[i] - calc_sentinel_sprobs[i]) < .0000001
+
+
 def test_exceptions():
     contest = Contest(100000, {'A': 80000, 'B': 20000}, 1, ['A'], ContestType.MAJORITY)
     with pytest.raises(Exception):
