@@ -13,18 +13,25 @@ of risk-limiting audits.
 
 # Installation
 
+You can install the in-development version via:
 ```
-pip install r2b2
+git clone https://github.com/gwexploratoryaudits/r2b2.git
+pip install .
 ```
 
-You can also install the in-development version with:
-```
-pip install https://github.com/gwexploratoryaudits/r2b2/archive/master.zip
-```
+# Usage
+R2B2 provides both a Python module for programatic use via its API, and a command-line interface.
+
+Here are some command-line examples for getting interactive help and running audits:
+
+    r2b2 --help
+    r2b2 bulk --help
+    r2b2 bulk -l "50 100" src/r2b2/tests/data/basic_contest.json brla 0.1 0.1
+    r2b2 interactive -a minerva -r 0.1 -m 0.2 -v --contest-file src/r2b2/tests/data/basic_contest.json
 
 # Documentation
 
-[r2b2.readthedocs.io](https://r2b2.readthedocs.io/)
+The R2B2 API is documented at [r2b2.readthedocs.io](https://r2b2.readthedocs.io/).
 
 # Development
 
