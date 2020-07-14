@@ -31,8 +31,6 @@ class Minerva(Audit):
         """Initialize a Minerva audit."""
         super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
         self.min_sample_size = self.get_min_sample_size()
-        self.rounds = []
-        self.min_winner_ballots = []
 
     def get_min_sample_size(self, min_sprob: float = 10 ** (-6)):
         """Computes the minimum sample size that has a stopping size (kmin). Here we find a
@@ -204,8 +202,13 @@ class Minerva(Audit):
             self.truncate_dist_null()
             self.truncate_dist_reported()
 
-    def compute_risk(self, *args, **kwargs):
-        pass
+    def compute_risk(self, votes_for_winner: int, *args, **kwargs):
+        """Return the hypothetical pvalue if votes_for_winner were obtained in the most recent
+        round."""
+
+        tail_null = sum(self.distribution_null[votes_for_winner:])
+        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
+        return tail_null / tail_reported
 
     def get_risk_level(self):
         """Return the risk level of an interactive Minerva audit. Non-interactive and bulk Minerva

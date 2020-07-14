@@ -17,7 +17,7 @@ def test_interactive_simple():
     The audit should run and stop in the first round.
     """
     runner = CliRunner()
-    user_in = 'brla\n0.1\n0.2\n1000\n2\nA\n700\nB\n300\n1\nA\nPLURALITY\ny\ny\n200\n175\n'
+    user_in = 'brla\n0.1\n0.2\n1000\n2\nA\n700\nB\n300\n1\nA\nPLURALITY\ny\ny\n200\nn\n175\n'
     result = runner.invoke(cli, 'interactive', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive.txt', 'r')
     expected_out = output_file.read()
@@ -32,7 +32,7 @@ def test_interactive_given_audit():
     as cli option arguments. The audit should run and stop in the first round.
     """
     runner = CliRunner()
-    user_in = '1000\n2\nA\n700\nB\n300\n1\nA\nPLURALITY\ny\ny\n200\n175\n'
+    user_in = '1000\n2\nA\n700\nB\n300\n1\nA\nPLURALITY\ny\ny\n200\nn\n175\n'
     result = runner.invoke(cli, 'interactive -a brla -r 0.1 -m 0.2', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_given_audit.txt', 'r')
     expected_out = output_file.read()
@@ -47,7 +47,7 @@ def test_interactive_given_contest():
     The audit should run and stop in the first round.
     """
     runner = CliRunner()
-    user_in = 'brla\n0.1\n0.2\ny\ny\n20\n19\n'
+    user_in = 'brla\n0.1\n0.2\ny\ny\n20\nn\n19\n'
     result = runner.invoke(cli, 'interactive --contest-file=src/r2b2/tests/data/single_contest_template.json', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_given_contest.txt', 'r')
     expected_out = output_file.read()
@@ -62,7 +62,7 @@ def test_interactive_given_both():
     arguments. The audit should run and stop in the first round.
     """
     runner = CliRunner()
-    user_in = 'y\ny\n20\n19\n'
+    user_in = 'y\ny\n20\nn\n19\n'
     result = runner.invoke(cli,
                            'interactive -a brla -r 0.1 -m 0.2 --contest-file src/r2b2/tests/data/single_contest_template.json',
                            input=user_in)
@@ -76,7 +76,7 @@ def test_interactive_multi_round():
     """Testing `r2b2 interactive -a blra -r 0.1 -m 0.1 --contest-file=/.../basic_contest.json`"""
 
     runner = CliRunner()
-    user_in = 'y\ny\n100\n63\nn\n200\n119\nn\n300\n175\n'
+    user_in = 'y\ny\n100\nn\n63\nn\n200\nn\n119\nn\n300\nn\n175\n'
     result = runner.invoke(cli, 'interactive --contest-file src/r2b2/tests/data/basic_contest.json -a brla -r 0.1 -m 0.1', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_multiround_.txt', 'r')
     expected_out = output_file.read()

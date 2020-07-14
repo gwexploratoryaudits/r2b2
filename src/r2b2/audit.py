@@ -315,6 +315,14 @@ class Audit(ABC):
             self.current_dist_null()
             self.current_dist_reported()
 
+            while click.confirm('Would you like to enter a hypothetical number of votes for reported winner?'):
+                hypothetical_votes_for_winner = click.prompt(
+                    'Enter the hypothetical number of (total) reported winner votes in sample',
+                    type=click.IntRange(previous_votes_for_winner,
+                                        previous_votes_for_winner + (sample_size - prev_sample_size)))
+                hypothetical_pvalue = self.compute_risk(hypothetical_votes_for_winner, sample_size)
+                click.echo('{:<50}'.format('Hypothetical p-value: {}'.format(hypothetical_pvalue)))
+
             votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
                                             type=click.IntRange(previous_votes_for_winner,
                                                                 previous_votes_for_winner + (sample_size - prev_sample_size)))
@@ -348,6 +356,7 @@ class Audit(ABC):
         self.sample_winner_ballots = []
         self.risk_schedule = []
         self.stopping_prob_schedule = []
+        self.pvalue_schedule = []
         self.distribution_null = [1.0]
         self.distribution_reported_tally = [1.0]
 
