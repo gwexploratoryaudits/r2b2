@@ -65,38 +65,11 @@ Beginning Audit...
 ----------
 
 Enter next sample size (as a running total): 100
+Would you like to enter a hypothetical number of votes for reported winner? [y/N]: y
+Enter the hypothetical number of (total) reported winner votes in sample: 57
+Hypothetical p-value: 0.1266246240013251          
 Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 57
-
-
-+----------------------------------------+
-|     Stopping Condition Met? False      |
-+----------------------------------------+
-
-Would you like to force stop the audit [y/N]: n
-
-----------
- Round 2  
-----------
-
-Enter next sample size (as a running total): 200
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 112
-
-
-+----------------------------------------+
-|     Stopping Condition Met? False      |
-+----------------------------------------+
-
-Would you like to force stop the audit [y/N]: n
-
-----------
- Round 3  
-----------
-
-Enter next sample size (as a running total): 400
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 221
+Enter total number of votes for reported winner found in sample: 60
 
 
 +----------------------------------------+
