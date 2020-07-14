@@ -16,6 +16,7 @@ of risk-limiting audits.
 You can install the in-development version via:
 ```
 git clone https://github.com/gwexploratoryaudits/r2b2.git
+cd r2b2
 pip install .
 ```
 
