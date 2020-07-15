@@ -519,7 +519,7 @@ class Audit(ABC):
         round risk and stopping probability are stored.
         """
 
-        self.__reset()
+        self._reset()
         click.echo('\n==================\nBeginning Audit...\n==================\n')
         # FIXME: no overall minimum sample size exists, so max of all sub audit mins used
         sample_size = max(sub_audit.min_sample_size for sub_audit in self.sub_audits.values())
@@ -603,7 +603,7 @@ class Audit(ABC):
 
         click.echo('\n\nAudit Complete: Reached max sample size.')
 
-    def __reset(self):
+    def _reset(self):
         """Reset attributes modified during run()."""
 
         self.rounds = []
