@@ -278,7 +278,7 @@ class Audit(ABC):
         round risk and stopping probability are stored.
         """
 
-        self.__reset()
+        self._reset()
         click.echo('\n==================\nBeginning Audit...\n==================\n')
         sample_size = self.min_sample_size
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
@@ -348,7 +348,7 @@ class Audit(ABC):
 
         click.echo('\n\nAudit Complete: Reached max sample size.')
 
-    def __reset(self):
+    def _reset(self):
         """Reset attributes modified during run()."""
 
         self.rounds = []
