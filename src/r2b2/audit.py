@@ -200,12 +200,12 @@ class Audit(ABC):
                 self.distribution_reported_tally = distribution_round_draw
 
     def truncate_dist_null(self):
-        """Truncate null distribution and update the stopping probability schedule."""
+        """Update the risk schedule and truncate the null distribution."""
         self.risk_schedule.append(sum(self.distribution_null[self.min_winner_ballots[-1]:]))
         self.distribution_null = self.distribution_null[:self.min_winner_ballots[-1]]
 
     def truncate_dist_reported(self):
-        """Truncate reported distribution and update the stopping probability schedule."""
+        """Update the stopping probability schedule and truncate the reported distribution."""
         self.stopping_prob_schedule.append(
             sum(self.distribution_reported_tally[self.min_winner_ballots[-1]:]))
         self.distribution_reported_tally = self.distribution_reported_tally[
