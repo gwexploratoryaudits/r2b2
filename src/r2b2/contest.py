@@ -17,19 +17,27 @@ class Contest:
 
     Attributes:
         contest_ballots (int): Total number of ballots cast in the contest.
-        candidates (List[str]): List of candidates in the contest.
+        irrelevant_ballots (int): Number of ballots not attributed to a candidate in the tally.
+        candidates (List[str]): List of candidates in the contest sorted (descending) by tally.
         num_candidates (int): Number of candidates in the contest.
         num_winners (int): Number of winners desired from contest.
         reported_winners (List[str]): Reported winners from contest. Must be candidates from list
-            of candidates, and length should match number of winners.
+            of candidates, and length should match number of winners. Stored in same order as
+            sorted candidates.
         contest_type (ContestType): What type of contest is this?
         tally (Dict[str, int]): Reported tally from contest as a dictionary of candidates to
             reported votes received.
         winner_prop (float): Proportion of ballots cast for reported winner. Currently for first
             winner listed in reported winners.
+        sub_contests (Dict[str, Dict[str, List[int]]]): Collection of pairwise sub-contests for
+            each (reported winner, candidate) pair where the reported winner has more than 50% of
+            the total sub-contest ballots, i.e. where the reported winner has a greater reported
+            tally than the other candidate. These pairs provide the two-candidate, no irrelevant
+            ballots assumption required by some audits.
     """
 
     contest_ballots: int
+    irrelevant_ballots: int
     candidates: List[str]
     num_candidates: int
     num_winners: int
@@ -37,6 +45,7 @@ class Contest:
     contest_type: ContestType
     tally: Dict[str, int]
     winner_prop: float
+    sub_contests: Dict[str, Dict[str, List[int]]]
 
     def __init__(self, contest_ballots: int, tally: Dict[str, int], num_winners: int, reported_winners: List[str],
                  contest_type: ContestType):
@@ -73,13 +82,26 @@ class Contest:
             raise TypeError('contest_type must be ContestType Enum object.')
 
         self.contest_ballots = contest_ballots
+        self.irrelevant_ballots = contest_ballots = sum(tally.values())
         self.tally = tally
         self.num_winners = num_winners
-        self.reported_winners = reported_winners
-        self.candidates = list(tally.keys())
+        self.reported_winners = []
+        self.candidates = sorted(tally.keys(), key=tally.get, reverse=True)
         self.num_candidates = len(self.candidates)
+        self.reported_winners = sorted(reported_winners, key=self.candidates.index)
         self.contest_type = contest_type
         self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(self.contest_ballots)
+        # For each reported winner get pairwise sub-contests where they have > 50% of the (sub)tally
+        # These sub-contests provide the two-candidate, no-irrelevant ballots assumption
+        # Format:
+        # {'pair_winner': {'pair_loser': [winner tally, loser tally, sub_contest_total_ballots]}}
+        self.sub_contests = {}
+        for rw in self.reported_winners:
+            rw_ballots = self.tally[rw]
+            self.sub_contests[rw] = {}
+            for candidate in self.candidates:
+                if rw_ballots > self.tally[candidate]:
+                    self.sub_contests[rw][candidate] = [rw_ballots, self.tally[candidate], rw_ballots + self.tally[candidate]]
 
     def __repr__(self):
         """String representation of Contest class."""
@@ -91,8 +113,8 @@ class Contest:
         title_str = 'Contest\n-------\n'
         ballot_str = 'Contest Ballots: {}\n'.format(self.contest_ballots)
         tally_str = 'Reported Tallies:\n'
-        for k, v in self.tally.items():
-            tally_str += '     {:<15} {}\n'.format(k, v)
+        for candidate in self.candidates:
+            tally_str += '     {:<15} {}\n'.format(candidate, self.tally[candidate])
         winner_str = 'Reported Winners: {}\n'.format(self.reported_winners)
         type_str = 'Contest Type: {}\n'.format(self.contest_type)
         return title_str + ballot_str + tally_str + winner_str + type_str + '\n'
