@@ -19,6 +19,25 @@ def test_simple_contest():
     assert simplecontest.winner_prop == 0.6
 
 
+def test_sorting_tally():
+    """Tests creation of a contest will sort the candidate tally before storing."""
+    contest1 = Contest(100, {'a': 10, 'b': 40, 'c': 50}, 1, ['c'], ContestType.PLURALITY)
+    assert contest1.candidates[0] == 'c'
+    assert contest1.candidates[1] == 'b'
+    assert contest1.candidates[2] == 'a'
+    contest2 = Contest(100, {'a': 40, 'b': 10, 'c': 30}, 2, ['c', 'a'], ContestType.PLURALITY)
+    assert contest2.candidates[0] == 'a'
+    assert contest2.candidates[1] == 'c'
+    assert contest2.candidates[2] == 'b'
+    assert contest2.reported_winners[0] == 'a'
+    assert contest2.reported_winners[1] == 'c'
+
+
+def test_pairwise_sub_contests():
+    contest = Contest(100, {'a': 50, 'b': 20, 'c': 10, 'd': 10, 'e': 5}, 1, ['a'], ContestType.PLURALITY)
+    assert contest.sub_contests == {'a': {'b': [50, 20, 70], 'c': [50, 10, 60], 'd': [50, 10, 60], 'e': [50, 5, 55]}}
+
+
 def test_repr():
     """Tests __repr__ function."""
     simplecontest1 = Contest(100, {'a': 60, 'b': 40}, 1, ['a'], ContestType.PLURALITY)
