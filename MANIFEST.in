@@ -3,6 +3,9 @@ graft src
 graft ci
 graft tests
 
+recursive-include notebook *.ipynb
+recursive-exclude notebook/.ipynb_checkpoints *
+
 include .bumpversion.cfg
 include .coveragerc
 include .cookiecutterrc
