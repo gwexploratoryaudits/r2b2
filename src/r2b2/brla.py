@@ -32,10 +32,10 @@ class BayesianRLA(Audit):
 
     prior: np.ndarray
 
-    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest, pair: List[str] = None):
         """Initialize a Bayesian RLA."""
 
-        super().__init__(alpha, 0.0, max_fraction_to_draw, False, contest)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, False, contest, pair)
         self.prior = self.compute_prior()
         self.min_sample_size = self.get_min_sample_size()
 

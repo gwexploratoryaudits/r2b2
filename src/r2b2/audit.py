@@ -11,6 +11,7 @@ from scipy.stats import binom
 from scipy.stats import hypergeom
 
 from r2b2.contest import Contest
+from r2b2.contest import PairwiseContest
 
 
 class Audit(ABC):
@@ -58,8 +59,9 @@ class Audit(ABC):
     distribution_null: List[float]
     distribution_reported_tally: List[float]
     contest: Contest
+    pairwise_contest: PairwiseContest
 
-    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float, replacement: bool, contest: Contest):
+    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float, replacement: bool, contest: Contest, pair: List[str] = None):
         """Create an instance of an Audit.
 
         Note:
@@ -83,12 +85,26 @@ class Audit(ABC):
             raise TypeError('replacement must be boolean.')
         if type(contest) is not Contest:
             raise TypeError('contest must be a Contest object')
+        if pair is None:
+            pw_winner = contest.candidates[0]
+            pw_loser = contest.candidates[1]
+        else:
+            if len(pair) != 2:
+                raise ValueError('pair must be exactly 2 candidates: [winner, loser]')
+            pw_winner = pair[0]
+            pw_loser = pair[1]
+        if type(pw_winner) is not str or type(pw_loser) is not str:
+            raise TypeError('pairwise winner and loser must be string names of candidates.')
+        pair_index = contest.find_sub_contest(pw_winner, pw_loser)
+        if pair_index == -1:
+            raise ValueError('pair is not a valid pairwise comparison.')
 
         self.alpha = alpha
         self.beta = beta
         self.max_fraction_to_draw = max_fraction_to_draw
         self.replacement = replacement
         self.contest = contest
+        self.pairwise_contest = self.contest.sub_contests[pair_index]
         self.min_sample_size = 1
         self.rounds = []
         self.min_winner_ballots = []
@@ -138,11 +154,11 @@ class Audit(ABC):
             else:
                 self.distribution_null = fftconvolve(self.distribution_null, distribution_round_draw)
         else:
-            half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
+            half_contest_ballots = math.floor(self.pairwise_contest.contest_ballots / 2)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_null = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots, half_contest_ballots,
-                                                       round_draw)
+                self.distribution_null = hypergeom.pmf(np.arange(round_draw + 1), self.pairwise_contest.contest_ballots,
+                                                       half_contest_ballots, round_draw)
             else:
                 distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
@@ -151,7 +167,7 @@ class Audit(ABC):
                 # and every possibility in the current round
                 # compute probability of their simultaneity
                 for prev_round_possibility in range(interval[0], interval[1] + 1):
-                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
+                    unsampled_contest_ballots = self.pairwise_contest.contest_ballots - self.rounds[-2]
                     unsampled_winner_ballots = half_contest_ballots - prev_round_possibility
 
                     curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
@@ -170,17 +186,16 @@ class Audit(ABC):
             round_draw = self.rounds[-1] - self.rounds[-2]
 
         if self.replacement:
-            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, self.contest.winner_prop)
+            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, self.pairwise_contest.winner_prop)
             if len(self.rounds) == 1:
                 self.distribution_reported_tally = distribution_round_draw
             else:
                 self.distribution_reported_tally = fftconvolve(self.distribution_reported_tally, distribution_round_draw)
         else:
-            reported_winner_ballots = int(self.contest.winner_prop * self.contest.contest_ballots)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_reported_tally = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots,
-                                                                 reported_winner_ballots, round_draw)
+                self.distribution_reported_tally = hypergeom.pmf(np.arange(round_draw + 1), self.pairwise_contest.contest_ballots,
+                                                                 self.pairwise_contest.reported_winner_ballots, round_draw)
             else:
                 distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
@@ -189,8 +204,8 @@ class Audit(ABC):
                 # and every possibility in the current round
                 # compute probability of their simultaneity
                 for prev_round_possibility in range(interval[0], interval[1] + 1):
-                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
-                    unsampled_winner_ballots = reported_winner_ballots - prev_round_possibility
+                    unsampled_contest_ballots = self.pairwise_contest.contest_ballots - self.rounds[-2]
+                    unsampled_winner_ballots = self.pairwise_contest.reported_winner_ballots - prev_round_possibility
 
                     curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
                                                     round_draw)
@@ -206,10 +221,8 @@ class Audit(ABC):
 
     def truncate_dist_reported(self):
         """Update the stopping probability schedule and truncate the reported distribution."""
-        self.stopping_prob_schedule.append(
-            sum(self.distribution_reported_tally[self.min_winner_ballots[-1]:]))
-        self.distribution_reported_tally = self.distribution_reported_tally[
-            :self.min_winner_ballots[-1]]
+        self.stopping_prob_schedule.append(sum(self.distribution_reported_tally[self.min_winner_ballots[-1]:]))
+        self.distribution_reported_tally = self.distribution_reported_tally[:self.min_winner_ballots[-1]]
 
     def __get_interval(self, dist):
         """Get relevant interval [l, u] of given distribution.
@@ -258,7 +271,7 @@ class Audit(ABC):
         Returns:
             int: ASN value.
         """
-        winner_prop = self.contest.winner_prop
+        winner_prop = self.pairwise_contest.winner_prop
         loser_prop = 1.0 - winner_prop
         margin = (2 * winner_prop) - 1
         z_w = math.log(margin + 1)
@@ -316,10 +329,10 @@ class Audit(ABC):
             self.current_dist_reported()
 
             while click.confirm('Would you like to enter a hypothetical number of votes for reported winner?'):
-                hypothetical_votes_for_winner = click.prompt(
-                    'Enter the hypothetical number of (total) reported winner votes in sample',
-                    type=click.IntRange(previous_votes_for_winner,
-                                        previous_votes_for_winner + (sample_size - prev_sample_size)))
+                hypothetical_votes_for_winner = click.prompt('Enter the hypothetical number of (total) reported winner votes in sample',
+                                                             type=click.IntRange(
+                                                                 previous_votes_for_winner,
+                                                                 previous_votes_for_winner + (sample_size - prev_sample_size)))
                 hypothetical_pvalue = self.compute_risk(hypothetical_votes_for_winner, sample_size)
                 click.echo('{:<50}'.format('Hypothetical p-value: {}'.format(hypothetical_pvalue)))
 
