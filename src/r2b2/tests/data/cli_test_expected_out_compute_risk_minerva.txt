@@ -51,6 +51,7 @@ Reported Tallies:
 Reported Winners: ['A']
 Contest Type: ContestType.MAJORITY
 
+Pair: A, B
 
 
 Are the audit parameters correct? [y/N]: y

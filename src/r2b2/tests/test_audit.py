@@ -104,6 +104,7 @@ def test_str():
     audit_str = 'Audit\n-----\nAlpha: 0.1\nBeta: 0.05\n'
     audit_str += 'Maximum Fraction to Draw: 0.1\nReplacement: True\n\n'
     audit_str += str(simpleaudit1.contest)
+    audit_str += 'Pair: a, b\n'
     assert str(simpleaudit1) == audit_str
 
 
