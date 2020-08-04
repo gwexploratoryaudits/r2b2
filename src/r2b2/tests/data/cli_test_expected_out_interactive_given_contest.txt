@@ -10,8 +10,8 @@ Contest
 -------
 Contest Ballots: 100
 Reported Tallies:
-     CandidateA      50
-     CandidateB      50
+     CandidateA      60
+     CandidateB      40
 Reported Winners: ['CandidateA']
 Contest Type: ContestType.PLURALITY
 
@@ -30,8 +30,8 @@ Contest
 -------
 Contest Ballots: 100
 Reported Tallies:
-     CandidateA      50
-     CandidateB      50
+     CandidateA      60
+     CandidateB      40
 Reported Winners: ['CandidateA']
 Contest Type: ContestType.PLURALITY
 
