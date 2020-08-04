@@ -35,7 +35,12 @@ def test_sorting_tally():
 
 def test_pairwise_sub_contests():
     contest = Contest(100, {'a': 50, 'b': 20, 'c': 10, 'd': 10, 'e': 5}, 1, ['a'], ContestType.PLURALITY)
-    assert contest.sub_contests == {'a': {'b': [50, 20, 70], 'c': [50, 10, 60], 'd': [50, 10, 60], 'e': [50, 5, 55]}}
+    assert len(contest.sub_contests) == 4
+    for i in range(4):
+        assert contest.sub_contests[i].reported_winner == 'a'
+        assert contest.sub_contests[i].reported_loser in ['b', 'c', 'd', 'e']
+        assert contest.sub_contests[i].reported_winner_ballots == 50
+        assert contest.sub_contests[i].reported_loser_ballots == contest.tally[contest.sub_contests[i].reported_loser]
 
 
 def test_repr():
