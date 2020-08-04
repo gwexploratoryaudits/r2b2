@@ -12,6 +12,25 @@ class ContestType(Enum):
     MAJORITY = 1
 
 
+class PairwiseContest:
+    """Simple 2-candidate, no irrelevant ballot sub contests of a Contest."""
+
+    contest_ballots: int
+    reported_winner: str
+    reported_loser: str
+    reported_winner_ballots: int
+    reported_loser_ballots: int
+    winner_prop: float
+
+    def __init__(self, reported_winner: str, reported_loser: str, reported_winner_ballots: int, reported_loser_ballots: int):
+        self.contest_ballots = reported_winner_ballots + reported_loser_ballots
+        self.reported_winner = reported_winner
+        self.reported_loser = reported_loser
+        self.reported_winner_ballots = reported_winner_ballots
+        self.reported_loser_ballots = reported_loser_ballots
+        self.winner_prop = float(reported_winner_ballots) / float(self.contest_ballots)
+
+
 class Contest:
     """Contest information from a single contest within an Election.
 
@@ -45,7 +64,7 @@ class Contest:
     contest_type: ContestType
     tally: Dict[str, int]
     winner_prop: float
-    sub_contests: Dict[str, Dict[str, List[int]]]
+    sub_contests: List[PairwiseContest]
 
     def __init__(self, contest_ballots: int, tally: Dict[str, int], num_winners: int, reported_winners: List[str],
                  contest_type: ContestType):
@@ -93,15 +112,18 @@ class Contest:
         self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(self.contest_ballots)
         # For each reported winner get pairwise sub-contests where they have > 50% of the (sub)tally
         # These sub-contests provide the two-candidate, no-irrelevant ballots assumption
-        # Format:
-        # {'pair_winner': {'pair_loser': [winner tally, loser tally, sub_contest_total_ballots]}}
-        self.sub_contests = {}
+        self.sub_contests = []
         for rw in self.reported_winners:
             rw_ballots = self.tally[rw]
-            self.sub_contests[rw] = {}
             for candidate in self.candidates:
                 if rw_ballots > self.tally[candidate]:
-                    self.sub_contests[rw][candidate] = [rw_ballots, self.tally[candidate], rw_ballots + self.tally[candidate]]
+                    self.sub_contests.append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
+
+    def find_sub_contest(self, reported_winner, reported_loser):
+        for i in range(len(self.sub_contests)):
+            if self.sub_contests[i].reported_winner == reported_winner and self.sub_contests[i].reported_loser == reported_loser:
+                return i
+        return -1
 
     def __repr__(self):
         """String representation of Contest class."""
