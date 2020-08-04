@@ -27,9 +27,9 @@ class Minerva(Audit):
         contest (Contest): Contest to be audited.
     """
 
-    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest, pair: List[str] = None):
         """Initialize a Minerva audit."""
-        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest, pair)
         self.min_sample_size = self.get_min_sample_size()
 
     def get_min_sample_size(self, min_sprob: float = 10 ** (-6)):
@@ -44,9 +44,9 @@ class Minerva(Audit):
         """
 
         # p0 is not .5 for contests with odd total ballots.
-        p0 = (self.contest.contest_ballots // 2) / self.contest.contest_ballots
-        p1 = self.contest.winner_prop
-        max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        p0 = (self.pairwise_contest.contest_ballots // 2) / self.pairwise_contest.contest_ballots
+        p1 = self.pairwise_contest.winner_prop
+        max_sample_size = math.ceil(self.pairwise_contest.contest_ballots * self.max_fraction_to_draw)
 
         # There may not be a point n' such that all n >= n' are acceptable round sizes and all
         # n < n' are unacceptable round sizes.
@@ -121,7 +121,7 @@ class Minerva(Audit):
         for i in range(len(rounds)):
             if rounds[i] < self.min_sample_size:
                 raise ValueError('Sample size must be >= minimum sample size.')
-            if rounds[i] > self.contest.contest_ballots * self.max_fraction_to_draw:
+            if rounds[i] > self.pairwise_contest.contest_ballots * self.max_fraction_to_draw:
                 raise ValueError(
                     'Sample size cannot exceed the maximum fraction of contest ballots to draw.')
             if i >= 1 and rounds[i] <= rounds[i - 1]:
@@ -178,10 +178,10 @@ class Minerva(Audit):
         if len(self.rounds) > 0:
             raise Exception("This audit already has an (at least partial) round schedule.")
         if max_sample_size is None:
-            max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+            max_sample_size = math.ceil(self.pairwise_contest.contest_ballots * self.max_fraction_to_draw)
         if max_sample_size < self.min_sample_size:
             raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
-        if max_sample_size > self.contest.contest_ballots:
+        if max_sample_size > self.pairwise_contest.contest_ballots:
             raise ValueError("Maximum sample size cannot exceed total contest ballots.")
 
         for sample_size in range(self.min_sample_size, max_sample_size + 1):
