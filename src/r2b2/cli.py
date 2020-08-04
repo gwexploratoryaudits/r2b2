@@ -18,6 +18,7 @@ Note:
       Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import math
+from typing import Tuple
 
 import click
 import pkg_resources
@@ -80,6 +81,12 @@ def cli():
               type=click.FloatRange(0.0, 1.0),
               prompt='Enter maximum fraction of ballots to draw during audit',
               help='Maximum fraction of total contest ballots that could be drawn during the audit.')
+@click.option('-p',
+              '--pair',
+              type=str,
+              nargs=2,
+              default=None,
+              help='Pair of candidates from the contest to audit. Ordered reported winner, reported loser.')
 @click.option('-v',
               '--verbose',
               default=False,
@@ -87,7 +94,7 @@ def cli():
               flag_value=True,
               show_default=False,
               help='Provides risk and stopping probability schedule of previous rounds, minimum and  maximum sample size.')
-def interactive(election_mode, election_file, contest_file, audit_type, risk_limit, max_fraction_to_draw, verbose):
+def interactive(election_mode, election_file, contest_file, audit_type, risk_limit, max_fraction_to_draw, pair, verbose):
     """Executes an audit round by round.
 
     Depending on what options are passed to the interactive command, users may be prompted for
@@ -162,7 +169,7 @@ def interactive(election_mode, election_file, contest_file, audit_type, risk_lim
         click.echo(contest)
 
     # Create audit from prompted input
-    audit = input_audit(contest, risk_limit, max_fraction_to_draw, audit_type)
+    audit = input_audit(contest, risk_limit, max_fraction_to_draw, audit_type, pair)
     click.echo(audit)
     if audit_type == 'athena':
         click.echo('Delta: ' + str(audit.delta))
@@ -308,8 +315,12 @@ def template(style, output):
         click.echo(template)
 
 
-def input_audit(contest: Contest, alpha: float = None, max_fraction_to_draw: float = None,
-                audit_type: str = None, delta: float = None) -> Audit:
+def input_audit(contest: Contest,
+                alpha: float = None,
+                max_fraction_to_draw: float = None,
+                audit_type: str = None,
+                pair: Tuple[str] = None,
+                delta: float = None) -> Audit:
     # Create an audit from user-input.
     click.echo('\nCreate a new Audit')
     click.echo('==================\n')
@@ -322,13 +333,24 @@ def input_audit(contest: Contest, alpha: float = None, max_fraction_to_draw: flo
         audit_type = click.prompt('Select an audit type', type=audit_types)
     if delta is None and audit_type == 'athena':
         delta = click.prompt('Enter the Athena delta value', type=click.FloatRange(0.0))
+    if pair == ():
+        pair = None
+    if pair is None:
+        if contest.num_candidates > 2 and click.confirm('Select a pair of candidates other than the top 2?'):
+            rw = click.prompt('Enter reported winner', type=click.Choice(contest.reported_winners))
+            other_candidates = contest.candidates.copy()
+            other_candidates.remove(rw)
+            rl = click.prompt('Enter reported loser', type=click.Choice(other_candidates))
+            pair = [rw, rl]
+    else:
+        pair = [pair[0], pair[1]]
 
     if audit_type == 'brla':
-        return BRLA(alpha, max_fraction_to_draw, contest)
+        return BRLA(alpha, max_fraction_to_draw, contest, pair)
     elif audit_type == 'minerva':
-        return Minerva(alpha, max_fraction_to_draw, contest)
+        return Minerva(alpha, max_fraction_to_draw, contest, pair)
     elif audit_type == 'athena':
-        return Athena(alpha, delta, max_fraction_to_draw, contest)
+        return Athena(alpha, delta, max_fraction_to_draw, contest, pair)
     # TODO: add creation for other types of audits.
     return None
 

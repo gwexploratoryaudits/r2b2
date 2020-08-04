@@ -45,6 +45,7 @@ Reported Tallies:
 Reported Winners: ['A']
 Contest Type: ContestType.PLURALITY
 
+Pair: A, B
 
 
 Are the audit parameters correct? [y/N]: y

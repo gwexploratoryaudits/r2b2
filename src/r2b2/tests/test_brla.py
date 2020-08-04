@@ -28,6 +28,7 @@ def test_str():
     brla_str = 'BayesianRLA without replacement\n-------------------------------\n'
     brla_str += 'Risk Limit: 0.1\nMaximum Fraction to Draw: 0.2\n'
     brla_str += str(default_contest)
+    brla_str += 'Pair: a, b\n'
     assert str(simplebrla) == brla_str
 
 

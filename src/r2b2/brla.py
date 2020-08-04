@@ -62,7 +62,8 @@ class BayesianRLA(Audit):
         title_str = 'BayesianRLA without replacement\n-------------------------------\n'
         alpha_str = 'Risk Limit: {}\n'.format(self.alpha)
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
-        return title_str + alpha_str + max_frac_str + str(self.contest)
+        pair_str = 'Pair: {}, {}\n'.format(self.pairwise_contest.reported_winner, self.pairwise_contest.reported_loser)
+        return title_str + alpha_str + max_frac_str + str(self.contest) + pair_str
 
     def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
         if len(self.rounds) < 1:

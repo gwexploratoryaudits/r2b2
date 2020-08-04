@@ -135,7 +135,8 @@ class Audit(ABC):
         beta_str = 'Beta: {}\n'.format(self.beta)
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
         replacement_str = 'Replacement: {}\n\n'.format(self.replacement)
-        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest)
+        pair_str = 'Pair: {}, {}\n'.format(self.pairwise_contest.reported_winner, self.pairwise_contest.reported_loser)
+        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest) + pair_str
 
     def current_dist_null(self):
         """Update distribution_null for current round."""
