@@ -12,8 +12,8 @@ default_contest = util.generate_contest(100)
 
 class SimpleAudit(Audit):
     """For testing purposes only."""
-    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: int, replacement: bool, contest: Contest):
-        super().__init__(alpha, beta, max_fraction_to_draw, replacement, contest)
+    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: int, replacement: bool, contest: Contest, pair=None):
+        super().__init__(alpha, beta, max_fraction_to_draw, replacement, contest, pair)
 
     def get_min_sample_size(self):
         return 5
@@ -158,6 +158,14 @@ def test_initialization_errors():
         SimpleAudit(0.1, 0.05, -0.1, True, default_contest)
     with pytest.raises(ValueError):
         SimpleAudit(0.1, 0.05, 1.5, True, default_contest)
+    # pair length
+    with pytest.raises(ValueError):
+        SimpleAudit(0.1, 0.05, 0.1, True, default_contest, ['a'])
+    with pytest.raises(ValueError):
+        SimpleAudit(0.1, 0.05, 0.1, True, default_contest, ['a', 'b', 'c'])
+    # pair type
+    with pytest.raises(TypeError):
+        SimpleAudit(0.1, 0.05, 0.1, True, default_contest, ['a', 1])
 
 
 def test_asn():
