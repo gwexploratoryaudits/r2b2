@@ -41,6 +41,14 @@ def test_pairwise_sub_contests():
         assert contest.sub_contests[i].reported_loser in ['b', 'c', 'd', 'e']
         assert contest.sub_contests[i].reported_winner_ballots == 50
         assert contest.sub_contests[i].reported_loser_ballots == contest.tally[contest.sub_contests[i].reported_loser]
+    for rl in ['b', 'c', 'd', 'e']:
+        assert contest.find_sub_contest('a', rl) > -1
+    multi_winner = Contest(100, {'a': 40, 'b': 50, 'c': 10}, 2, ['a', 'b'], ContestType.PLURALITY)
+    assert len(multi_winner.sub_contests) == 3
+    assert multi_winner.find_sub_contest('a', 'b') == -1
+    assert multi_winner.find_sub_contest('a', 'c') > -1
+    assert multi_winner.find_sub_contest('b', 'a') > -1
+    assert multi_winner.find_sub_contest('b', 'c') > -1
 
 
 def test_repr():
@@ -126,3 +134,15 @@ def test_initialization_errors():
         Contest(100, tally, 1, win, 'PLURALITY')
     with pytest.raises(TypeError):
         Contest(100, tally, 1, win, None)
+
+
+def test_sub_contest_errors():
+    """Test exceptions raised correctly by find_sub_contest()"""
+    contest = Contest(100, {'a': 50, 'b': 20, 'c': 10, 'd': 10, 'e': 5}, 1, ['a'], ContestType.PLURALITY)
+    for rw in ['b', 'c', 'd', 'e']:
+        with pytest.raises(ValueError):
+            contest.find_sub_contest(rw, 'a')
+    with pytest.raises(ValueError):
+        contest.find_sub_contest('a', 'x')
+    with pytest.raises(ValueError):
+        contest.find_sub_contest('a', 'a')

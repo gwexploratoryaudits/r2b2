@@ -120,6 +120,13 @@ class Contest:
                     self.sub_contests.append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
 
     def find_sub_contest(self, reported_winner, reported_loser):
+        if reported_winner not in self.reported_winners:
+            raise ValueError('reported winner must be a reported winner')
+        if reported_loser not in self.candidates:
+            raise ValueError('reported loser must be a candidate')
+        if reported_winner == reported_loser:
+            raise ValueError('reported winner and loser must be distinct candidates')
+
         for i in range(len(self.sub_contests)):
             if self.sub_contests[i].reported_winner == reported_winner and self.sub_contests[i].reported_loser == reported_loser:
                 return i
