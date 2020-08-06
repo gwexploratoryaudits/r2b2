@@ -300,8 +300,8 @@ class Audit(ABC):
                 click.echo('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk Expended'))
                 click.echo('|----------------|----------------|----------------|')
                 for r in range(1, curr_round):
-                    click.echo('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r - 1]),
-                                                               '{:.12f}'.format(self.risk_schedule[r - 1])))
+                    click.echo('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.8f} %'.format(self.stopping_prob_schedule[r - 1]*100.0),
+                                                               '{:.8f} %'.format(self.risk_schedule[r - 1]*100.0)))
                 click.echo('+--------------------------------------------------+')
 
             self.next_sample_size()
@@ -366,14 +366,22 @@ class Audit(ABC):
 
         pass
 
-    @abstractmethod
     def next_sample_size(self, *args, **kwargs):
         """Generate estimates of possible next sample sizes.
 
+        This is a default implementation which simply gives the asn and its multiples.
+        For specific audits, this may be overwritten.
+
         Note: To be used during live/interactive audit execution.
         """
-
-        pass
+        asn = self.asn()
+        click.echo('\n+--------------------------------------------------+')
+        click.echo('|{:^50}|'.format('Proposed Next Sample Sizes'))
+        click.echo('|{:^50}|'.format('  ASN: {}'.format(asn)))
+        click.echo('|{:^50}|'.format('2 ASN: {}'.format(2*asn)))
+        click.echo('|{:^50}|'.format('4 ASN: {}'.format(4*asn)))
+        click.echo('|{:^50}|'.format('6 ASN: {}'.format(6*asn)))
+        click.echo('+--------------------------------------------------+\n')
 
     @abstractmethod
     def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
