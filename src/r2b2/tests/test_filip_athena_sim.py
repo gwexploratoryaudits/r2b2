@@ -1,7 +1,6 @@
 from r2b2.simulation.filip_athena import FZMinervaOneRoundRisk as FZMR
 from r2b2.tests.util import parse_election
 
-
 election_file = 'src/r2b2/tests/data/election_template.json'
 contest_name = 'contest1'
 election = parse_election(election_file)
