@@ -9,7 +9,7 @@ sample_size_file = 'data/2016_presidential_one_round_sample_sizes.json'
 
 
 def state_trial(state, alpha, sample_size):
-    sim = MORR(alpha, election.contests[state], sample_size, reported_name=state, sim_args={'description': 'One round Minerva with given sample size (from PV MATLAB)'}, reported_args={'name': state, 'description': '2016 Presidential'})
+    sim = MORR(alpha, election.contests[state], sample_size, sim_args={'description': 'One round Minerva with given sample size (from PV MATLAB)'}, reported_args={'name': state, 'description': '2016 Presidential'})
     sim.run(10000)
     return sim.analyze()
 
