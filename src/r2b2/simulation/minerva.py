@@ -1,11 +1,10 @@
-import logging
 import random as r
 from typing import List
 from typing import Tuple
 
+from r2b2.minerva import Minerva
 from r2b2.simulator import Simulation
 from r2b2.simulator import histogram
-from r2b2.minerva import Minerva
 
 
 class MinervaOneRoundRisk(Simulation):
@@ -15,16 +14,7 @@ class MinervaOneRoundRisk(Simulation):
     vote_dist: List[Tuple[str, int]]
     audit: Minerva
 
-    def __init__(self,
-                 alpha,
-                 reported,
-                 sample_size,
-                 db_mode=True,
-                 db_host='localhost',
-                 db_name='r2b2',
-                 db_port=27017,
-                 *args,
-                 **kwargs):
+    def __init__(self, alpha, reported, sample_size, db_mode=True, db_host='localhost', db_name='r2b2', db_port=27017, *args, **kwargs):
         super().__init__('minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, args, kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
@@ -81,7 +71,14 @@ class MinervaOneRoundRisk(Simulation):
             'winner_ballots': sample[0]
         }
 
-    def analyze(self):
+    def analyze(self, verbose: bool = False, hist: bool = False):
+        """Analyze trials to get experimental risk.
+
+        Args:
+            verbose (bool): If true, analyze will print simulation analysis information.
+            hist (bool): If true, analyze will generate and display 2 histograms: winner
+                ballots found in the sample size and computed risk.
+        """
         if self.db_mode:
             trials = self.db.trial_lookup(self.sim_id)
         else:
@@ -103,11 +100,17 @@ class MinervaOneRoundRisk(Simulation):
             total_risk += trial['p_value']
             risk_dist.append(trial['p_value'])
 
-        print('Analysis\n========')
-        print('Underlying election is tied\n')
-        print('Number of trials: {}'.format(num_trials))
-        print('Number of stopped: {}'.format(stopped))
-        print('Risk Limit: {:%}'.format(self.alpha))
-        print('Risk: {:%}'.format(stopped / num_trials))
-        histogram(winner_ballot_dist, 'Winner ballots found in sample of size: {}'.format(self.sample_size))
-        histogram(risk_dist, 'Risk (p_value) dist.')
+        if verbose:
+            print('Analysis\n========')
+            print('Underlying election is tied\n')
+            print('Number of trials: {}'.format(num_trials))
+            print('Number of stopped: {}'.format(stopped))
+            print('Risk Limit: {:%}'.format(self.alpha))
+            print('Risk Computed: {:%}'.format(stopped / num_trials))
+        if hist:
+            histogram(winner_ballot_dist, 'Winner ballots found in sample of size: {}'.format(self.sample_size))
+            histogram(risk_dist, 'Risk (p_value) dist.')
+
+        # Update simulation entry to include analysis
+        self.db.update_analysis(self.sim_id, (stopped / num_trials))
+        return stopped / num_trials
