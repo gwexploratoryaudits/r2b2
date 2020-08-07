@@ -11,6 +11,7 @@ sample_size_file = 'data/2016_presidential_one_round_sample_sizes.json'
 def state_trial(state, alpha, sample_size):
     sim = MORR(alpha, election.contests[state], sample_size, reported_name=state, sim_args={'description': 'One round Minerva with given sample size (from PV MATLAB)'}, reported_args={'name': state, 'description': '2016 Presidential'})
     sim.run(10000)
+    return sim.analyze()
 
 
 if __name__=='__main__':
@@ -21,3 +22,5 @@ if __name__=='__main__':
                 logging.warning('Michigan does not have sample sizes scaled from MATLAB, so its simulation is not run.')
                 continue
             sample_size = sample_sizes[contest]['Athena_pv_scaled']
+            computed_risk = state_trial(contest, 0.1, sample_size)
+            logging.info('{}: {}'.format(contest, computed_risk))
