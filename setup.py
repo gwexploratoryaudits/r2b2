@@ -69,6 +69,8 @@ setup(
         'numpy',
         'scipy',
         'typing',
+        'pymongo',
+        'matplotlib',
     ],
     extras_require={
         # eg:
