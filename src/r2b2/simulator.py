@@ -13,8 +13,8 @@ from r2b2.contest import Contest
 
 class DBInterface():
     """Class for handling MongoDB operations."""
-    def __init__(self, host='localhost', port=27017, name='r2b2'):
-        self.client = MongoClient(host, port)
+    def __init__(self, host='localhost', port=27017, name='r2b2', user='reader', pwd='icanread'):
+        self.client = MongoClient(host=host, port=port, username=user, password=pwd)
         self.db = self.client[name]
 
     def audit_lookup(self, audit_type: str, alpha: float, qapp: dict = None, *args, **kwargs):
@@ -152,6 +152,8 @@ class Simulation(ABC):
                  db_host='localhost',
                  db_port=27017,
                  db_name='r2b2',
+                 user='reader',
+                 pwd='icanread',
                  *args,
                  **kwargs):
         self.audit_type = audit_type
@@ -167,7 +169,7 @@ class Simulation(ABC):
             self.sim_id = None
 
         else:
-            self.db = DBInterface(db_host, db_port, db_name)
+            self.db = DBInterface(db_host, db_port, db_name, user, pwd)
             if 'audit_args' in kwargs:
                 self.audit_id = self.db.audit_lookup(audit_type, alpha, qapp=kwargs['audit_args'])
             else:
