@@ -1,12 +1,11 @@
 """R2B2 Simulation Module."""
-
 import json
 import os
 from abc import ABC
 from abc import abstractmethod
 from typing import List
 
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from pymongo import MongoClient
 
 from r2b2.contest import Contest
@@ -107,6 +106,10 @@ class DBInterface():
     def write_trial(self, entry):
         """Write a trial document into the trials collection."""
         self.db.trials.insert_one(entry)
+
+    def update_analysis(self, sim_id, entry):
+        """Update analysis in simulation document."""
+        self.db.simulations.update_one({'_id': sim_id}, {'$set': {'analysis': entry}})
 
 
 class Simulation(ABC):
