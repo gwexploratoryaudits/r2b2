@@ -26,7 +26,7 @@ class MinervaOneRoundRisk(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, user, pwd, args, kwargs)
+        super().__init__('minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
