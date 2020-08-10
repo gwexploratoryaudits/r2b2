@@ -73,15 +73,15 @@ class FZMinervaOneRoundRisk(Simulation):
         # Perform audit calculations
         # FIXME: set_observations() will always print, let's not do that
         audit.set_observations(self.sample_size, relevant_sample_size, sample[:len(sample) - 1])
-        p_value = audit.risks[-1]
+        p_value = audit.status[self.reported_name].risks[-1]
 
-        if p_value > self.alpha and audit.audit_completed:
+        if p_value > self.alpha and audit.status[self.reported_name].audit_completed:
             raise Exception('Risk limit not met, audit says completed')
-        elif p_value <= self.alpha and not audit.audit_completed:
+        elif p_value <= self.alpha and not audit.status[self.reported_name].audit_completed:
             raise Exception('Risk limit met, audit says not complete.')
 
         return {
-            'stop': audit.audit_completed,
+            'stop': audit.status[self.reported_name].audit_completed,
             'p_value': p_value,
             'sample_size': self.sample_size,
             'relevant_sample_size': relevant_sample_size,
