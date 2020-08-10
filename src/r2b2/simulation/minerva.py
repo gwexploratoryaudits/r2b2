@@ -123,5 +123,109 @@ class MinervaOneRoundRisk(Simulation):
             histogram(risk_dist, 'Risk (p_value) dist.')
 
         # Update simulation entry to include analysis
-        self.db.update_analysis(self.sim_id, (stopped / num_trials))
+        if self.db_mode:
+            self.db.update_analysis(self.sim_id, (stopped / num_trials))
+        return stopped / num_trials
+
+
+class MinervaOneRoundStoppingProb(Simulation):
+    """Simulate a 1-round Minerva audit for a given sample size to compute stopping probability."""
+    sample_size: int
+    total_relevant_ballots: int
+    vote_dist: List[Tuple[str, int]]
+    audit: Minerva
+
+    def __init__(self,
+                 alpha,
+                 reported,
+                 sample_size,
+                 db_mode=True,
+                 db_host='localhost',
+                 db_name='r2b2',
+                 db_port=27017,
+                 user='writer',
+                 pwd='icanwrite',
+                 *args,
+                 **kwargs):
+        super().__init__('minerva', alpha, reported, 'reported', db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        self.sample_size = sample_size
+        self.total_relevant_ballots = sum(self.reported.tally.values())
+        # FIXME: temporary until pairwise contest fix is implemented
+        self.reported.contest_ballots = self.total_relevant_ballots
+        self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
+        self.audit = Minerva(self.alpha, 1.0, self.reported)
+
+        if sample_size < self.audit.min_sample_size:
+            raise ValueError('Sample size is less than minimum sample size for audit')
+
+        # FIXME: sorted candidate list will be created by new branch, update once merged
+        # Generate a sorted underlying vote distribution
+        sorted_tally = sorted(self.reported.tally.items(), key=lambda x: x[1], reverse=True)
+        self.vote_dist = [(sorted_tally[0][0], sorted_tally[0][1])]
+        current = sorted_tally[0][1]
+        for i in range(1, len(sorted_tally)):
+            current += sorted_tally[i][1]
+            self.vote_dist.append((sorted_tally[i][0], current))
+        self.vote_dist.append(('invalid', self.reported.contest_ballots))
+
+    def trial(self, seed):
+        """Execute a 1-round minerva audit."""
+
+        r.seed(seed)
+
+        # Draw a sample
+        sample = [0 for i in range(len(self.vote_dist))]
+        for i in range(self.sample_size):
+            ballot = r.randint(1, self.reported.contest_ballots)
+            for j in range(len(sample)):
+                if ballot <= self.vote_dist[j][1]:
+                    sample[j] += 1
+                    break
+        relevant_sample_size = self.sample_size - sample[-1]
+
+        # Perform audit computations
+        self.audit._reset()
+        if relevant_sample_size < self.audit.min_sample_size:
+            raise ValueError('relevant ballot sample is too small')
+        self.audit.rounds.append(relevant_sample_size)
+        self.audit.current_dist_null()
+        self.audit.current_dist_reported()
+        p_value = self.audit.compute_risk(sample[0], relevant_sample_size)
+        if p_value <= self.alpha:
+            stop = True
+        else:
+            stop = False
+
+        return {
+            'stop': stop,
+            'p_value': p_value,
+            'sample_size': self.sample_size,
+            'relevant_sample_size': relevant_sample_size,
+            'winner_ballots': sample[0]
+        }
+
+    def analyze(self, verbose: bool = False, hist: bool = False):
+        """Analyse trials to get experimental stopping probability"""
+        if self.db_mode:
+            trials = self.db.trial_lookup(self.sim_id)
+        else:
+            trials = self.trials
+        num_trials = 0
+        stopped = 0
+        winner_ballot_dist = []
+        risk_dist = []
+
+        for trial in trials:
+            num_trials += 1
+            if trial['stop']:
+                stopped += 1
+
+                winner_ballot_dist.append(trial['winner_ballots'])
+                risk_dist.append(trial['p_value'])
+
+        # TODO: insert verbose and histograms
+
+        # Update simulation entry to include analysis
+        if self.db_mode:
+            self.db.update_analysis(self.sim_id, (stopped / num_trials))
         return stopped / num_trials
