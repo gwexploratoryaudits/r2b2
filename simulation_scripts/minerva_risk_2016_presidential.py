@@ -21,6 +21,9 @@ if __name__=='__main__':
             if contest == 'Michigan':
                 logging.warning('Michigan does not have sample sizes scaled from MATLAB, so its simulation is not run.')
                 continue
+            if contest == 'New Hampshire':
+                logging.warning('New Hampshire margin too small to compute min_sample_size efficiently, skipping.')
+                continue
             sample_size = sample_sizes[contest]['Athena_pv_scaled']
             computed_risk = state_trial(contest, 0.1, sample_size)
             logging.info('{}: {}'.format(contest, computed_risk))
