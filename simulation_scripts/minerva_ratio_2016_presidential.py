@@ -6,7 +6,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2016_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface()
+    db = DBInterface(user='reader', pwd='icanread')
     ratio_results = {}
     
     for contest in election.contests:
@@ -21,6 +21,7 @@ if __name__ == '__main__':
         risk = tied_sim['analysis']
         sprob = sprob_sim['analysis']
 
-        ratio_results[contest] = {'computed_risk': risk, 'computed_sprob': sprob, 'ratio': sprob/risk}
+        ratio_results[contest] = {'computed_risk': risk, 'computed_sprob': sprob, 'ratio': sprob/risk, '1/alpha': 10}
     
-    json.dumps(ratio_results, indent=4)
+    with open('data/minerva_one_round_sprob_risk_ratio.json', 'w') as out:
+        json.dump(ratio_results, out, indent=4)
