@@ -21,7 +21,10 @@ if __name__ == '__main__':
         risk = tied_sim['analysis']
         sprob = sprob_sim['analysis']
 
-        ratio_results[contest] = {'computed_risk': risk, 'computed_sprob': sprob, 'ratio': sprob/risk, '1/alpha': 10}
+        winner_prop = election.contests[contest].tally[election.contests[contest].reported_winners[0]]/sum(election.contests[contest].tally.values())
+        margin = winner_prop - (1.0 - winner_prop)
+
+        ratio_results[contest] = {'margin': margin, 'computed_risk': risk, 'computed_sprob': sprob, 'ratio': sprob/risk, '1/alpha': 10}
     
     with open('data/minerva_one_round_sprob_risk_ratio.json', 'w') as out:
         json.dump(ratio_results, out, indent=4)

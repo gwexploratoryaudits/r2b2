@@ -1,293 +1,342 @@
 {
     "Alabama": {
+        "margin": 0.28748287187921484,
         "computed_risk": 0.0924,
         "computed_sprob": 0.935,
         "ratio": 10.11904761904762,
         "1/alpha": 10
     },
     "Alaska": {
+        "margin": 0.16771309422136138,
         "computed_risk": 0.0839,
         "computed_sprob": 0.9328,
         "ratio": 11.117997616209772,
         "1/alpha": 10
     },
     "Arizona": {
+        "margin": 0.03780046802078907,
         "computed_risk": 0.0952,
         "computed_sprob": 0.9175,
         "ratio": 9.637605042016807,
         "1/alpha": 10
     },
     "Arkansas": {
+        "margin": 0.2857027537954093,
         "computed_risk": 0.0928,
         "computed_sprob": 0.938,
         "ratio": 10.107758620689655,
         "1/alpha": 10
     },
     "California": {
+        "margin": 0.32256441085459775,
         "computed_risk": 0.087,
         "computed_sprob": 0.9435,
         "ratio": 10.844827586206897,
         "1/alpha": 10
     },
     "Colorado": {
+        "margin": 0.053666667453648786,
         "computed_risk": 0.0923,
         "computed_sprob": 0.9261,
         "ratio": 10.033586132177682,
         "1/alpha": 10
     },
     "Connecticut": {
+        "margin": 0.1428309503452727,
         "computed_risk": 0.0807,
         "computed_sprob": 0.9135,
         "ratio": 11.319702602230484,
         "1/alpha": 10
     },
     "Delaware": {
+        "margin": 0.11997242887362436,
         "computed_risk": 0.0815,
         "computed_sprob": 0.9108,
         "ratio": 11.175460122699386,
         "1/alpha": 10
     },
     "District of Columbia": {
+        "margin": 0.9139037668370817,
         "computed_risk": 0.0357,
         "computed_sprob": 0.9556,
         "ratio": 26.767507002801118,
         "1/alpha": 10
     },
     "Florida": {
+        "margin": 0.012376709455509616,
         "computed_risk": 0.0843,
         "computed_sprob": 0.9066,
         "ratio": 10.754448398576512,
         "1/alpha": 10
     },
     "Georgia": {
+        "margin": 0.053223451986064374,
         "computed_risk": 0.0923,
         "computed_sprob": 0.912,
         "ratio": 9.880823401950163,
         "1/alpha": 10
     },
     "Hawaii": {
+        "margin": 0.3488267490107091,
         "computed_risk": 0.0898,
         "computed_sprob": 0.947,
         "ratio": 10.5456570155902,
         "1/alpha": 10
     },
     "Idaho": {
+        "margin": 0.3662035336161116,
         "computed_risk": 0.0815,
         "computed_sprob": 0.9514,
         "ratio": 11.67361963190184,
         "1/alpha": 10
     },
     "Illinois": {
+        "margin": 0.18040102781422962,
         "computed_risk": 0.0893,
         "computed_sprob": 0.9262,
         "ratio": 10.371780515117582,
         "1/alpha": 10
     },
     "Indiana": {
+        "margin": 0.20234619049016134,
         "computed_risk": 0.074,
         "computed_sprob": 0.9075,
         "ratio": 12.263513513513514,
         "1/alpha": 10
     },
     "Iowa": {
+        "margin": 0.10127095690240684,
         "computed_risk": 0.0848,
         "computed_sprob": 0.918,
         "ratio": 10.825471698113208,
         "1/alpha": 10
     },
     "Kansas": {
+        "margin": 0.22222940685213333,
         "computed_risk": 0.0916,
         "computed_sprob": 0.9333,
         "ratio": 10.18886462882096,
         "1/alpha": 10
     },
     "Kentucky": {
+        "margin": 0.31341258035019726,
         "computed_risk": 0.0876,
         "computed_sprob": 0.932,
         "ratio": 10.639269406392694,
         "1/alpha": 10
     },
     "Louisiana": {
+        "margin": 0.20343354475615594,
         "computed_risk": 0.0791,
         "computed_sprob": 0.9088,
         "ratio": 11.489254108723136,
         "1/alpha": 10
     },
     "Maine": {
+        "margin": 0.03193582258325067,
         "computed_risk": 0.09,
         "computed_sprob": 0.9174,
         "ratio": 10.193333333333333,
         "1/alpha": 10
     },
     "Maryland": {
+        "margin": 0.28032499369538777,
         "computed_risk": 0.067,
         "computed_sprob": 0.9042,
         "ratio": 13.495522388059701,
         "1/alpha": 10
     },
     "Massachusetts": {
+        "margin": 0.29302557379259,
         "computed_risk": 0.0748,
         "computed_sprob": 0.9262,
         "ratio": 12.38235294117647,
         "1/alpha": 10
     },
     "Minnesota": {
+        "margin": 0.016637138672306984,
         "computed_risk": 0.0922,
         "computed_sprob": 0.9232,
         "ratio": 10.013015184381779,
         "1/alpha": 10
     },
     "Mississippi": {
+        "margin": 0.18179694648120126,
         "computed_risk": 0.075,
         "computed_sprob": 0.906,
         "ratio": 12.08,
         "1/alpha": 10
     },
     "Missouri": {
+        "margin": 0.19637121991132123,
         "computed_risk": 0.0805,
         "computed_sprob": 0.9245,
         "ratio": 11.48447204968944,
         "1/alpha": 10
     },
     "Montana": {
+        "margin": 0.22219328634048874,
         "computed_risk": 0.0941,
         "computed_sprob": 0.9382,
         "ratio": 9.970244420828905,
         "1/alpha": 10
     },
     "Nebraska": {
+        "margin": 0.2709534822635513,
         "computed_risk": 0.0788,
         "computed_sprob": 0.9314,
         "ratio": 11.819796954314722,
         "1/alpha": 10
     },
     "Nevada": {
+        "margin": 0.025874188399704012,
         "computed_risk": 0.0883,
         "computed_sprob": 0.9129,
         "ratio": 10.338618346545866,
         "1/alpha": 10
     },
     "New Jersey": {
+        "margin": 0.14568380285802585,
         "computed_risk": 0.088,
         "computed_sprob": 0.9225,
         "ratio": 10.482954545454547,
         "1/alpha": 10
     },
     "New Mexico": {
+        "margin": 0.09301589868648219,
         "computed_risk": 0.085,
         "computed_sprob": 0.9322,
         "ratio": 10.967058823529412,
         "1/alpha": 10
     },
     "New York": {
+        "margin": 0.23544882368461217,
         "computed_risk": 0.0755,
         "computed_sprob": 0.9144,
         "ratio": 12.111258278145696,
         "1/alpha": 10
     },
     "North Carolina": {
+        "margin": 0.0380749160743743,
         "computed_risk": 0.0859,
         "computed_sprob": 0.9141,
         "ratio": 10.641443538998836,
         "1/alpha": 10
     },
     "North Dakota": {
+        "margin": 0.3961848579303948,
         "computed_risk": 0.0879,
         "computed_sprob": 0.9595,
         "ratio": 10.915813424345847,
         "1/alpha": 10
     },
     "Ohio": {
+        "margin": 0.08535369154271821,
         "computed_risk": 0.0906,
         "computed_sprob": 0.9195,
         "ratio": 10.149006622516556,
         "1/alpha": 10
     },
     "Oklahoma": {
+        "margin": 0.3860947447665626,
         "computed_risk": 0.0906,
         "computed_sprob": 0.9474,
         "ratio": 10.456953642384105,
         "1/alpha": 10
     },
     "Oregon": {
+        "margin": 0.12311677890108719,
         "computed_risk": 0.0818,
         "computed_sprob": 0.9314,
         "ratio": 11.386308068459659,
         "1/alpha": 10
     },
     "Pennsylvania": {
+        "margin": 0.007510716149803365,
         "computed_risk": 0.0932,
         "computed_sprob": 0.9083,
         "ratio": 9.745708154506437,
         "1/alpha": 10
     },
     "Rhode Island": {
+        "margin": 0.1662140818531963,
         "computed_risk": 0.0783,
         "computed_sprob": 0.9235,
         "ratio": 11.794380587484037,
         "1/alpha": 10
     },
     "South Carolina": {
+        "margin": 0.1492051272104804,
         "computed_risk": 0.0895,
         "computed_sprob": 0.926,
         "ratio": 10.3463687150838,
         "1/alpha": 10
     },
     "South Dakota": {
+        "margin": 0.3194371615886251,
         "computed_risk": 0.0863,
         "computed_sprob": 0.9419,
         "ratio": 10.91425260718424,
         "1/alpha": 10
     },
     "Tennessee": {
+        "margin": 0.27248686090523977,
         "computed_risk": 0.0743,
         "computed_sprob": 0.9214,
         "ratio": 12.40107671601615,
         "1/alpha": 10
     },
     "Texas": {
+        "margin": 0.09426451155943982,
         "computed_risk": 0.0808,
         "computed_sprob": 0.9059,
         "ratio": 11.211633663366337,
         "1/alpha": 10
     },
     "Utah": {
+        "margin": 0.24767316416981577,
         "computed_risk": 0.0795,
         "computed_sprob": 0.9657,
         "ratio": 12.147169811320754,
         "1/alpha": 10
     },
     "Vermont": {
+        "margin": 0.30372852647640736,
         "computed_risk": 0.0755,
         "computed_sprob": 0.9356,
         "ratio": 12.392052980132451,
         "1/alpha": 10
     },
     "Virginia": {
+        "margin": 0.056527525543093926,
         "computed_risk": 0.0893,
         "computed_sprob": 0.9187,
         "ratio": 10.287793952967524,
         "1/alpha": 10
     },
     "Washington": {
+        "margin": 0.17573862400129525,
         "computed_risk": 0.0875,
         "computed_sprob": 0.9372,
         "ratio": 10.710857142857144,
         "1/alpha": 10
     },
     "West Virginia": {
+        "margin": 0.4432210450259155,
         "computed_risk": 0.0607,
         "computed_sprob": 0.9204,
         "ratio": 15.163097199341022,
         "1/alpha": 10
     },
     "Wisconsin": {
+        "margin": 0.008159780760594204,
         "computed_risk": 0.0868,
         "computed_sprob": 0.912,
         "ratio": 10.506912442396313,
         "1/alpha": 10
     },
     "Wyoming": {
+        "margin": 0.5141063925830758,
         "computed_risk": 0.0673,
         "computed_sprob": 0.9307,
         "ratio": 13.829123328380387,
