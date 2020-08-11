@@ -31,7 +31,7 @@ class FZMinervaOneRoundRisk(Simulation):
                  db_port=27017,
                  *args,
                  **kwargs):
-        super().__init__('fz_minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, args, kwargs)
+        super().__init__('fz_minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, args, kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
 

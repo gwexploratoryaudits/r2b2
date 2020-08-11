@@ -26,10 +26,11 @@ class MinervaOneRoundRisk(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, 'tie', db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
+        self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
         self.audit = Minerva(self.alpha, 1.0, self.reported)
@@ -43,7 +44,7 @@ class MinervaOneRoundRisk(Simulation):
         self.vote_dist = [(sorted_tally[0][0], self.total_relevant_ballots // 2)]
         for i in range(1, len(sorted_tally)):
             self.vote_dist.append((sorted_tally[i][0], self.total_relevant_ballots))
-        self.vote_dist.append(('invalid', self.reported.contest_ballots))
+        self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
         """Execute a 1-round minerva audit (using r2b2.minerva.Minerva)"""
@@ -53,7 +54,7 @@ class MinervaOneRoundRisk(Simulation):
         # Draw a sample of a given size
         sample = [0 for i in range(len(self.vote_dist))]
         for i in range(self.sample_size):
-            ballot = r.randint(1, self.reported.contest_ballots)
+            ballot = r.randint(1, self.contest_ballots)
             for j in range(len(sample)):
                 if ballot <= self.vote_dist[j][1]:
                     sample[j] += 1
@@ -147,10 +148,11 @@ class MinervaOneRoundStoppingProb(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, 'reported', db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
+        self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
         self.audit = Minerva(self.alpha, 1.0, self.reported)
@@ -166,7 +168,7 @@ class MinervaOneRoundStoppingProb(Simulation):
         for i in range(1, len(sorted_tally)):
             current += sorted_tally[i][1]
             self.vote_dist.append((sorted_tally[i][0], current))
-        self.vote_dist.append(('invalid', self.reported.contest_ballots))
+        self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
         """Execute a 1-round minerva audit."""
@@ -176,7 +178,7 @@ class MinervaOneRoundStoppingProb(Simulation):
         # Draw a sample
         sample = [0 for i in range(len(self.vote_dist))]
         for i in range(self.sample_size):
-            ballot = r.randint(1, self.reported.contest_ballots)
+            ballot = r.randint(1, self.contest_ballots)
             for j in range(len(sample)):
                 if ballot <= self.vote_dist[j][1]:
                     sample[j] += 1
