@@ -71,7 +71,7 @@ class DBInterface():
             return contest['_id']
         return contests.insert_one(query).inserted_id
 
-    def simulation_lookup(self, audit, reported, underlying, qapp: dict = None, *args, **kwargs):
+    def simulation_lookup(self, audit, reported, underlying, invalid, qapp: dict = None, *args, **kwargs):
         """Find/Create a simulation in database.
 
         Searches through database for an existing simulation entry with the given parameters.
@@ -90,7 +90,7 @@ class DBInterface():
             ObjectID of new or existing simulation entry.
         """
         simulations = self.db.simulations
-        query = {'reported': reported, 'underlying': underlying, 'audit': audit}
+        query = {'reported': reported, 'underlying': underlying, 'audit': audit, 'invalid_ballots': invalid}
         if qapp is not None:
             query.update(qapp)
         # TODO: Handle additional things
@@ -140,6 +140,7 @@ class Simulation(ABC):
     reported: Contest
     reported_id: str
     underlying: str
+    invalid: bool
     sim_id: str
     trials: List
 
@@ -148,6 +149,7 @@ class Simulation(ABC):
                  alpha: float,
                  reported: Contest,
                  underlying,
+                 invalid: bool,
                  db_mode=True,
                  db_host='localhost',
                  db_port=27017,
@@ -160,6 +162,7 @@ class Simulation(ABC):
         self.alpha = alpha
         self.reported = reported
         self.underlying = underlying
+        self.invalid = invalid
         self.db_mode = db_mode
         self.trials = []
         if not self.db_mode:
@@ -179,9 +182,13 @@ class Simulation(ABC):
             else:
                 self.reported_id = self.db.contest_lookup(reported)
             if 'sim_args' in kwargs:
-                self.sim_id = self.db.simulation_lookup(self.audit_id, self.reported_id, self.underlying, qapp=kwargs['sim_args'])
+                self.sim_id = self.db.simulation_lookup(self.audit_id,
+                                                        self.reported_id,
+                                                        self.underlying,
+                                                        self.invalid,
+                                                        qapp=kwargs['sim_args'])
             else:
-                self.sim_id = self.db.simulation_lookup(self.audit_id, self.reported_id, self.underlying)
+                self.sim_id = self.db.simulation_lookup(self.audit_id, self.reported_id, self.underlying, self.invalid)
 
     def run(self, n: int):
         """Execute n trials of the simulation.
