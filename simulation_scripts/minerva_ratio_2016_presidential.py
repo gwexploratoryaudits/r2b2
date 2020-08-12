@@ -15,8 +15,8 @@ if __name__ == '__main__':
 
         audit_id = db.audit_lookup('minerva', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2016 Presidential'})
-        tied_sim  = db.db.simulations.find_one({'reported': reported_id, 'underlying': 'tie', 'audit': audit_id, 'description': 'One round Minerva with given sample size (from PV MATLAB)'})
-        sprob_sim = db.db.simulations.find_one({'reported': reported_id, 'underlying': 'reported', 'audit': audit_id, 'description': 'Stopping Probability 90%: One round Minerva with given sample size (from PV MATLAB)'})
+        tied_sim  = db.db.simulations.find_one({'reported': reported_id, 'underlying': 'tie', 'audit': audit_id, 'description': 'One round Minerva with given sample size (from PV MATLAB)', 'invalid_ballots': True})
+        sprob_sim = db.db.simulations.find_one({'reported': reported_id, 'underlying': 'reported', 'audit': audit_id, 'description': 'Stopping Probability 90%: One round Minerva with given sample size (from PV MATLAB)', 'invalid_ballots': True})
 
         risk = tied_sim['analysis']
         sprob = sprob_sim['analysis']
