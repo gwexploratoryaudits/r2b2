@@ -41,9 +41,9 @@ class BayesianRLA(Audit):
 
     def get_min_sample_size(self):
         left = 1
-        right = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        right = 30
 
-        while left < right:
+        while left <= right:
             proposed_min = (left + right) // 2
             proposed_min_kmin = self.next_min_winner_ballots(proposed_min)
 
@@ -55,8 +55,7 @@ class BayesianRLA(Audit):
                     return proposed_min
                 else:
                     right = proposed_min - 1
-        # FIXME: need check for final size, if we reach this is the contest to small for the audit?
-        return left
+        return -1
 
     def __str__(self):
         title_str = 'BayesianRLA without replacement\n-------------------------------\n'
