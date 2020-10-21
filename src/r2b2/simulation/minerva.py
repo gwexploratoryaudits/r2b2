@@ -64,8 +64,6 @@ class MinervaOneRoundRisk(Simulation):
 
         # Perform audit computations
         self.audit._reset()
-        if relevant_sample_size < self.audit.min_sample_size:
-            raise ValueError('relevant ballot sample is too small.')
         self.audit.rounds.append(relevant_sample_size)
         self.audit.current_dist_null()
         self.audit.current_dist_reported()
@@ -187,8 +185,6 @@ class MinervaOneRoundStoppingProb(Simulation):
 
         # Perform audit computations
         self.audit._reset()
-        if relevant_sample_size < self.audit.min_sample_size:
-            raise ValueError('relevant ballot sample is too small')
         self.audit.rounds.append(relevant_sample_size)
         self.audit.current_dist_null()
         self.audit.current_dist_reported()
