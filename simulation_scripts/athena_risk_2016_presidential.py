@@ -9,12 +9,20 @@ sample_size_file = 'data/2016_presidential_one_round_sample_sizes.json'
 
 
 def state_trial(state, alpha, sample_size):
-    sim = AORR(alpha, 1.0, election.contests[state], sample_size, sim_args={'description': 'One round Athena with given sample size (from PV MATLAB)'}, reported_args={'name': state, 'description': '2016 Presidential'})
+    sim = AORR(alpha,
+               1.0,
+               election.contests[state],
+               sample_size,
+               sim_args={'description': 'One round Athena with given sample size (from PV MATLAB)'},
+               reported_args={
+                   'name': state,
+                   'description': '2016 Presidential'
+               })
     sim.run(10000)
     return sim.analyze()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     with open(sample_size_file, 'r') as fd:
         sample_sizes = json.load(fd)
         for contest in election.contests.keys():
