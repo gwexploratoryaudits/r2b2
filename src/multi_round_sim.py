@@ -27,10 +27,16 @@ Eventually:
 
 from typing import Any
 import time
+import itertools
+import json
 from scipy.stats import binom
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
+
+def vars_to_dict(*args):
+    ""
+    return dict(((k, eval(k)) for k in args))
 
 def compute_multi_round_r2b2(contest_dict, rounds, observations, risk_limit=0.1, max_fraction=0.5):
     """Compute multi-round risk level via r2b2 module, returning p_value"""
@@ -105,28 +111,25 @@ def random_round(audit, max_samplesize):
     round_size = min(round_size, max_samplesize - sampled)
 
     a = binom.rvs(round_size, 0.5)
-    with Timer() as t:
-        audit.set_observations(round_size, round_size, [a, round_size - a])
+    audit.set_observations(round_size, round_size, [a, round_size - a])
 
     risk = audit.status[audit.active_contest].risks[-1]
-    print(f"{round_size=}, {a=}, {risk=}, {t.interval=:.3f} s")
-    return risk
+    return {"relevant_sample_size": round_size, "winner_ballots": a, "p_value": risk}
 
 
-def run_audit(risk_limit):
+def run_audit(audit, max_samplesize):
     "Run a Minerva RLA to completion and return the p_value"
 
-    m = make_election(0.1, 0.55, 0.45)
-    max_samplesize = 2000   # FIXME: higher?
-
-    print(f"{max_samplesize=}")
-
-    while True:
-        risk = random_round(m, max_samplesize)
+    for i in itertools.count(start=1):
+        with Timer() as t:
+            results = random_round(audit, max_samplesize)
+        results.update({"round": i, "cpu": round(t.interval, 5)})
+        risk = results["p_value"]
+        print(" ", json.dumps(results), ",")
         if risk <= risk_limit:
-            return risk, m
-        if m.round_schedule[-1] >= max_samplesize:
-            return risk, m  # FIXME: refactor?
+            return risk, audit
+        if audit.round_schedule[-1] >= max_samplesize:
+            return risk, audit  # FIXME: refactor?
 
 
 class Timer:
@@ -151,20 +154,58 @@ class GracefulKiller:
     self.kill_now = True
 
 
+"""
+    "Alabama": {
+        "contest_ballots": 2123372,
+        "tally": {
+            "Clinton": 729547,
+            "Trump": 1318255
+        },
+        "num_winners": 1,
+        "reported_winners": [
+            "Trump"
+        ],
+        "contest_type": "PLURALITY",
+"""
+
 if __name__ == "__main__":
     killer = GracefulKiller()
 
     risk_limit = 0.1
-    trials = 100000
+    trials = 2 # 100000
     risks = []
     results = []
 
+    risk_limit = 0.1
+    
+    print("[")
+
     for i in range(trials):
-        risk, res = run_audit(risk_limit)
+        p_w = 0.55
+        p_l = 0.45
+        audit = make_election(risk_limit, p_w, p_l)
+
+        max_samplesize = 2000   # FIXME: higher?
+
+        c = audit.election.contests['ArloContest']
+
+        print(f'''
+    "audit": {{
+          "seq": {i},
+          "contest_ballots": {audit.election.total_ballots},
+          "tally": {c.tally},
+          "reported_winners": {c.reported_winners},
+          "rounds": {{
+        ''')
+
+        #  "num_winners": {c.num_winners},
+
+        risk, res = run_audit(audit, max_samplesize)
         risks.append(risk)
         results.append(res)
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0])}\n")
-
+        # print(f"{repr(res)=}, {type(res)=}")
+        #print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0])}\n")
+        print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
             break
@@ -177,4 +218,8 @@ if __name__ == "__main__":
     print(f"{risk_limit=:.1%}")
     print(f"Round size counter: {sorted(Counter([len(r.round_schedule) for r in results]).items())}")
     np.set_printoptions(suppress=True, linewidth=95)
+
+    # FIXME: need to truncate / round down to preserve thresholds
+    # And need to actually print all the values.
     print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
+    print("]")
