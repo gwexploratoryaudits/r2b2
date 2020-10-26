@@ -116,7 +116,7 @@ def random_round(audit, max_samplesize):
 def run_audit(risk_limit):
     "Run a Minerva RLA to completion and return the p_value"
 
-    m = make_election(0.1, 0.6, 0.4)
+    m = make_election(0.1, 0.55, 0.45)
     max_samplesize = 2000   # FIXME: higher?
 
     print(f"{max_samplesize=}")
@@ -154,8 +154,8 @@ class GracefulKiller:
 if __name__ == "__main__":
     killer = GracefulKiller()
 
-    risk_limit = 0.2
-    trials = 200
+    risk_limit = 0.1
+    trials = 100000
     risks = []
     results = []
 
