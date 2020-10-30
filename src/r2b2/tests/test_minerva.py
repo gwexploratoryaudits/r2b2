@@ -34,6 +34,37 @@ def test_min_sample_size():
     assert minerva3.min_sample_size == 830
 
 
+def test_kmin_upper_bound():
+    contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva1 = Minerva(.1, .1, contest1)
+    contest2 = Contest(100000, {'A': 90000, 'B': 10000}, 1, ['A'], ContestType.MAJORITY)
+    minerva2 = Minerva(.1, .1, contest2)
+
+    assert minerva1.kmin_search_upper_bound(200) == 116
+    assert minerva2.kmin_search_upper_bound(2000) == 1467
+
+
+def test_minerva_first_round_estimate():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva(.1, .1, contest)
+
+    assert minerva.next_sample_size() == 180
+
+
+def test_minerva_second_round_estimate():
+    contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva1 = Minerva(.1, .1, contest1)
+    minerva1.compute_min_winner_ballots([100])
+    minerva1.sample_winner_ballots.append(54)
+    contest2 = Contest(100000, {'A': 95000, 'B': 5000}, 1, ['A'], ContestType.MAJORITY)
+    minerva2 = Minerva(.1, .1, contest2)
+    minerva2.compute_min_winner_ballots([6])
+    minerva2.sample_winner_ballots.append(5)
+
+    assert minerva1.next_sample_size() == 312
+    assert minerva2.next_sample_size() == 11
+
+
 def test_minerva_kmins():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva = Minerva(.1, .1, contest)
