@@ -108,8 +108,9 @@ def random_round(audit, max_samplesize):
     "Run another round of random size and sample results on the given audit and return the p_value"
 
     # Increase round sizes geometrically.  TODO: randomize via gamma or the like
-    # round_size = 50 * 4 ** len(audit.round_schedule)
-
+    # round_size = 4000 * 2 ** len(audit.round_schedule)
+    round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    """
     # Employ filip's strategy, choosing 2nd round size based on 1st observation
     if len(audit.round_schedule) == 0:
         round_size = 20
@@ -120,6 +121,7 @@ def random_round(audit, max_samplesize):
             round_size = 60
     else:
         round_size = 30 * 3 ** len(audit.round_schedule)
+    """
 
     sampled = 0
     if len(audit.round_schedule) > 0:
@@ -146,7 +148,7 @@ def run_audit(audit, max_samplesize):
         print(" ", json.dumps(results), ",")
         if risk <= risk_limit:
             return risk, audit
-        if audit.round_schedule[-1] >= max_samplesize:
+        if audit.round_schedule[-1] >= max_samplesize  or  risk > 100.0:
             return risk, audit  # FIXME: refactor?
 
 
@@ -176,7 +178,7 @@ if __name__ == "__main__":
     killer = GracefulKiller()
 
     risk_limit = 0.1
-    trials = 1000 # 100000 # 100000
+    trials = 100000 # 100000 # 100000
     risks = []
     results = []
 
@@ -185,11 +187,11 @@ if __name__ == "__main__":
     print("[")
 
     for i in range(trials):
-        p_w = 0.7
-        p_l = 0.3
+        p_w = 0.55
+        p_l = 0.45
         audit = make_election(risk_limit, p_w, p_l)
 
-        max_samplesize = 2000   # FIXME: higher?
+        max_samplesize = 100000   # FIXME: higher?
 
         c = audit.election.contests['ArloContest']
 
@@ -208,7 +210,7 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}\n")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0])}\n")
         print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
