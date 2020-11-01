@@ -1,6 +1,12 @@
 #!/usr/bin/env python
-
 """
+Simulate Filip's minerva round strategy.
+
+[Based on evolving simulation code, half-way thru converting it to json output.
+Sorry for the mess and invalid syntax in the json!]
+
+General plan:
+
 Simulate random audits, with random round sizes.
 
 Eventually:
@@ -102,7 +108,18 @@ def random_round(audit, max_samplesize):
     "Run another round of random size and sample results on the given audit and return the p_value"
 
     # Increase round sizes geometrically.  TODO: randomize via gamma or the like
-    round_size = 50 * 4 ** len(audit.round_schedule)
+    # round_size = 50 * 4 ** len(audit.round_schedule)
+
+    # Employ filip's strategy, choosing 2nd round size based on 1st observation
+    if len(audit.round_schedule) == 0:
+        round_size = 20
+    elif len(audit.round_schedule) == 1:
+        if audit.observations['ArloContest'][0][0] in [12, 13]:
+            round_size = 30
+        else:
+            round_size = 60
+    else:
+        round_size = 30 * 3 ** len(audit.round_schedule)
 
     sampled = 0
     if len(audit.round_schedule) > 0:
@@ -111,6 +128,7 @@ def random_round(audit, max_samplesize):
     round_size = min(round_size, max_samplesize - sampled)
 
     a = binom.rvs(round_size, 0.5)
+
     audit.set_observations(round_size, round_size, [a, round_size - a])
 
     risk = audit.status[audit.active_contest].risks[-1]
@@ -154,25 +172,11 @@ class GracefulKiller:
     self.kill_now = True
 
 
-"""
-    "Alabama": {
-        "contest_ballots": 2123372,
-        "tally": {
-            "Clinton": 729547,
-            "Trump": 1318255
-        },
-        "num_winners": 1,
-        "reported_winners": [
-            "Trump"
-        ],
-        "contest_type": "PLURALITY",
-"""
-
 if __name__ == "__main__":
     killer = GracefulKiller()
 
     risk_limit = 0.1
-    trials = 2 # 100000
+    trials = 1000 # 100000 # 100000
     risks = []
     results = []
 
@@ -181,8 +185,8 @@ if __name__ == "__main__":
     print("[")
 
     for i in range(trials):
-        p_w = 0.55
-        p_l = 0.45
+        p_w = 0.7
+        p_l = 0.3
         audit = make_election(risk_limit, p_w, p_l)
 
         max_samplesize = 2000   # FIXME: higher?
@@ -204,7 +208,7 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        #print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0])}\n")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}\n")
         print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
@@ -221,5 +225,5 @@ if __name__ == "__main__":
 
     # FIXME: need to truncate / round down to preserve thresholds
     # And need to actually print all the values.
-    print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
+    #print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
     print("]")
