@@ -35,7 +35,7 @@ from typing import Any
 import time
 import itertools
 import json
-from scipy.stats import binom
+from scipy.stats import binom, gamma
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
@@ -107,10 +107,18 @@ def make_election(risk_limit, p_w: float, p_r: float) -> Any:
 def random_round(audit, max_samplesize):
     "Run another round of random size and sample results on the given audit and return the p_value"
 
-    # Increase round sizes geometrically.  TODO: randomize via gamma or the like
+    # TODO: replace max_samplesize with a more general context object to this method,
+    # and make each of these round size approaches into
+    # a generator which is part of the context object.
+
+    # approach 1: Increase round sizes geometrically.
     # round_size = 4000 * 2 ** len(audit.round_schedule)
-    # round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
-    round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+
+    # fixed approaches:
+    # margin 10%, 90% at each round: round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    # margin 10%, 33% at each round: round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+
+    # Strategic approach:
     """
     # Employ filip's strategy, choosing 2nd round size based on 1st observation
     if len(audit.round_schedule) == 0:
@@ -123,6 +131,10 @@ def random_round(audit, max_samplesize):
     else:
         round_size = 30 * 3 ** len(audit.round_schedule)
     """
+
+    # Random round size, min 1, average of 100 in first round, approximately doubling every round, via gamma function.
+    # TODO: does this make sense?
+    round_size = max(1, int(gamma.rvs(a=2, scale=2) * 50) * 2 ** len(audit.round_schedule))
 
     sampled = 0
     if len(audit.round_schedule) > 0:
