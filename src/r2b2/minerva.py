@@ -152,7 +152,7 @@ class Minerva(Audit):
         """Method to use binary search approximation to find a round size estimate."""
 
         # No acceptable round size.
-        if left > right:
+        if right - left <= 1:
             return 0
 
         mid = (left + right) // 2
@@ -225,7 +225,7 @@ class Minerva(Audit):
         # This round size is returned if it has satisfactory stopping probability and a round size one less
         # does not, or if it has satisfactory stopping probability and exceeds the desired stopping probability
         # only nominally.
-        if (sprob_round >= sprob and sprob_round - sprob <= .01) or (sprob_round >= sprob and sprob_prev < sprob):
+        if (sprob_round >= sprob and sprob_round - sprob <= .0001) or (sprob_round >= sprob and sprob_prev < sprob):
             return mid
         elif sprob_round < sprob:
             return self.binary_search_estimate(mid, right, sprob)
@@ -242,9 +242,15 @@ class Minerva(Audit):
         upper_bound = 10000
         while upper_bound < 10 ** 7:
             if len(self.rounds) > 0:
-                estimate = self.binary_search_estimate(self.rounds[-1] + 1, upper_bound, sprob)
+                if upper_bound == 10000:
+                    estimate = self.binary_search_estimate(self.rounds[-1] + 1, upper_bound, sprob)
+                else:
+                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob)
             else:
-                estimate = self.binary_search_estimate(self.min_sample_size, upper_bound, sprob)
+                if upper_bound == 10000:
+                    estimate = self.binary_search_estimate(self.min_sample_size, upper_bound, sprob)
+                else:
+                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob)
             if estimate > 0:
                 return estimate
             upper_bound *= 2
