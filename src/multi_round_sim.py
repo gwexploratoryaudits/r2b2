@@ -109,7 +109,8 @@ def random_round(audit, max_samplesize):
 
     # Increase round sizes geometrically.  TODO: randomize via gamma or the like
     # round_size = 4000 * 2 ** len(audit.round_schedule)
-    round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    # round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
     """
     # Employ filip's strategy, choosing 2nd round size based on 1st observation
     if len(audit.round_schedule) == 0:
@@ -210,7 +211,7 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0])}\n")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}\n")
         print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
