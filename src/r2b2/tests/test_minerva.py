@@ -45,10 +45,13 @@ def test_kmin_upper_bound():
 
 
 def test_minerva_first_round_estimate():
-    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
-    minerva = Minerva(.1, .1, contest)
+    contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva1 = Minerva(.1, .1, contest1)
+    contest2 = Contest(100000, {'A': 51000, 'B': 49000}, 1, ['A'], ContestType.MAJORITY)
+    minerva2 = Minerva(.1, .1, contest2)
 
-    assert minerva.next_sample_size() == 180
+    assert minerva1.next_sample_size() == 179
+    assert minerva2.next_sample_size() == 17304
 
 
 def test_minerva_second_round_estimate():
