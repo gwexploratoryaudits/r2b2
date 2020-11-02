@@ -1,3 +1,4 @@
+import math
 import random as r
 from typing import List
 from typing import Tuple
@@ -342,7 +343,7 @@ class MinervaOneRoundAlteredMargin(Simulation):
         return analysis
 
 
-class MinervaMultiRoundRisk(Simulation):
+class MinervaRandomMultiRoundRisk(Simulation):
     """Simulate a multi-round Minerva audit for random subsequent sample sizes.
 
     The initial sample size, x, is given as input and further sample sizes are
@@ -368,9 +369,13 @@ class MinervaMultiRoundRisk(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
+        if 'sim_args' in kwargs:
+            kwargs['sim_args']['max_rounds'] = max_rounds
+        else:
+            kwargs['sim_args'] = {'max_rounds': max_rounds}
         super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
-        self.max_rounds = -max_rounds
+        self.max_rounds = max_rounds
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
@@ -401,14 +406,15 @@ class MinervaMultiRoundRisk(Simulation):
 
         # Initialize first round with given initial sample size
         round_num = 1
+        previous_sample_size = 0
         current_sample_size = self.sample_size
         stop = False
 
         # For each round
+        sample = [0 for i in range(len(self.vote_dist))]
         while round_num <= self.max_rounds:
             # Draw a sample of a given size
-            sample = [0 for i in range(len(self.vote_dist))]
-            for i in range(current_sample_size):
+            for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(1, self.contest_ballots)
                 for j in range(len(sample)):
                     if ballot <= self.vote_dist[j][1]:
@@ -447,14 +453,15 @@ class MinervaMultiRoundRisk(Simulation):
             # Else choose a next round size and continue
             round_num += 1
             sample_mult = r.uniform(0.5, 1.5)
-            next_sample = current_sample_size * sample_mult
+            next_sample = math.ceil(current_sample_size * sample_mult)
+            previous_sample_size = current_sample_size
             current_sample_size += next_sample
 
         # If audit does not stop, return trial output
         # FIXME: Improve output format
         return {
             'stop': stop,
-            'round': round_num,
+            'round': self.max_rounds,
             'p_value_sched': self.audit.pvalue_schedule,
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
@@ -476,17 +483,25 @@ class MinervaMultiRoundRisk(Simulation):
             trials = self.trials
         num_trials = 0
         stopped = 0
+        rounds_stopped = []
         # TODO: Create additinal structures to store trial data
 
         for trial in trials:
             num_trials += 1
             if trial['stop']:
                 stopped += 1
+                rounds_stopped.append(trial['round'])
             # TODO: Extract more data from trial
 
-        # TODO: Compute additional results?
-        # TODO: Add verbose mode
-        # TODO: Add histogram mode
+        if verbose:
+            print('Analysis\n========\n')
+            print('Number of trials: {}'.format(num_trials))
+            print('Experiemtnal Risk: {:.5f}'.format(stopped / num_trials))
+            if stopped > 0:
+                print('Average Rounds in Stopped Trials: {:.2f}'.format(sum(rounds_stopped) / stopped))
+
+        if hist:
+            histogram(rounds_stopped, 'Rounds reached in stopped trials.')
 
         # Update simulation entry to include analysis
         if self.db_mode:
