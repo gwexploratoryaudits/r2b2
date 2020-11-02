@@ -26,11 +26,12 @@ if __name__ == '__main__':
     with open(sample_size_file, 'r') as fd:
         sample_sizes = json.load(fd)
         for contest in election.contests.keys():
-            if contest == 'Michigan':
-                logging.warning('Michigan does not have sample sizes scaled from MATLAB, so its simulation is not run.')
-                continue
-            if contest == 'New Hampshire':
-                logging.warning('New Hampshire margin too small to compute min_sample_size efficiently, skipping.')
+            winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
+            tally = sum(election.contests[contest].tally.values())
+            loser_tally = tally - winner_tally
+            margin = (winner_tally - loser_tally) / tally 
+            if margin < 0.02:
+                logging.warning('{} has a margin below 2%, so its simulation is not run.'.format(contest))
                 continue
 
             sample_size = sample_sizes[contest]['Athena_pv_scaled']
