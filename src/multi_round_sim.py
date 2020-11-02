@@ -35,10 +35,15 @@ from typing import Any
 import time
 import itertools
 import json
+import logging
 from scipy.stats import binom, gamma
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
+
+# Parameters
+SPROB = 0.9
+MIN_ROUND_SIZE = 25
 
 def vars_to_dict(*args):
     ""
@@ -104,23 +109,32 @@ def make_election(risk_limit, p_w: float, p_r: float) -> Any:
     return audit
 
 
-def random_round(audit, max_samplesize):
-    "Run another round of random size and sample results on the given audit and return the p_value"
+# TODO:
+# def next_if_missed_by_one(audit, sprob):
+#        "Return next round size for given stopping probability assuming audit missed kmin by just one in last round"
+# extract from below
 
-    # TODO: replace max_samplesize with a more general context object to this method,
-    # and make each of these round size approaches into
-    # a generator which is part of the context object.
 
-    # approach 1: Increase round sizes geometrically.
-    # round_size = 4000 * 2 ** len(audit.round_schedule)
+def next_round(audit, max_samplesize):
+    """Run another round on the given audit and return the p_value
 
-    # fixed approaches:
-    # margin 10%, 90% at each round: round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
-    # margin 10%, 33% at each round: round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    TODO: generalize. Replace max_samplesize with a more general context object to this method,
+    and make each of these round size approaches into
+    a generator which is part of the context object.
 
-    # Strategic approach:
-    """
-    # Employ filip's strategy, choosing 2nd round size based on 1st observation
+    Current approach: choose next round size assuming sample results hit kmin-1.
+    Pick random sample results.
+
+    Other approaches:
+    approach 1: Increase round sizes geometrically.
+    round_size = 4000 * 2 ** len(audit.round_schedule)
+
+    fixed approaches:
+    margin 10%, 90% at each round: round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+    margin 10%, 33% at each round: round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
+
+    Strategic approach:
+    Employ filip's strategy, choosing 2nd round size based on 1st observation
     if len(audit.round_schedule) == 0:
         round_size = 20
     elif len(audit.round_schedule) == 1:
@@ -132,15 +146,56 @@ def random_round(audit, max_samplesize):
         round_size = 30 * 3 ** len(audit.round_schedule)
     """
 
-    # Random round size, min 1, average of 100 in first round, approximately doubling every round, via gamma function.
-    # TODO: does this make sense?
-    round_size = max(1, int(gamma.rvs(a=2, scale=2) * 50) * 2 ** len(audit.round_schedule))
+    if len(audit.round_schedule) == 0:
+        # Random round size, min 1, average of 100 in first round, approximately doubling every round, via gamma function.
+        # TODO: is there a suitable discrete distribution like gamma, or one better?
+        # TODO: see if we can eliminate need to require at least MIN_ROUND_SIZE
+        #   due to kmin being larger than round size, thus proposing negative values for votes.
+        #   File "/home/neal/Envs/arlo/lib/python3.8/site-packages/athena/athena.py", line 384, in find_next_round_size
+        #   prob_table_prev[observations_i] = 1.0
+        #  IndexError: list assignment index out of range
 
-    sampled = 0
-    if len(audit.round_schedule) > 0:
-        sampled = audit.round_schedule[-1]
+        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 50) * 2 ** len(audit.round_schedule))
 
-    round_size = min(round_size, max_samplesize - sampled)
+        sampled = 0
+        if len(audit.round_schedule) > 0:
+            sampled = audit.round_schedule[-1]
+
+        round_size = min(round_size, max_samplesize - sampled)
+
+    else:
+        # Extract kmin for current audit
+        contest = audit.active_contest
+        c = audit.election.contests[contest]
+        kmin = audit.status[audit.active_contest].min_kmins[0]
+        logging.warning(f"{kmin=}")
+
+        # Create a play_audit object with the same election parameters, for estimations
+        risk_limit = audit.alpha
+        p_w = c.tally['A']
+        p_l = c.tally['LOSER']
+        play_audit = make_election(risk_limit, p_w, p_l)
+
+        # We'll estimate the next round size optimistically as if kmin-1 votes have been seen.
+        # Figure out how many votes to put in each round, filling them in starting with the last round,
+        # since we can't succeed too early.
+        votes_to_go = kmin - 1
+        delta_rounds = np.diff(audit.round_schedule, prepend=[0])
+        votes_per_round = []
+        for round_size in np.flip(delta_rounds):
+             votes = min(votes_to_go, round_size)
+             votes_to_go -= votes 
+             votes_per_round.append(votes)
+
+        # put the rounds back in the right order
+        votes_per_round = votes_per_round[::-1]
+
+        # Replay the audit rounds, with winner votes adding up to kmin-1
+        for play_round_size, play_round_votes in zip(delta_rounds, votes_per_round):
+            play_audit.set_observations(play_round_size, play_round_size, [play_round_votes, play_round_size - play_round_votes])
+            logging.warning(f"{play_audit.status[contest].risks[-1]=}")
+
+        round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
 
     a = binom.rvs(round_size, 0.5)
 
@@ -155,7 +210,7 @@ def run_audit(audit, max_samplesize):
 
     for i in itertools.count(start=1):
         with Timer() as t:
-            results = random_round(audit, max_samplesize)
+            results = next_round(audit, max_samplesize)
         results.update({"round": i, "cpu": round(t.interval, 5)})
         risk = results["p_value"]
         print(" ", json.dumps(results), ",")
@@ -188,6 +243,9 @@ class GracefulKiller:
 
 
 if __name__ == "__main__":
+    # logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.ERROR)
+
     killer = GracefulKiller()
 
     risk_limit = 0.1
@@ -239,6 +297,7 @@ if __name__ == "__main__":
     np.set_printoptions(suppress=True, linewidth=95)
 
     # FIXME: need to truncate / round down to preserve thresholds
-    # And need to actually print all the values.
+    # And need to actually print all the values if there are more than default of threshold=1000.
     #print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
+
     print("]")
