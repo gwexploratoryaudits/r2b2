@@ -9,15 +9,19 @@ sample_size_file = 'data/2016_presidential_one_round_sample_sizes.json'
 
 
 def state_trial(state, alpha, sample_size):
-    sim = MRMRR(alpha,
-                election.contests[state],
-                sample_size,
-                5,
-                sim_args={'description': 'MutiRound Minerva with initial sample size from PV MATLAB, then random.'},
-                reported_args={
-                    'name': state,
-                    'description': '2016 Presidential'
-                })
+    sim = MRMRR(
+        alpha,
+        election.contests[state],
+        sample_size,
+        5,
+        sim_args={
+            'description':
+            'MutiRound Minerva with initial sample size from PV MATLAB, next rounds random multiple [0.5, 1.5] of initial sample size.'
+        },
+        reported_args={
+            'name': state,
+            'description': '2016 Presidential'
+        })
     sim.run(10000)
     return sim.analyze()
 
@@ -29,9 +33,9 @@ if __name__ == '__main__':
             winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
             tally = sum(election.contests[contest].tally.values())
             loser_tally = tally - winner_tally
-            margin = (winner_tally - loser_tally) / tally 
-            if margin < 0.02:
-                logging.warning('{} has a margin below 2%, so its simulation is not run.'.format(contest))
+            margin = (winner_tally - loser_tally) / tally
+            if margin < 0.1:
+                logging.warning('{} has a margin below 10%, so its simulation is not run.'.format(contest))
                 continue
 
             sample_size = sample_sizes[contest]['Athena_pv_scaled']
