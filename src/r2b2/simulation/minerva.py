@@ -453,7 +453,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
             # Else choose a next round size and continue
             round_num += 1
             sample_mult = r.uniform(0.5, 1.5)
-            next_sample = math.ceil(current_sample_size * sample_mult)
+            next_sample = math.ceil(self.sample_size * sample_mult)
             previous_sample_size = current_sample_size
             current_sample_size += next_sample
 
