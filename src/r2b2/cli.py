@@ -332,7 +332,7 @@ def input_audit(contest: Contest,
     if audit_type is None:
         audit_type = click.prompt('Select an audit type', type=audit_types)
     if delta is None and audit_type == 'athena':
-        delta = click.prompt('Enter the Athena delta value', type=click.FloatRange(0.0))
+        delta = click.prompt('Enter the Athena delta value', type=click.FloatRange(0.0, 1.0))
     if pair == ():
         pair = None
     if pair is None:

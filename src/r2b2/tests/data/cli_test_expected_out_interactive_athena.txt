@@ -52,6 +52,7 @@ Reported Tallies:
 Reported Winners: ['A']
 Contest Type: ContestType.MAJORITY
 
+Pair: A, B
 
 Delta: 1.0
 
