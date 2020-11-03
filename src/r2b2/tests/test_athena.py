@@ -45,6 +45,24 @@ def test_interactive_athena():
     output_file.close()
 
 
+def test_execute_round_athena():
+    contest = Contest(100000, {'A': 75000, 'B': 25000}, 1, ['A'], ContestType.MAJORITY)
+    athena = Athena(.1, 1, .1, contest)
+    assert not athena.stopped
+    assert len(athena.rounds) == 0
+    assert len(athena.sample_winner_ballots) == 0
+    athena.execute_round(50, 31)
+    assert not athena.stopped
+    assert athena.rounds[0] == 50
+    assert athena.sample_winner_ballots[0] == 31
+    assert len(athena.min_winner_ballots) == 1
+    athena.execute_round(100, 70)
+    assert athena.stopped
+    assert athena.rounds[1] == 100
+    assert athena.sample_winner_ballots[1] == 70
+    assert len(athena.min_winner_ballots) == 1
+
+
 def test_bulk_athena():
     # Same as Minerva (that is, delta = infinity)
 

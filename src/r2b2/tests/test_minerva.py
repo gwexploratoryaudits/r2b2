@@ -63,6 +63,28 @@ def test_compute_risk_minerva():
     output_file.close()
 
 
+def test_execute_round_minerva():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva(0.1, 0.1, contest)
+    assert len(minerva.rounds) == 0
+    assert len(minerva.sample_winner_ballots) == 0
+    minerva.execute_round(100, 57)
+    assert not minerva.stopped
+    assert minerva.rounds[0] == 100
+    assert minerva.sample_winner_ballots[0] == 57
+    assert len(minerva.min_winner_ballots) == 1
+    minerva.execute_round(200, 112)
+    assert not minerva.stopped
+    assert minerva.rounds[1] == 200
+    assert minerva.sample_winner_ballots[1] == 112
+    assert len(minerva.min_winner_ballots) == 2
+    minerva.execute_round(400, 221)
+    assert minerva.stopped
+    assert minerva.rounds[2] == 400
+    assert minerva.sample_winner_ballots[2] == 221
+    assert len(minerva.min_winner_ballots) == 2
+
+
 def test_bulk_minerva():
     # Ballot-by-ballot Minerva should yield identical stopping rules to BRAVO.
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
