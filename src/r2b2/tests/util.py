@@ -81,7 +81,11 @@ def parse_election(json_file):
     """
     with open(json_file, 'r') as json_data:
         data = json.load(json_data)
+        return election_from_dict(data)
 
+
+def election_from_dict(data):
+    """Convert dict to Election object"""
     name = data['name']
     total_ballots = data['total_ballots']
     contests = {}

@@ -1,0 +1,29 @@
+{
+        "name": "Example Election",
+        "total_ballots": 200,
+        "contests": {
+                "contest1": {
+                        "contest_ballots": 100,
+                        "tally": {
+                                "A": 60,
+                                "B": 40
+                        },
+                        "num_winners": 1,
+                        "reported_winners": ["A"],
+                        "contest_type": "MAJORITY"
+                },
+                "contest2":  {
+                        "contest_ballots": 100,
+                        "tally": {
+                                "C": 30,
+                                "D": 70
+                        },
+                        "num_winners": 1,
+                        "reported_winners": ["D"],
+                        "contest_type": "MAJORITY"
+                }
+        }
+
+}
+
+
