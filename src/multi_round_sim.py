@@ -34,6 +34,7 @@ Eventually:
 import sys
 import os
 import random
+from numpy.random import Generator, PCG64
 from typing import Any
 import time
 import itertools
@@ -275,7 +276,8 @@ if __name__ == "__main__":
 
     # Pick starting point at random, but override via $RANDSEED
     epoch = random.randint(0, 100000)
-    epoch = os.environ.get("RANDSEED", epoch)
+    epoch = int(os.environ.get("RANDSEED", epoch))
+
     for seq in range(trials):
         p_w = 0.55
         p_l = 0.45
@@ -285,11 +287,11 @@ if __name__ == "__main__":
 
         c = audit.election.contests['ArloContest']
 
-        seed = f"{epoch},{seq}"
-        random.seed(seed)
-        print(random.randint(0, 100000))
-        print(random.randint(0, 100000))
-        print(random.randint(0, 100000))
+        seed = (epoch, seq)
+        # See python - scipy.stats seed? - Stack Overflow https://stackoverflow.com/questions/16016959/scipy-stats-seed
+        random_gen = Generator(PCG64(seed))
+        binom.random_state = random_gen
+        gamma.random_state = random_gen
         print(f'''
     "audit": {{
           "seq": {seed},
