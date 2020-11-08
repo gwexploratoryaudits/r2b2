@@ -274,7 +274,7 @@ if __name__ == "__main__":
     print("[")
 
     # Pick starting point at random, but override via $RANDSEED
-    epoch = random.seed(0, 100000)
+    epoch = random.randint(0, 100000)
     epoch = os.environ.get("RANDSEED", epoch)
     for seq in range(trials):
         p_w = 0.55
@@ -287,6 +287,9 @@ if __name__ == "__main__":
 
         seed = f"{epoch},{seq}"
         random.seed(seed)
+        print(random.randint(0, 100000))
+        print(random.randint(0, 100000))
+        print(random.randint(0, 100000))
         print(f'''
     "audit": {{
           "seq": {seed},
