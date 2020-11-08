@@ -31,6 +31,9 @@ Eventually:
 * [some day?] random number of candidates from 2 to 20 mostly small, and test full multi-candidate audits
 """
 
+import sys
+import os
+import random
 from typing import Any
 import time
 import itertools
@@ -169,6 +172,7 @@ def next_round(audit, max_samplesize):
         contest = audit.active_contest
         c = audit.election.contests[contest]
         kmin = audit.status[audit.active_contest].min_kmins[0]
+        print(f"{kmin=}")
         #logging.warning(f"{kmin=}")
 
         # Create a play_audit object with the same election parameters, for estimations
@@ -196,7 +200,12 @@ def next_round(audit, max_samplesize):
             play_audit.set_observations(play_round_size, play_round_size, [play_round_votes, play_round_size - play_round_votes])
             # logging.warning(f"{play_audit.status[contest].risks[-1]=}")
 
-        round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
+        try:
+          round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
+        except Exception:
+          print(f" traceback for {delta_rounds=}, {votes_per_round=}")
+          traceback.print_exc(file=sys.stdout)
+          import pdb; pdb.set_trace()
 
     a = binom.rvs(round_size, 0.5)
 
@@ -264,7 +273,10 @@ if __name__ == "__main__":
     
     print("[")
 
-    for i in range(trials):
+    # Pick starting point at random, but override via $RANDSEED
+    epoch = random.seed(0, 100000)
+    epoch = os.environ.get("RANDSEED", epoch)
+    for seq in range(trials):
         p_w = 0.55
         p_l = 0.45
         audit = make_election(risk_limit, p_w, p_l)
@@ -273,9 +285,11 @@ if __name__ == "__main__":
 
         c = audit.election.contests['ArloContest']
 
+        seed = f"{epoch},{seq}"
+        random.seed(seed)
         print(f'''
     "audit": {{
-          "seq": {i},
+          "seq": {seed},
           "contest_ballots": {audit.election.total_ballots},
           "tally": {c.tally},
           "reported_winners": {c.reported_winners},
