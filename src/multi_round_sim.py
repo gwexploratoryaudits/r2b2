@@ -215,6 +215,9 @@ def run_audit(audit, max_samplesize):
             results = next_round(audit, max_samplesize)
           except Exception:
             traceback.print_exc()
+            import pdb; pdb.set_trace()
+            print(" traceback for ", json.dumps(results), ",")
+            return float('nan'), audit
         results.update({"round": i, "cpu": round(t.interval, 5)})
         risk = results["p_value"]
         print(" ", json.dumps(results), ",")
