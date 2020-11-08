@@ -49,6 +49,7 @@ import traceback
 # Parameters
 SPROB = 0.9
 MIN_ROUND_SIZE = 25
+MINERVA_MULTIPLE = 1.5
 
 def vars_to_dict(*args):
     ""
@@ -169,6 +170,18 @@ def next_round(audit, max_samplesize):
         round_size = min(round_size, max_samplesize - sampled)
 
     else:
+        round_num = len(audit.round_schedule)
+        round_size = int(audit.round_schedule[0] * MINERVA_MULTIPLE ** round_num)
+
+    a = binom.rvs(round_size, 0.55)
+
+    audit.set_observations(round_size, round_size, [a, round_size - a])
+
+    risk = audit.status[audit.active_contest].risks[-1]
+    return {"relevant_sample_size": round_size, "winner_ballots": a, "p_value": risk}
+
+
+def future_round_kmin():
         # Extract kmin for current audit
         contest = audit.active_contest
         c = audit.election.contests[contest]
@@ -207,13 +220,6 @@ def next_round(audit, max_samplesize):
           print(f" traceback for {delta_rounds=}, {votes_per_round=}")
           traceback.print_exc(file=sys.stdout)
           import pdb; pdb.set_trace()
-
-    a = binom.rvs(round_size, 0.5)
-
-    audit.set_observations(round_size, round_size, [a, round_size - a])
-
-    risk = audit.status[audit.active_contest].risks[-1]
-    return {"relevant_sample_size": round_size, "winner_ballots": a, "p_value": risk}
 
 
 def run_audit(audit, max_samplesize):
