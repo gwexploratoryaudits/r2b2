@@ -173,7 +173,7 @@ def next_round(audit, max_samplesize):
         round_num = len(audit.round_schedule)
         round_size = int(audit.round_schedule[0] * MINERVA_MULTIPLE ** round_num)
 
-    a = binom.rvs(round_size, 0.55)
+    a = binom.rvs(round_size, 0.5)
 
     audit.set_observations(round_size, round_size, [a, round_size - a])
 
