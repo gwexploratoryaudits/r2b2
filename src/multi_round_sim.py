@@ -40,6 +40,7 @@ from scipy.stats import binom, gamma
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
+import traceback
 
 # Parameters
 SPROB = 0.9
@@ -168,7 +169,7 @@ def next_round(audit, max_samplesize):
         contest = audit.active_contest
         c = audit.election.contests[contest]
         kmin = audit.status[audit.active_contest].min_kmins[0]
-        logging.warning(f"{kmin=}")
+        #logging.warning(f"{kmin=}")
 
         # Create a play_audit object with the same election parameters, for estimations
         risk_limit = audit.alpha
@@ -193,7 +194,7 @@ def next_round(audit, max_samplesize):
         # Replay the audit rounds, with winner votes adding up to kmin-1
         for play_round_size, play_round_votes in zip(delta_rounds, votes_per_round):
             play_audit.set_observations(play_round_size, play_round_size, [play_round_votes, play_round_size - play_round_votes])
-            logging.warning(f"{play_audit.status[contest].risks[-1]=}")
+            # logging.warning(f"{play_audit.status[contest].risks[-1]=}")
 
         round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
 
@@ -210,7 +211,10 @@ def run_audit(audit, max_samplesize):
 
     for i in itertools.count(start=1):
         with Timer() as t:
+          try:
             results = next_round(audit, max_samplesize)
+          except Exception:
+            traceback.print_exc()
         results.update({"round": i, "cpu": round(t.interval, 5)})
         risk = results["p_value"]
         print(" ", json.dumps(results), ",")
@@ -243,7 +247,7 @@ class GracefulKiller:
 
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.WARNING)
+    #logging.basicConfig(level=logging.WARNING)
     logging.basicConfig(level=logging.ERROR)
 
     killer = GracefulKiller()
