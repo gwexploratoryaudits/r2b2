@@ -219,7 +219,7 @@ def future_round_kmin():
         except Exception:
           print(f" traceback for {delta_rounds=}, {votes_per_round=}")
           traceback.print_exc(file=sys.stdout)
-          import pdb; pdb.set_trace()
+          # import pdb; pdb.set_trace()
 
 
 def run_audit(audit, max_samplesize):
