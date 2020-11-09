@@ -161,7 +161,7 @@ def next_round(audit, max_samplesize):
         #   prob_table_prev[observations_i] = 1.0
         #  IndexError: list assignment index out of range
 
-        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 50) * 2 ** len(audit.round_schedule))
+        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 20000) * 2 ** len(audit.round_schedule))
 
         sampled = 0
         if len(audit.round_schedule) > 0:
@@ -173,7 +173,7 @@ def next_round(audit, max_samplesize):
         round_num = len(audit.round_schedule)
         round_size = int(audit.round_schedule[0] * MINERVA_MULTIPLE ** round_num)
 
-    a = binom.rvs(round_size, 0.5)
+    a = binom.rvs(round_size, 0.505)
 
     audit.set_observations(round_size, round_size, [a, round_size - a])
 
@@ -285,11 +285,11 @@ if __name__ == "__main__":
     epoch = int(os.environ.get("RANDSEED", epoch))
 
     for seq in range(trials):
-        p_w = 0.55
-        p_l = 0.45
+        p_w = 0.505
+        p_l = 0.495
         audit = make_election(risk_limit, p_w, p_l)
 
-        max_samplesize = 100000   # FIXME: higher?
+        max_samplesize = 1000000   # FIXME: higher?
 
         c = audit.election.contests['ArloContest']
 
