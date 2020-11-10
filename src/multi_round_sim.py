@@ -115,6 +115,54 @@ def make_election(risk_limit, p_w: float, p_r: float) -> Any:
     return audit
 
 
+def make_audit(risk_limit, tally, num_winners=1, winners=["A"]) -> Any:
+    """
+    Transform tally to an athena Election object.
+
+    Inputs:
+        risk_limit      - the risk-limit for this audit
+        tally:      {c1: votes, c2: votes, ...}
+    """
+
+    contest_ballots = sum(tally.values())
+    votes = {key: tally[key] for key in tally if key != "_undervote_"}
+
+    contest = {
+        "contest_ballots": contest_ballots,
+        "tally": tally,
+        "num_winners": num_winners,
+        "reported_winners": winners,
+        "contest_type": "PLURALITY",
+    }
+
+    contest_name = "ArloContest"
+    election = {
+        "name": "ArloElection",
+        "total_ballots": contest_ballots,
+        "contests": {contest_name: contest},
+    }
+
+    audit = Audit("minerva", risk_limit)
+    audit.add_election(election)
+    audit.load_contest(contest_name)
+
+    return audit
+
+
+def take_multi_sample(round_size, probs):
+    """
+    Return a random sample totalling no bigger than round_size, with given probabilities
+
+    This is surely off, but hopefully close enough with big enough sample sizes....
+    Better to do what ron did? gamma?
+    """
+
+    sample = np.array([binom.rvs(round_size, prob) for prob in probs])
+    tot = sum(sample)
+    s = (sample * round_size / tot).astype(int)
+    # print(sum(s))
+    return list(s)
+
 # TODO:
 # def next_if_missed_by_one(audit, sprob):
 #        "Return next round size for given stopping probability assuming audit missed kmin by just one in last round"
@@ -161,27 +209,37 @@ def next_round(audit, max_samplesize):
         #   prob_table_prev[observations_i] = 1.0
         #  IndexError: list assignment index out of range
 
-        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 20000) * 2 ** len(audit.round_schedule))
+        #round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 20000) * 2 ** len(audit.round_schedule))
+        round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
 
         sampled = 0
         if len(audit.round_schedule) > 0:
             sampled = audit.round_schedule[-1]
 
+        print(f"{round_size=}, {sampled=}, {max_samplesize=}")
         round_size = min(round_size, max_samplesize - sampled)
 
     else:
         round_num = len(audit.round_schedule)
         round_size = int(audit.round_schedule[0] * MINERVA_MULTIPLE ** round_num)
 
-    a = binom.rvs(round_size, 0.505)
 
-    audit.set_observations(round_size, round_size, [a, round_size - a])
+    # a = binom.rvs(round_size, 0.505)
+    probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
+    #import pdb; pdb.set_trace()
+    probs = probs / sum(probs)
+    #print(probs)
+    sample = take_multi_sample(round_size, probs)
+    #print(sample)
+
+    audit.set_observations(round_size, round_size, sample)
 
     risk = audit.status[audit.active_contest].risks[-1]
-    return {"relevant_sample_size": round_size, "winner_ballots": a, "p_value": risk}
+    return {"relevant_sample_size": round_size, "sample": sample, "p_value": risk}
 
 
 def future_round_kmin():
+        # FIXME: add arguments, make this available to next_round()
         # Extract kmin for current audit
         contest = audit.active_contest
         c = audit.election.contests[contest]
@@ -230,17 +288,19 @@ def run_audit(audit, max_samplesize):
           try:
             results = next_round(audit, max_samplesize)
           except Exception:
-            traceback.print_exc()
-            import pdb; pdb.set_trace()
-            print(" traceback for ", json.dumps(results), ",")
+            traceback.print_exc(file=sys.stdout)
+            # import pdb; pdb.set_trace()
+            print(" traceback")
             return float('nan'), audit
         results.update({"round": i, "cpu": round(t.interval, 5)})
         risk = results["p_value"]
-        print(" ", json.dumps(results), ",")
+        print(" ", results)
+        #print(" ", json.dumps(results), ",")
         if risk <= risk_limit:
             return risk, audit
         if audit.round_schedule[-1] >= max_samplesize  or  risk > 100.0:
-            return risk, audit  # FIXME: refactor?
+            print("Bailing audit due to exceeding max-samplesize or big risk")
+            return risk, audit
 
 
 class Timer:
@@ -285,9 +345,10 @@ if __name__ == "__main__":
     epoch = int(os.environ.get("RANDSEED", epoch))
 
     for seq in range(trials):
-        p_w = 0.505
-        p_l = 0.495
-        audit = make_election(risk_limit, p_w, p_l)
+        #p_w = 0.51
+        #p_l = 0.49
+        tally = {"A": 320, "B": 300, "C": 200, "D": 180}
+        audit = make_audit(risk_limit, tally, num_winners=2)
 
         max_samplesize = 1000000   # FIXME: higher?
 
