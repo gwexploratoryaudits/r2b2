@@ -40,7 +40,7 @@ import time
 import itertools
 import json
 import logging
-from scipy.stats import binom, gamma
+from scipy.stats import binom, multinomial, gamma
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
@@ -149,20 +149,6 @@ def make_audit(risk_limit, tally, num_winners=1, winners=["A"]) -> Any:
     return audit
 
 
-def take_multi_sample(round_size, probs):
-    """
-    Return a random sample totalling no bigger than round_size, with given probabilities
-
-    This is surely off, but hopefully close enough with big enough sample sizes....
-    Better to do what ron did? gamma?
-    """
-
-    sample = np.array([binom.rvs(round_size, prob) for prob in probs])
-    tot = sum(sample)
-    s = (sample * round_size / tot).astype(int)
-    # print(sum(s))
-    return list(s)
-
 # TODO:
 # def next_if_missed_by_one(audit, sprob):
 #        "Return next round size for given stopping probability assuming audit missed kmin by just one in last round"
@@ -226,10 +212,9 @@ def next_round(audit, max_samplesize):
 
     # a = binom.rvs(round_size, 0.505)
     probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
-    #import pdb; pdb.set_trace()
     probs = probs / sum(probs)
     #print(probs)
-    sample = take_multi_sample(round_size, probs)
+    sample = list(multinomial.rvs(round_size, probs))
     #print(sample)
 
     audit.set_observations(round_size, round_size, sample)
