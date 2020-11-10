@@ -262,25 +262,10 @@ def future_round_kmin():
           # import pdb; pdb.set_trace()
 
 
-def run_audit(audit, max_samplesize):
+def run_audit(audit, probs, max_samplesize):
     "Run a Minerva RLA to completion and return the p_value"
 
     for i in itertools.count(start=1):
-        probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
-        probs = probs / sum(probs)
-        # Pick an actual tally which is close to the original, rejecting those with different outcomes
-        while True:
-            truetally = multinomial.rvs(200, probs)
-            num_winners = audit.election.contests[audit.active_contest].num_winner
-            #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
-            if min(truetally[:num_winners]) > max(truetally[num_winners:]):
-                break
-            #print(f'\n\nfailed truetally: {truetally=}\n')
-            # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
-        trueprobs = truetally / sum(truetally)
-
-        print(f'{trueprobs=}')
-
         with Timer() as t:
           try:
             results = next_round(audit, probs, max_samplesize)
@@ -357,22 +342,24 @@ if __name__ == "__main__":
         binom.random_state = random_gen
         gamma.random_state = random_gen
 
-        print(f'{seed=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}')
+        probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
+        probs = probs / sum(probs)
+        # Pick an actual tally which is close to the original, rejecting those with different outcomes
+        while True:
+            truetally = multinomial.rvs(200, probs)
+            num_winners = audit.election.contests[audit.active_contest].num_winner
+            #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
+            if min(truetally[:num_winners]) > max(truetally[num_winners:]):
+                break
+            #print(f'\n\nfailed truetally: {truetally=}\n')
+            # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
+        trueprobs = truetally / sum(truetally)
 
-        """
-        print(f'''
-    "audit": {{
-          "seq": {seed},
-          "contest_ballots": {audit.election.total_ballots},
-          "tally": {c.tally},
-          "reported_winners": {c.reported_winners},
-          "rounds": {{
-        ''')
-        """
+        print(f'{seed=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
 
         #  "num_winners": {c.num_winners},
 
-        risk, res = run_audit(audit, max_samplesize)
+        risk, res = run_audit(audit, probs, max_samplesize)
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
