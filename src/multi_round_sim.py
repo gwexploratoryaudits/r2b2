@@ -155,7 +155,7 @@ def make_audit(risk_limit, tally, num_winners=1, winners=["A"]) -> Any:
 # extract from below
 
 
-def next_round(audit, max_samplesize):
+def next_round(audit, probs, max_samplesize):
     """Run another round on the given audit and return the p_value
 
     TODO: generalize. Replace max_samplesize with a more general context object to this method,
@@ -211,9 +211,6 @@ def next_round(audit, max_samplesize):
 
 
     # a = binom.rvs(round_size, 0.505)
-    probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
-    probs = probs / sum(probs)
-    #print(probs)
     sample = list(multinomial.rvs(round_size, probs))
     #print(sample)
 
@@ -269,9 +266,24 @@ def run_audit(audit, max_samplesize):
     "Run a Minerva RLA to completion and return the p_value"
 
     for i in itertools.count(start=1):
+        probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
+        probs = probs / sum(probs)
+        # Pick an actual tally which is close to the original, rejecting those with different outcomes
+        while True:
+            truetally = multinomial.rvs(200, probs)
+            num_winners = audit.election.contests[audit.active_contest].num_winner
+            #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
+            if min(truetally[:num_winners]) > max(truetally[num_winners:]):
+                break
+            #print(f'\n\nfailed truetally: {truetally=}\n')
+            # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
+        trueprobs = truetally / sum(truetally)
+
+        print(f'{trueprobs=}')
+
         with Timer() as t:
           try:
-            results = next_round(audit, max_samplesize)
+            results = next_round(audit, probs, max_samplesize)
           except Exception:
             traceback.print_exc(file=sys.stdout)
             # import pdb; pdb.set_trace()
