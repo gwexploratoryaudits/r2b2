@@ -298,7 +298,7 @@ def run_audit(audit, max_samplesize):
         #print(" ", json.dumps(results), ",")
         if risk <= risk_limit:
             return risk, audit
-        if audit.round_schedule[-1] >= max_samplesize  or  risk > 100.0:
+        if audit.round_schedule[-1] >= max_samplesize  or  float('inf') > risk > 100.0:
             print("Bailing audit due to exceeding max-samplesize or big risk")
             return risk, audit
 
@@ -379,7 +379,7 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk)}")
         # print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
