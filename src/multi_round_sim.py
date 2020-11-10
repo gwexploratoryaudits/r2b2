@@ -372,9 +372,9 @@ if __name__ == "__main__":
 
     audits = len(risks)
     # FIXME: The athena module frequently produces a risk level of 0.0 for large multi-round audits
-    passed = len([r for r in risks if r > 0.0 and r <= risk_limit])
+    passed = len([r for r in risks if r <= risk_limit])
 
-    print(f"{passed / audits:.2%} ({passed}/{audits}) of the audits passed: (excluding 'zero' risks)")
+    print(f"{passed / audits:.2%} ({passed}/{audits}) of the audits passed:")
     print(f"{risk_limit=:.1%}")
     print(f"Round size counter: {sorted(Counter([len(r.round_schedule) for r in results]).items())}")
     np.set_printoptions(suppress=True, linewidth=95)
