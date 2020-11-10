@@ -209,14 +209,14 @@ def next_round(audit, max_samplesize):
         #   prob_table_prev[observations_i] = 1.0
         #  IndexError: list assignment index out of range
 
-        #round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * 20000) * 2 ** len(audit.round_schedule))
         round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
 
         sampled = 0
         if len(audit.round_schedule) > 0:
             sampled = audit.round_schedule[-1]
 
-        print(f"{round_size=}, {sampled=}, {max_samplesize=}")
+        #print(f"{round_size=}, {sampled=}, {max_samplesize=}")
         round_size = min(round_size, max_samplesize - sampled)
 
     else:
@@ -348,7 +348,7 @@ if __name__ == "__main__":
         #p_w = 0.51
         #p_l = 0.49
         tally = {"A": 320, "B": 300, "C": 200, "D": 180}
-        audit = make_audit(risk_limit, tally, num_winners=2)
+        audit = make_audit(risk_limit, tally, num_winners=2, winners=["A", "B"])
 
         max_samplesize = 1000000   # FIXME: higher?
 
@@ -359,6 +359,10 @@ if __name__ == "__main__":
         random_gen = Generator(PCG64(seed))
         binom.random_state = random_gen
         gamma.random_state = random_gen
+
+        print(f'{seed=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}')
+
+        """
         print(f'''
     "audit": {{
           "seq": {seed},
@@ -367,6 +371,7 @@ if __name__ == "__main__":
           "reported_winners": {c.reported_winners},
           "rounds": {{
         ''')
+        """
 
         #  "num_winners": {c.num_winners},
 
@@ -374,8 +379,8 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}\n")
-        print("}")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'][0], risk)}")
+        # print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
             break
