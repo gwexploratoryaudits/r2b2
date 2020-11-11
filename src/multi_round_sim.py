@@ -195,7 +195,9 @@ def next_round(audit, probs, max_samplesize):
         #   prob_table_prev[observations_i] = 1.0
         #  IndexError: list assignment index out of range
 
-        round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+        with Timer() as t:
+            round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+        print(f"{round_size=}, cpu={round(t.interval, 5)}")
         round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
 
         sampled = 0
@@ -271,7 +273,7 @@ def run_audit(audit, probs, max_samplesize):
             results = next_round(audit, probs, max_samplesize)
           except Exception:
             traceback.print_exc(file=sys.stdout)
-            # import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
             print(" traceback")
             return float('nan'), audit
         results.update({"round": i, "cpu": round(t.interval, 5)})
@@ -313,6 +315,9 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
+    import warnings
+    warnings.filterwarnings('error', category=RuntimeWarning)
+
     risk_limit = 0.1
     trials = 100000 # 100000 # 100000
     risks = []
@@ -329,8 +334,29 @@ if __name__ == "__main__":
     for seq in range(trials):
         #p_w = 0.51
         #p_l = 0.49
-        tally = {"A": 320, "B": 300, "C": 200, "D": 180}
-        audit = make_audit(risk_limit, tally, num_winners=2, winners=["A", "B"])
+        #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
+        # https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate.html 2020-11-10T22:52:45+0000 
+        # tally = {"Perdue": 2457909, "Ossoff": 2369925, "Hazel": 114802, "Writein": 265}
+        # https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate-special.html
+        tally = {"Warnock": 1613896, "Loeffler": 1270718, "Collins": 978667, "Jackson": 323518, "Lieberman": 135745,
+                 "Tamara Johnson-Shealey": 106552,
+                 "Jamesia James": 94201,
+                 "Derrick Grayson": 51513,
+                 "Joy Slade": 44849,
+                 "Annette Jackson": 44231,
+		 "Kandiss Taylor": 40266,
+                 "Wayne Johnson": 36114,
+                 "Brian Slowinski": 35354,
+                 "Richard Winfield": 28617,
+                 "Ed Tarver": 26311,
+                 "Allen Buckley": 17922,
+                 "John Fortuin": 15269,
+                 "Al Bartell": 14614,
+                 "Valencia Stovall": 13280,
+                 "Michael Greene": 13253,
+                 "Write-ins": 132
+        }
+        audit = make_audit(risk_limit, tally, num_winners=2, winners=["Warnock", "Loeffler"])
 
         max_samplesize = 1000000   # FIXME: higher?
 
