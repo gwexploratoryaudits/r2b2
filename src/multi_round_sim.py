@@ -198,7 +198,7 @@ def next_round(audit, probs, max_samplesize):
 
         with Timer() as t:
             round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
-        print(f"{round_size=}, cpu={round(t.interval, 5)}")
+        print(f"Round size for {SPROB:.0%} SPROB = {round_size}, cpu={round(t.interval, 5)}")
         round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
 
         sampled = 0
@@ -260,7 +260,7 @@ def future_round_kmin():
         try:
           round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
         except ValueError as e:
-              print(e)
+              print(f"obsolete code{e}")
         except Exception:
           print(f" traceback for {delta_rounds=}, {votes_per_round=}")
           traceback.print_exc(file=sys.stdout)
@@ -275,7 +275,7 @@ def run_audit(audit, probs, max_samplesize):
           try:
             results = next_round(audit, probs, max_samplesize)
           except ValueError as e:
-              print(e)
+              print(f"Cannot audit: {e}")
               return float('nan'), audit
           except Exception:
             traceback.print_exc(file=sys.stdout)
@@ -349,8 +349,8 @@ if __name__ == "__main__":
 
     # TODO: simulate random # candidates, random # winners, uniform random votes per candidate, sort votes, pick random round size around 70% stopping prob?
 
-    # Ensure minimum of 0.5% margin. TODO: improve this
-    univotes = uniform(0, 200)
+    # Ensure minimum of 1% margin. TODO: improve this
+    univotes = uniform(0, 100)
     trials = 100000 # But easy to stop at any time and get final summary report via interrupt
     risks = []
     results = []
