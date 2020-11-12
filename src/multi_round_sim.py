@@ -343,14 +343,15 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
+    os.system("git log --pretty=oneline -n 1; echo; git status -vv")
     # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
 
     # TODO: simulate random # candidates, random # winners, uniform random votes per candidate, sort votes, pick random round size around 70% stopping prob?
 
-    # Ensure minimum of 1% margin. TODO: improve this
-    univotes = uniform(0, 100)
+    vote_scale = 100
+    univotes = uniform(0, vote_scale)
     trials = 100000 # But easy to stop at any time and get final summary report via interrupt
     risks = []
     results = []
@@ -372,12 +373,19 @@ if __name__ == "__main__":
         univotes.random_state = random_gen
         risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
 
-        num_candidates = max(1, min(25, int(gamma.rvs(a=2, scale=2))))
-        num_winners = max(1, min(num_candidates, int(gamma.rvs(a=2, scale=2))))
-        votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
+        num_candidates = max(2, min(5, int(gamma.rvs(a=3, scale=0.6))))
+        num_winners = max(1, min(num_candidates-1, int(gamma.rvs(a=3, scale=0.6))))
+
+        while True:
+            votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
+            votes = np.sort(votes)[::-1]
+            # print(f'{votes=}, {num_winners=}')
+            margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
+            if margin >= 0.05:
+                break
 
         #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
-        tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, sorted(votes, reverse=True))}
+        tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
         audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
 
         max_samplesize = 1000000   # FIXME: higher?
@@ -399,7 +407,7 @@ if __name__ == "__main__":
             # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
         trueprobs = truetally / sum(truetally)
 
-        print(f'\n{seed=}, {risk_limit=}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
+        print(f'\n{seed=}, {risk_limit=}, {margin=:.2%}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
 
         #  "num_winners": {c.num_winners},
 
@@ -407,7 +415,7 @@ if __name__ == "__main__":
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk)}")
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, risk <= risk_limit)}")
         # print("}")
         if killer.kill_now:
             print("Received interrupt - stopping")
@@ -418,7 +426,6 @@ if __name__ == "__main__":
     passed = len([r for r in risks if r <= risk_limit])
 
     print(f"{passed / audits:.2%} ({passed}/{audits}) of the audits passed:")
-    print(f"{risk_limit=:.1%}")
     print(f"Round size counter: {sorted(Counter([len(r.round_schedule) for r in results]).items())}")
     np.set_printoptions(suppress=True, linewidth=95)
 
