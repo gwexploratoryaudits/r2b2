@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
-    os.system("git log --pretty=oneline -n 1; echo; git status -vv")
+    os.system("cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
     # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
