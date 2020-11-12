@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
-    os.system("pip show athena; cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
+    os.system("pip show athena; echo; cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
     # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
@@ -371,17 +371,19 @@ if __name__ == "__main__":
         binom.random_state = random_gen
         gamma.random_state = random_gen
         univotes.random_state = random_gen
+        multinomial.random_state = random_gen
         risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
 
         num_candidates = max(2, min(5, int(gamma.rvs(a=3, scale=0.6))))
         num_winners = max(1, min(num_candidates-1, int(gamma.rvs(a=3, scale=0.6))))
 
+        # Find a set of votes with a big enough margin
         while True:
             votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
             votes = np.sort(votes)[::-1]
-            # print(f'{votes=}, {num_winners=}')
+            print(f'{votes=}, {num_winners=}')
             if sum(votes) == 0:
-                # Avoid RuntimeWarning: invalid value encountered in long_scalars
+                # Avoid divide by zero == RuntimeWarning: invalid value encountered in long_scalars
                 continue
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
             if margin >= 0.05:
@@ -404,7 +406,7 @@ if __name__ == "__main__":
             truetally = multinomial.rvs(200, probs)
             num_winners = audit.election.contests[audit.active_contest].num_winner
             #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
-            if num_winners == num_candidates  or  min(truetally[:num_winners]) > max(truetally[num_winners:]):
+            if min(truetally[:num_winners]) > max(truetally[num_winners:]):
                 break
             #print(f'\n\nfailed truetally: {truetally=}\n')
             # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
