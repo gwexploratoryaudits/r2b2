@@ -32,6 +32,7 @@ Eventually:
 """
 
 import sys
+import string
 import os
 import random
 from numpy.random import Generator, PCG64
@@ -40,15 +41,15 @@ import time
 import itertools
 import json
 import logging
-from scipy.stats import binom, multinomial, gamma
+from scipy.stats import binom, multinomial, gamma, uniform
 from collections import Counter
 from athena.audit import Audit  # type: ignore
 import numpy as np
 import traceback
 
 # Parameters
-SPROB = 0.9
-MIN_ROUND_SIZE = 25
+SPROB = 0.7
+MIN_ROUND_SIZE = 100
 MINERVA_MULTIPLE = 1.5
 
 def vars_to_dict(*args):
@@ -196,7 +197,7 @@ def next_round(audit, probs, max_samplesize):
         #  IndexError: list assignment index out of range
 
         with Timer() as t:
-            round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+            round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
         print(f"{round_size=}, cpu={round(t.interval, 5)}")
         round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
 
@@ -258,6 +259,8 @@ def future_round_kmin():
 
         try:
           round_size = play_audit.find_next_round_size([SPROB])['future_round_sizes'][0]
+        except ValueError as e:
+              print(e)
         except Exception:
           print(f" traceback for {delta_rounds=}, {votes_per_round=}")
           traceback.print_exc(file=sys.stdout)
@@ -271,10 +274,13 @@ def run_audit(audit, probs, max_samplesize):
         with Timer() as t:
           try:
             results = next_round(audit, probs, max_samplesize)
+          except ValueError as e:
+              print(e)
+              return float('nan'), audit
           except Exception:
             traceback.print_exc(file=sys.stdout)
             import pdb; pdb.set_trace()
-            print(" traceback")
+            print(" Unknown traceback")
             return float('nan'), audit
         results.update({"round": i, "cpu": round(t.interval, 5)})
         risk = results["p_value"]
@@ -297,6 +303,28 @@ class Timer:
         self.interval = self.end - self.start
 
 
+# https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate.html 2020-11-10T22:52:45+0000 
+# tally = {"Perdue": 2457909, "Ossoff": 2369925, "Hazel": 114802, "Writein": 265}
+# https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate-special.html
+ga_special_tally = {"Warnock": 1613896, "Loeffler": 1270718, "Collins": 978667, "Jackson": 323518, "Lieberman": 135745,
+                 "Tamara Johnson-Shealey": 106552,
+                 "Jamesia James": 94201,
+                 "Derrick Grayson": 51513,
+                 "Joy Slade": 44849,
+                 "Annette Jackson": 44231,
+		 "Kandiss Taylor": 40266,
+                 "Wayne Johnson": 36114,
+                 "Brian Slowinski": 35354,
+                 "Richard Winfield": 28617,
+                 "Ed Tarver": 26311,
+                 "Allen Buckley": 17922,
+                 "John Fortuin": 15269,
+                 "Al Bartell": 14614,
+                 "Valencia Stovall": 13280,
+                 "Michael Greene": 13253,
+                 "Write-ins": 132
+        }
+
 class GracefulKiller:
   kill_now = False
   def __init__(self):
@@ -315,16 +343,18 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
+    # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
 
-    risk_limit = 0.1
-    trials = 100000 # 100000 # 100000
+    # TODO: simulate random # candidates, random # winners, uniform random votes per candidate, sort votes, pick random round size around 70% stopping prob?
+
+    # Ensure minimum of 0.5% margin. TODO: improve this
+    univotes = uniform(0, 200)
+    trials = 100000 # But easy to stop at any time and get final summary report via interrupt
     risks = []
     results = []
 
-    risk_limit = 0.1
-    
     print("[")
 
     # Pick starting point at random, but override via $RANDSEED
@@ -332,41 +362,29 @@ if __name__ == "__main__":
     epoch = int(os.environ.get("RANDSEED", epoch))
 
     for seq in range(trials):
-        #p_w = 0.51
-        #p_l = 0.49
-        #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
-        # https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate.html 2020-11-10T22:52:45+0000 
-        # tally = {"Perdue": 2457909, "Ossoff": 2369925, "Hazel": 114802, "Writein": 265}
-        # https://www.nytimes.com/interactive/2020/11/03/us/elections/results-georgia-senate-special.html
-        tally = {"Warnock": 1613896, "Loeffler": 1270718, "Collins": 978667, "Jackson": 323518, "Lieberman": 135745,
-                 "Tamara Johnson-Shealey": 106552,
-                 "Jamesia James": 94201,
-                 "Derrick Grayson": 51513,
-                 "Joy Slade": 44849,
-                 "Annette Jackson": 44231,
-		 "Kandiss Taylor": 40266,
-                 "Wayne Johnson": 36114,
-                 "Brian Slowinski": 35354,
-                 "Richard Winfield": 28617,
-                 "Ed Tarver": 26311,
-                 "Allen Buckley": 17922,
-                 "John Fortuin": 15269,
-                 "Al Bartell": 14614,
-                 "Valencia Stovall": 13280,
-                 "Michael Greene": 13253,
-                 "Write-ins": 132
-        }
-        audit = make_audit(risk_limit, tally, num_winners=2, winners=["Warnock", "Loeffler"])
-
-        max_samplesize = 1000000   # FIXME: higher?
-
-        c = audit.election.contests['ArloContest']
-
         seed = (epoch, seq)
-        # See python - scipy.stats seed? - Stack Overflow https://stackoverflow.com/questions/16016959/scipy-stats-seed
+
+        # See reproducable seeding - Stack Overflow https://stackoverflow.com/questions/16016959/scipy-stats-seed
+        # TODO: Is it all reproducable if some other module uses binom and varies in its use?
         random_gen = Generator(PCG64(seed))
         binom.random_state = random_gen
         gamma.random_state = random_gen
+        univotes.random_state = random_gen
+        risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
+
+        num_candidates = max(1, min(25, int(gamma.rvs(a=2, scale=2))))
+        num_winners = max(1, min(num_candidates, int(gamma.rvs(a=2, scale=2))))
+        votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
+
+        #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
+        tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, sorted(votes, reverse=True))}
+        audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
+
+        max_samplesize = 1000000   # FIXME: higher?
+
+        # print(f'{seed=}, {risk_limit=}, {num_candidates=}, {num_winners=}, tally={tally}')
+
+        c = audit.election.contests['ArloContest']
 
         probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
         probs = probs / sum(probs)
@@ -375,13 +393,13 @@ if __name__ == "__main__":
             truetally = multinomial.rvs(200, probs)
             num_winners = audit.election.contests[audit.active_contest].num_winner
             #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
-            if min(truetally[:num_winners]) > max(truetally[num_winners:]):
+            if num_winners == num_candidates  or  min(truetally[:num_winners]) > max(truetally[num_winners:]):
                 break
             #print(f'\n\nfailed truetally: {truetally=}\n')
             # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
         trueprobs = truetally / sum(truetally)
 
-        print(f'{seed=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
+        print(f'\n{seed=}, {risk_limit=}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
 
         #  "num_winners": {c.num_winners},
 
