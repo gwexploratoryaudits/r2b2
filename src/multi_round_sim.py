@@ -49,7 +49,7 @@ import traceback
 
 # Parameters
 SPROB = 0.7
-MIN_ROUND_SIZE = 10
+MIN_ROUND_SIZE = 100
 MINERVA_MULTIPLE = 1.5
 
 def vars_to_dict(*args):
