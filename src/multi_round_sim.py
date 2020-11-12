@@ -380,6 +380,9 @@ if __name__ == "__main__":
             votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
             votes = np.sort(votes)[::-1]
             # print(f'{votes=}, {num_winners=}')
+            if sum(votes) == 0:
+                # Avoid RuntimeWarning: invalid value encountered in long_scalars
+                continue
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
             if margin >= 0.05:
                 break
