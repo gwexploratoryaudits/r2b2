@@ -49,7 +49,7 @@ import traceback
 
 # Parameters
 SPROB = 0.7
-MIN_ROUND_SIZE = 100
+MIN_ROUND_SIZE = 10
 MINERVA_MULTIPLE = 1.5
 
 def vars_to_dict(*args):
@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
     killer = GracefulKiller()
 
-    os.system("cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
+    os.system("pip show athena; cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
     # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
