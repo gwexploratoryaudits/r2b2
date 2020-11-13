@@ -264,8 +264,8 @@ def run_audit(audit, probs, max_samplesize):
         #print(" ", json.dumps(results), ",")
         if risk <= risk_limit:
             return risk, audit
-        if audit.round_schedule[-1] >= max_samplesize  or  float('inf') > risk > 100.0:
-            print("Bailing audit due to exceeding max-samplesize or big risk")
+        if risk > 100.0  or  audit.round_schedule[-1] >= max_samplesize:
+            print("Do a full hand count. Bailing audit due to exceeding max-samplesize or big risk")
             return risk, audit
 
 
