@@ -379,7 +379,10 @@ if __name__ == "__main__":
         probs = probs / sum(probs)
         # Pick an actual tally which is close to the original, rejecting those with different outcomes
         while True:
-            truetally = multinomial.rvs(200, probs)
+            try:
+                truetally = multinomial.rvs(200, probs)
+            except Exception as e:
+                print(f"Exception for multinomial of {probs=} {e}")
             num_winners = audit.election.contests[audit.active_contest].num_winner
             #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
             if min(truetally[:num_winners]) > max(truetally[num_winners:]):
