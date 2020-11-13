@@ -386,7 +386,7 @@ if __name__ == "__main__":
                 # Avoid divide by zero == RuntimeWarning: invalid value encountered in long_scalars
                 continue
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
-            if margin >= 0.05:
+            if margin >= 0.005:
                 break
 
         #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
