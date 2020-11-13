@@ -348,6 +348,8 @@ if __name__ == "__main__":
         gamma.random_state = random_gen
         univotes.random_state = random_gen
         multinomial.random_state = random_gen
+        random.seed(seq/epoch)
+
         risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
 
         num_candidates = max(2, min(5, 2 + int(gamma.rvs(a=3, scale=0.6))))
