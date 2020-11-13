@@ -52,30 +52,6 @@ SPROB = 0.7
 MIN_ROUND_SIZE = 100
 MINERVA_MULTIPLE = 1.5
 
-def vars_to_dict(*args):
-    ""
-    return dict(((k, eval(k)) for k in args))
-
-def compute_multi_round_r2b2(contest_dict, rounds, observations, risk_limit=0.1, max_fraction=0.5):
-    """Compute multi-round risk level via r2b2 module, returning p_value"""
-
-    contest = r2b2contest.Contest(**contest_dict)
-    if contest.contest_ballots % 2 != 0:
-        raise Exception("Number of contest ballots must be a multiple of two")
-
-    half_ballots = contest.contest_ballots // 2
-    tied_contest = Contest(contest.contest_ballots, {'A': half_ballots, 'B': half_ballots}, 1, ['A'], ContestType.PLURALITY)
-
-    sprob_reported = Sprob(rounds, observations, contest)
-    sprob_tied = Sprob(rounds, observations, tied_contest)
-    tsprobs = sprob_tied.compute_sprobs()
-    rsprobs = sprob_reported.compute_sprobs()
-    # print(f"{tsprobs=}\n{rsprobs=}")
-    ratios = [tsprobs[i] /rsprobs[i]  for i in range(len(rounds))]
-    print(f"{ratios=}")
-    return min(ratios)
-
-
 def make_election(risk_limit, p_w: float, p_r: float) -> Any:
     """
     Transform fractional shares to an athena Election object.
