@@ -262,6 +262,9 @@ def run_audit(audit, probs, max_samplesize):
         risk = results["p_value"]
         print(" ", results)
         #print(" ", json.dumps(results), ",")
+        if risk == float('inf'):
+            # Results are inconclusive: round size too small
+            continue
         if risk <= risk_limit:
             return risk, audit
         if risk > 100.0  or  audit.round_schedule[-1] >= max_samplesize:
