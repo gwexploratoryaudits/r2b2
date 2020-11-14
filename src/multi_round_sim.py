@@ -382,13 +382,12 @@ if __name__ == "__main__":
 
         probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
         probs = probs / sum(probs)
+        if sum(probs) > 1.0:
+            print(f"Bail, for multinomial of {probs=}, based on {votes=}")
+            continue
         # Pick an actual tally which is close to the original, rejecting those with different outcomes
         while True:
-            try:
-                truetally = multinomial.rvs(200, probs)
-            except Exception as e:
-                print(f"Exception for multinomial of {probs=} {e}")
-                continue
+            truetally = multinomial.rvs(200, probs)
             num_winners = audit.election.contests[audit.active_contest].num_winner
             #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
             if min(truetally[:num_winners]) > max(truetally[num_winners:]):
