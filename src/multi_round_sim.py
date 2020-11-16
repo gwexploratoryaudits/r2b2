@@ -173,8 +173,7 @@ def next_round(audit, probs, max_samplesize):
         #  IndexError: list assignment index out of range
 
         with Timer() as t:
-            # round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
-            round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+            round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
         if False:  # pick actual round size in neighborhood of SPROB-based size
             print(f"Round size for {SPROB:.0%} SPROB = {round_size}, cpu={round(t.interval, 5)}")
             round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
@@ -378,7 +377,7 @@ if __name__ == "__main__":
             if margin >= 0.005:
                 break
         else:
-            votes = np.array([400, 400, 200])
+            votes = np.array([366, 366, 266])
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
 
         tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
@@ -408,7 +407,7 @@ if __name__ == "__main__":
             truetally = list(tally.values())
         trueprobs = truetally / sum(truetally)
 
-        print(f'\n{seed=}, {risk_limit=}, {margin=:.2%}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
+        print(f'\n{seed=}, {risk_limit=}, {margin=:.2%}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}, {SPROB=}')
 
         #  "num_winners": {c.num_winners},
 
