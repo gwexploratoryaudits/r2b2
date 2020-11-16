@@ -355,8 +355,12 @@ if __name__ == "__main__":
 
         risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
 
-        num_candidates = max(2, min(5, 2 + int(gamma.rvs(a=3, scale=0.6))))
-        num_winners = max(1, min(num_candidates-1, int(gamma.rvs(a=3, scale=0.6))))
+        if False: # rand
+            num_candidates = max(2, min(5, 2 + int(gamma.rvs(a=3, scale=0.6))))
+            num_winners = max(1, min(num_candidates-1, int(gamma.rvs(a=3, scale=0.6))))
+        else:
+            num_candidates = 3
+            num_winners = 2
 
         # Find a set of votes with a big enough margin
         while True:
@@ -370,7 +374,7 @@ if __name__ == "__main__":
             if margin >= 0.005:
                 break
 
-        #tally = {"A": 320, "B": 300, "C": 200, "D": 180}
+        tally = {"A": 400, "B": 400, "C": 200}
         tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
         audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
 
@@ -386,7 +390,7 @@ if __name__ == "__main__":
             print(f"Bail, for multinomial of {probs=}, based on {votes=}")
             continue
         # Pick an actual tally which is close to the original, rejecting those with different outcomes
-        while True:
+        if False: # different probs    while True:
             truetally = multinomial.rvs(200, probs)
             num_winners = audit.election.contests[audit.active_contest].num_winner
             #print(f"{truetally[:num_winners]=} {truetally[num_winners:]=}")
@@ -394,6 +398,8 @@ if __name__ == "__main__":
                 break
             #print(f'\n\nfailed truetally: {truetally=}\n')
             # if all(truetally[win] > truetally[lose] for win in range(num_winners) for lose in range(num_winners+1, len(probs)):
+        else:
+            truetally = list(tally.values())
         trueprobs = truetally / sum(truetally)
 
         print(f'\n{seed=}, {risk_limit=}, {margin=:.2%}, {num_candidates=}, {num_winners=}, ballots={audit.election.total_ballots}, tally={c.tally}, winners={c.reported_winners}, {trueprobs=}')
