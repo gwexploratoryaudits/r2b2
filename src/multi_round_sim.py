@@ -334,6 +334,7 @@ if __name__ == "__main__":
     trials = 100000 # But easy to stop at any time and get final summary report via interrupt
     risks = []
     results = []
+    successes = 0
 
     print("[")
 
@@ -409,20 +410,21 @@ if __name__ == "__main__":
         #  "num_winners": {c.num_winners},
 
         risk, res = run_audit(audit, probs, max_samplesize)
+
         risks.append(risk)
         results.append(res)
         # print(f"{repr(res)=}, {type(res)=}")
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, risk <= risk_limit)}")
+        success = risk <= risk_limit
+        successes += success
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, success)}")
         # print("}")
+
         if killer.kill_now:
             print("Received interrupt - stopping")
             break
 
     audits = len(risks)
-    # FIXME: The athena module frequently produces a risk level of 0.0 for large multi-round audits
-    passed = len([r for r in risks if r <= risk_limit])
-
-    print(f"{passed / audits:.2%} ({passed}/{audits}) of the audits passed:")
+    print(f"{successes / audits:.2%} ({successes}/{audits}) of the audits passed:")
     print(f"Round size counter: {sorted(Counter([len(r.round_schedule) for r in results]).items())}")
     np.set_printoptions(suppress=True, linewidth=95)
 
