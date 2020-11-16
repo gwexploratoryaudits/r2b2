@@ -363,7 +363,7 @@ if __name__ == "__main__":
             num_winners = 2
 
         # Find a set of votes with a big enough margin
-        while True:
+        if False: # while True:
             votes = np.array([int(univotes.rvs()) for _ in range(num_candidates)])
             votes = np.sort(votes)[::-1]
             print(f'{votes=}, {num_winners=}')
@@ -373,8 +373,10 @@ if __name__ == "__main__":
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
             if margin >= 0.005:
                 break
+        else:
+            votes = np.array([400, 400, 200])
+            margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
 
-        tally = {"A": 400, "B": 400, "C": 200}
         tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
         audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
 
