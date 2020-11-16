@@ -173,9 +173,11 @@ def next_round(audit, probs, max_samplesize):
         #  IndexError: list assignment index out of range
 
         with Timer() as t:
-            round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
-        print(f"Round size for {SPROB:.0%} SPROB = {round_size}, cpu={round(t.interval, 5)}")
-        round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
+            # round_size = audit.find_next_round_size([SPROB])["future_round_sizes"][0]
+            round_size = audit.find_next_round_size([0.9])["future_round_sizes"][0]
+        if False:  # pick actual round size in neighborhood of SPROB-based size
+            print(f"Round size for {SPROB:.0%} SPROB = {round_size}, cpu={round(t.interval, 5)}")
+            round_size = max(MIN_ROUND_SIZE, int(gamma.rvs(a=2, scale=2) * round_size/2) * 2 ** len(audit.round_schedule))
 
         sampled = 0
         if len(audit.round_schedule) > 0:
@@ -354,7 +356,8 @@ if __name__ == "__main__":
         multinomial.random_state = random_gen
         random.seed(seq/epoch)
 
-        risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
+        # risk_limit = random.choice([0.2, 0.1, 0.1, 0.1, 0.05, 0.01])
+        risk_limit = 0.1
 
         if False: # rand
             num_candidates = max(2, min(5, 2 + int(gamma.rvs(a=3, scale=0.6))))
