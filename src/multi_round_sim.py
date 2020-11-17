@@ -48,7 +48,7 @@ import numpy as np
 import traceback
 
 # Parameters
-SPROB = 0.7
+SPROB = 0.5
 MIN_ROUND_SIZE = 100
 MINERVA_MULTIPLE = 1.5
 
