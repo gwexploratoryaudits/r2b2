@@ -377,7 +377,7 @@ if __name__ == "__main__":
             if margin >= 0.005:
                 break
         else:
-            votes = np.array([366, 366, 266])
+            votes = np.array([350, 350, 300])
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
 
         tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
