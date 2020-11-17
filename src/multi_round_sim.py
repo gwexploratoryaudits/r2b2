@@ -337,8 +337,6 @@ if __name__ == "__main__":
     results = []
     successes = 0
 
-    print("[")
-
     # Pick starting point at random, but override via $RANDSEED
     epoch = random.randint(0, 100000)
     epoch = int(os.environ.get("RANDSEED", epoch))
@@ -363,7 +361,7 @@ if __name__ == "__main__":
             num_winners = max(1, min(num_candidates-1, int(gamma.rvs(a=3, scale=0.6))))
         else:
             num_candidates = 3
-            num_winners = 2
+            num_winners = 1
 
         # Find a set of votes with a big enough margin
         if False: # while True:
@@ -377,7 +375,7 @@ if __name__ == "__main__":
             if margin >= 0.005:
                 break
         else:
-            votes = np.array([350, 350, 300])
+            votes = np.array([367, 317, 317])
             margin = (votes[num_winners-1] - votes[num_winners]) / sum(votes)
 
         tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
@@ -433,5 +431,3 @@ if __name__ == "__main__":
     # FIXME: need to truncate / round down to preserve thresholds
     # And need to actually print all the values if there are more than default of threshold=1000.
     #print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
-
-    print("]")
