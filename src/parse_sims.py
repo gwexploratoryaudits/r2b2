@@ -11,6 +11,8 @@ def parse_debug(str):
     """Parse string containing f-string Python debug output separated by commas
     """
 
+    splitpat = re.compile(", (?=[a-zA-Z])")
+
     if 'relevant_sample_size' in str:
         j = str.replace("'", '"')
         if "inf" in j:
@@ -25,19 +27,16 @@ def parse_debug(str):
         return {}
     return dict(map(lambda field: field.split('=', 2), fields))
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', help='file to parse')
-
-    args = parser.parse_args()
-
-    splitpat = re.compile(", (?=[a-zA-Z])")
+def parse(fn):
     acc = defaultdict(list)
-    with open(args.filename) as f:
+    with open(fn) as f:
         for res in [parse_debug(line) for line in f.readlines()]:
             acc[frozenset(res.keys())].append(res)
 
+    return acc
+
+
+def show_minmax(acc):
     for schema, rows in acc.items():
         print(f"{len(rows)=} rows in {schema=}")
 
@@ -45,3 +44,14 @@ if __name__ == "__main__":
             rows.sort(key=itemgetter("p_value"))
             print("Lowest 10 pvalues:", *rows[:10], sep='\n')
             print("Highest 10 pvalues:", *rows[-10:], sep='\n')
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', help='file to parse')
+
+    args = parser.parse_args()
+
+    acc = parse(args.filename)
+    show_minmax(acc)
