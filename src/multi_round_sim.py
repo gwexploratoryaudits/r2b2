@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 """
-Simulate Filip's minerva round strategy.
+Run Athena / Minerva simulations
 
-[Based on evolving simulation code, half-way thru converting it to json output.
-Sorry for the mess and invalid syntax in the json!]
+Provide a flexible framework to run reproducable simulations with parameters for:
 
-General plan:
+ * risk limit
+ * tally
+ * true vote probabilities which differ from announced tally
+ * various kinds of round schedules
 
-Simulate random audits, with random round sizes.
+and can be used to test Minerva round strategies and the like.
 
-Eventually:
+E.g.:
 
 * Do these steps for risk limits of 20%, 10%, 5%, 1%, 0.1% or whatever
 * "Mostly small" means drawn from a probibility distribution which is weighted towards small values, like a gamma with k=2, theta=2
@@ -24,11 +26,7 @@ Eventually:
      * declare full hand count done, increment success count and break loop
   * Log parameters and result
 
-
 * Analyze results to confirm that the fraction of failures is less than the risk limit in each case
-
-
-* [some day?] random number of candidates from 2 to 20 mostly small, and test full multi-candidate audits
 """
 
 import sys
@@ -51,46 +49,6 @@ import traceback
 SPROB = 0.5
 MIN_ROUND_SIZE = 100
 MINERVA_MULTIPLE = 1.5
-
-def make_election(risk_limit, p_w: float, p_r: float) -> Any:
-    """
-    Transform fractional shares to an athena Election object.
-
-    Inputs:
-        risk_limit      - the risk-limit for this audit
-        p_w             - the fraction of vote share for the winner
-        p_r             - the fraction of vote share for the loser / runner-up
-    """
-
-    # calculate the undiluted "two-way" share of votes for the winner
-    p_wr = p_w + p_r
-    p_w2 = p_w / p_wr
-
-    contest_ballots = 100000
-    winner = int(contest_ballots * p_w2)
-    loser = contest_ballots - winner
-
-    contest = {
-        "contest_ballots": contest_ballots,
-        "tally": {"A": winner, "LOSER": loser},
-        "num_winners": 1,
-        "reported_winners": ["A"],
-        "contest_type": "PLURALITY",
-    }
-
-    contest_name = "ArloContest"
-    election = {
-        "name": "ArloElection",
-        "total_ballots": contest_ballots,
-        "contests": {contest_name: contest},
-    }
-
-    audit = Audit("minerva", risk_limit)
-    audit.add_election(election)
-    audit.load_contest(contest_name)
-
-    return audit
-
 
 def make_audit(risk_limit, tally, num_winners=1, winners=["A"]) -> Any:
     """
@@ -126,12 +84,6 @@ def make_audit(risk_limit, tally, num_winners=1, winners=["A"]) -> Any:
     return audit
 
 
-# TODO:
-# def next_if_missed_by_one(audit, sprob):
-#        "Return next round size for given stopping probability assuming audit missed kmin by just one in last round"
-# extract from below
-
-
 def next_round(audit, probs, max_samplesize):
     """Run another round on the given audit and return the p_value
 
@@ -139,19 +91,17 @@ def next_round(audit, probs, max_samplesize):
     and make each of these round size approaches into
     a generator which is part of the context object.
 
-    Current approach: choose next round size assuming sample results hit kmin-1.
     Pick random sample results.
 
-    Other approaches:
-    approach 1: Increase round sizes geometrically.
-    round_size = 4000 * 2 ** len(audit.round_schedule)
-
-    fixed approaches:
+    Various round size approaches:
+      Choose next round size assuming sample results hit kmin-1.
+      Increase round sizes geometrically: round_size = 4000 * 2 ** len(audit.round_schedule)
+      Fixed approaches:
     margin 10%, 90% at each round: round_size = [710, 1850, 3250, 5110, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
     margin 10%, 33% at each round: round_size = [199,336,481,632,796,975,1180,1380,1582,1800,2100,2400,2700,3000,3500,5000, 10000, 20000, 40000, 80000][len(audit.round_schedule)]
 
-    Strategic approach:
-    Employ filip's strategy, choosing 2nd round size based on 1st observation
+    Strategic round size choice approach:
+    Employ Filip's strategy, choosing 2nd round size based on 1st observation
     if len(audit.round_schedule) == 0:
         round_size = 20
     elif len(audit.round_schedule) == 1:
@@ -163,6 +113,7 @@ def next_round(audit, probs, max_samplesize):
         round_size = 30 * 3 ** len(audit.round_schedule)
     """
 
+    # Geometric: First round size is based on margin, then others are multiplied by MINERVA_MULTIPLE
     if len(audit.round_schedule) == 0:
         # Random round size, min 1, average of 100 in first round, approximately doubling every round, via gamma function.
         # TODO: is there a suitable discrete distribution like gamma, or one better?
@@ -200,7 +151,10 @@ def next_round(audit, probs, max_samplesize):
     return {"relevant_sample_size": round_size, "sample": sample, "p_value": risk}
 
 
+# Unused for now
 def future_round_kmin():
+        "Pick smallest possible next round size, pretending k = kmin-1"
+
         # FIXME: add arguments, make this available to next_round()
         # Extract kmin for current audit
         contest = audit.active_contest
@@ -273,6 +227,37 @@ def run_audit(audit, probs, max_samplesize):
             return risk, audit
 
 
+def collect_audits(trials, risk_limit, num_candidates, num_winners, votes, probs, round_sizes):
+    """Run an audit repeatedly and collect the results
+    TODO: allow each argument to be a generator yielding different values on each run.
+    """
+
+    killer = GracefulKiller()
+
+    risks = []
+    results = []
+    successes = 0
+
+    for seq in range(trials):
+        tally = {cand: votes for cand, votes in zip(string.ascii_uppercase, votes)}
+        audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
+        max_samplesize = 1000000
+
+        risk, res = run_audit(audit, probs, max_samplesize)
+        risks.append(risk)
+        results.append(res)
+
+        success = risk <= risk_limit
+        successes += success
+        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, success)}")
+
+        if killer.kill_now:
+            print("Received interrupt - stopping")
+            break
+
+    return risks, results, successes
+
+
 class Timer:
     def __enter__(self):
         self.start = time.process_time()  # or perhaps time.perf_counter here and below for clock time if using threads
@@ -324,6 +309,7 @@ if __name__ == "__main__":
     killer = GracefulKiller()
 
     os.system("pip show athena; echo; cd ~/bayes/r2b2; git log --pretty=oneline -n 1; echo; git status -vv")
+
     # treat RuntimeWarning overflows as errors
     import warnings
     warnings.filterwarnings('error', category=RuntimeWarning)
@@ -383,8 +369,6 @@ if __name__ == "__main__":
 
         max_samplesize = 1000000   # FIXME: higher?
 
-        # print(f'{seed=}, {risk_limit=}, {num_candidates=}, {num_winners=}, tally={tally}')
-
         c = audit.election.contests['ArloContest']
 
         probs = np.array(list(audit.election.contests['ArloContest'].tally.values()))
@@ -417,7 +401,6 @@ if __name__ == "__main__":
         success = risk <= risk_limit
         successes += success
         print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, success)}")
-        # print("}")
 
         if killer.kill_now:
             print("Received interrupt - stopping")
@@ -426,8 +409,3 @@ if __name__ == "__main__":
     audits = len(risks)
     print(f"{successes / audits:.2%} ({successes}/{audits}) of the audits passed:")
     print(f"Round size counter: {sorted(Counter([len(r.round_schedule) for r in results]).items())}")
-    np.set_printoptions(suppress=True, linewidth=95)
-
-    # FIXME: need to truncate / round down to preserve thresholds
-    # And need to actually print all the values if there are more than default of threshold=1000.
-    #print(f"Risks:\n{np.around(np.array(sorted(risks)), decimals=2)}")
