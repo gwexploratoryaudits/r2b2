@@ -201,6 +201,7 @@ def future_round_kmin():
 def run_audit(audit, probs, max_samplesize):
     "Run a Minerva RLA to completion and return the p_value"
 
+    result_list = []
     for i in itertools.count(start=1):
         with Timer() as t:
           try:
@@ -214,17 +215,18 @@ def run_audit(audit, probs, max_samplesize):
             print(" Unknown traceback")
             return float('nan'), audit
         results.update({"round": i, "cpu": round(t.interval, 5)})
+        result_list.append(results)
         risk = results["p_value"]
-        print(" ", results)
+        # print(" ", results)
         #print(" ", json.dumps(results), ",")
         if risk == float('inf'):
             # Results are inconclusive: round size too small
             continue
-        if risk <= risk_limit:
-            return risk, audit
+        if risk <= audit.alpha:
+            return result_list, audit
         if risk > 100.0  or  audit.round_schedule[-1] >= max_samplesize:
             print("Do a full hand count. Bailing audit due to exceeding max-samplesize or big risk")
-            return risk, audit
+            return result_list, audit
 
 
 def collect_audits(trials, risk_limit, num_candidates, num_winners, votes, probs, round_sizes):
@@ -243,13 +245,14 @@ def collect_audits(trials, risk_limit, num_candidates, num_winners, votes, probs
         audit = make_audit(risk_limit, tally, num_winners=num_winners, winners=string.ascii_uppercase[:num_winners])
         max_samplesize = 1000000
 
-        risk, res = run_audit(audit, probs, max_samplesize)
+        result_list, res = run_audit(audit, probs, max_samplesize)
+        risk = result_list[-1]['p_value']
         risks.append(risk)
-        results.append(res)
+        results.append(result_list)
 
         success = risk <= risk_limit
         successes += success
-        print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, success)}")
+        # print(f"Summary: {(res.round_schedule, res.observations['ArloContest'], risk, success)}")
 
         if killer.kill_now:
             print("Received interrupt - stopping")
@@ -393,7 +396,9 @@ if __name__ == "__main__":
 
         #  "num_winners": {c.num_winners},
 
-        risk, res = run_audit(audit, probs, max_samplesize)
+        result_list, res = run_audit(audit, probs, max_samplesize)
+        print(*result_list, sep="\n")
+        risk = result_list[-1]['p_value']
 
         risks.append(risk)
         results.append(res)
