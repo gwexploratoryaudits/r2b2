@@ -6,7 +6,7 @@ from typing import List
 
 import click
 import numpy as np
-from scipy.signal import fftconvolve
+from scipy.signal import convolve
 from scipy.stats import binom
 from scipy.stats import hypergeom
 
@@ -136,7 +136,7 @@ class Audit(ABC):
             if len(self.rounds) == 1:
                 self.distribution_null = distribution_round_draw
             else:
-                self.distribution_null = fftconvolve(self.distribution_null, distribution_round_draw)
+                self.distribution_null = convolve(self.distribution_null, distribution_round_draw, method='direct')
         else:
             half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
             if len(self.rounds) == 1:
@@ -174,7 +174,7 @@ class Audit(ABC):
             if len(self.rounds) == 1:
                 self.distribution_reported_tally = distribution_round_draw
             else:
-                self.distribution_reported_tally = fftconvolve(self.distribution_reported_tally, distribution_round_draw)
+                self.distribution_reported_tally = convolve(self.distribution_reported_tally, distribution_round_draw, method='direct')
         else:
             reported_winner_ballots = int(self.contest.winner_prop * self.contest.contest_ballots)
             if len(self.rounds) == 1:
