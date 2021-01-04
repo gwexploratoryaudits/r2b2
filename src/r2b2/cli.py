@@ -23,6 +23,7 @@ from typing import Tuple
 import click
 import pkg_resources
 
+from r2b2.athena import Athena
 from r2b2.audit import Audit
 from r2b2.brla import BayesianRLA as BRLA
 from r2b2.contest import Contest
@@ -48,7 +49,7 @@ INT_LIST = IntList()
 
 # Audit type choices
 # TODO: add new audit types when they become available
-audit_types = click.Choice(['brla', 'minerva'], case_sensitive=False)
+audit_types = click.Choice(['brla', 'minerva', 'athena'], case_sensitive=False)
 # Contest type choice
 contest_types = click.Choice(['PLURALITY', 'MAJORITY'])
 
@@ -170,6 +171,8 @@ def interactive(election_mode, election_file, contest_file, audit_type, risk_lim
     # Create audit from prompted input
     audit = input_audit(contest, risk_limit, max_fraction_to_draw, audit_type, pair)
     click.echo(audit)
+    if audit_type == 'athena':
+        click.echo('Delta: ' + str(audit.delta))
     # Confirm audit, if incorrect get new audit
     while not click.confirm('\nAre the audit parameters correct?'):
         audit = input_audit(contest)
@@ -316,7 +319,8 @@ def input_audit(contest: Contest,
                 alpha: float = None,
                 max_fraction_to_draw: float = None,
                 audit_type: str = None,
-                pair: Tuple[str] = None) -> Audit:
+                pair: Tuple[str] = None,
+                delta: float = None) -> Audit:
     # Create an audit from user-input.
     click.echo('\nCreate a new Audit')
     click.echo('==================\n')
@@ -327,6 +331,8 @@ def input_audit(contest: Contest,
         max_fraction_to_draw = click.prompt('Enter the maximum fraction of contest ballots to draw', type=click.FloatRange(0.0, 1.0))
     if audit_type is None:
         audit_type = click.prompt('Select an audit type', type=audit_types)
+    if delta is None and audit_type == 'athena':
+        delta = click.prompt('Enter the Athena delta value', type=click.FloatRange(0.0, 1.0))
     if pair == ():
         pair = None
     if pair is None:
@@ -343,6 +349,8 @@ def input_audit(contest: Contest,
         return BRLA(alpha, max_fraction_to_draw, contest, pair)
     elif audit_type == 'minerva':
         return Minerva(alpha, max_fraction_to_draw, contest, pair)
+    elif audit_type == 'athena':
+        return Athena(alpha, delta, max_fraction_to_draw, contest, pair)
     # TODO: add creation for other types of audits.
     return None
 

@@ -21,7 +21,7 @@ class SimpleAudit(Audit):
     def next_sample_size(self):
         return 20
 
-    def stopping_condition(self, votes_for_winner: int) -> bool:
+    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
         return True
 
     def next_min_winner_ballots(self):
@@ -56,9 +56,10 @@ def test_simple_audit():
     assert simpleaudit1.next_min_winner_ballots() == 10
     assert simpleaudit1.compute_risk() == 0.1
     assert simpleaudit1.compute_min_winner_ballots() == 60
+    assert not simpleaudit1.stopped
 
 
-def test_simple_audit_execution():
+def test_simple_audit_updating():
     """Test basic properties of updating attributes."""
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.5, True, default_contest)
     simpleaudit2 = SimpleAudit(0.1, 0.05, 0.1, False, default_contest)
@@ -91,6 +92,18 @@ def test_simple_audit_execution():
         assert simpleaudit2.stopping_prob_schedule[i - 1] >= 0.0
         assert simpleaudit2.stopping_prob_schedule[i - 1] <= 1.0000001
         assert len(simpleaudit2.distribution_reported_tally) == (10 * i) - 5
+
+
+def test_simple_audit_execute_rounds():
+    """Test execute_round method."""
+    simpleaudit1 = SimpleAudit(0.1, 0.05, 0.5, True, default_contest)
+    simpleaudit1.execute_round(10, 10)
+    assert len(simpleaudit1.rounds) == 1
+    assert simpleaudit1.rounds[0] == 10
+    assert len(simpleaudit1.sample_winner_ballots) == 1
+    assert simpleaudit1.sample_winner_ballots[0] == 10
+    assert len(simpleaudit1.min_winner_ballots) == 0
+    assert simpleaudit1.stopped
 
 
 def test_repr():

@@ -44,6 +44,9 @@ class Audit(ABC):
         distribution_reported_tally (List[float]): Current distribution associated with reported
             tally.
         contest (Contest): Contest on which to run the audit.
+        pairwise_contest (PairwiseContest): Pairwise contest without invalid ballots from contest
+            to run audit computations on.
+        stopped (bool): Indicates if the audit has met the stopping condition yet.
     """
 
     alpha: float
@@ -60,6 +63,7 @@ class Audit(ABC):
     distribution_reported_tally: List[float]
     contest: Contest
     pairwise_contest: PairwiseContest
+    stopped: bool
 
     def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float, replacement: bool, contest: Contest, pair: List[str] = None):
         """Create an instance of an Audit.
@@ -114,6 +118,7 @@ class Audit(ABC):
         self.pvalue_schedule = []
         self.distribution_null = [1.0]
         self.distribution_reported_tally = [1.0]
+        self.stopped = False
 
     def __repr__(self):
         """String representation of Audit class.
@@ -281,6 +286,56 @@ class Audit(ABC):
         bottom = (winner_prop * z_w) + (loser_prop * z_l)
         return math.ceil(top / bottom)
 
+    def execute_round(self, sample_size: int, votes_for_winner: int, verbose: bool = False) -> bool:
+        """Non-interactive audit round.
+
+        Executes 1 round of the audit, given its current state.
+
+        Warning: This method assumes the audit is in the correct state to be executed. If multiple
+            executions of a full audit will be run with the same audit object, make sure to call
+            reset on the audit in between full executions. To do experimental/hypothetical
+            computations between rounds, use compute_risk() with the hypothetical winner ballots
+            found in a sample for the most recent round size.
+
+        Args:
+            sample_size (int): Total relevant ballots sampled by this round.
+            votes_for_winner (int): Total number of ballots for the reported winner in the total
+                sample size.
+        Return:
+            bool: Whether of not the audit has met the stopping condition in this round
+        """
+
+        if self.stopped:
+            if verbose:
+                click.echo('Audit already met the stopping condition in a previous round.')
+            return self.stopped
+
+        if len(self.rounds) > 0 and sample_size <= self.rounds[-1]:
+            raise ValueError('Invalid sample size, must be larger than previous round.')
+        if len(self.sample_winner_ballots) > 0 and votes_for_winner < self.sample_winner_ballots[-1]:
+            raise ValueError('Invalid votes_for_winner, must be at least size of previous round')
+        if len(self.rounds) != len(self.sample_winner_ballots):
+            raise Exception('Different number of rounds and sampled winner ballots.')
+
+        self.rounds.append(sample_size)
+        self.current_dist_null()
+        self.current_dist_reported()
+        self.stopped = self.stopping_condition(votes_for_winner, verbose)
+        self.sample_winner_ballots.append(votes_for_winner)
+
+        # If audit meets stopping condition, return
+        if self.stopped:
+            if verbose:
+                click.echo('Audit has met stopping condition.')
+            return self.stopped
+
+        # If the audit does not meet the stopping criteria, perform additional computations
+        kmin = self.next_min_winner_ballots(sample_size)
+        self.min_winner_ballots.append(kmin)
+        self.truncate_dist_null()
+        self.truncate_dist_reported()
+        return self.stopped
+
     def run(self, verbose: bool = False):
         """Begin interactive audit execution.
 
@@ -341,12 +396,12 @@ class Audit(ABC):
                                             type=click.IntRange(previous_votes_for_winner,
                                                                 previous_votes_for_winner + (sample_size - prev_sample_size)))
 
-            stopping_condition_met = self.stopping_condition(votes_for_winner, verbose)
+            self.stopped = self.stopping_condition(votes_for_winner, verbose)
             click.echo('\n\n+----------------------------------------+')
-            click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(stopping_condition_met)))
+            click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(self.stopped)))
             click.echo('+----------------------------------------+')
 
-            if stopping_condition_met:
+            if self.stopped:
                 click.echo('\n\nAudit Complete.')
                 return
             elif click.confirm('\nWould you like to force stop the audit'):
@@ -373,6 +428,7 @@ class Audit(ABC):
         self.pvalue_schedule = []
         self.distribution_null = [1.0]
         self.distribution_reported_tally = [1.0]
+        self.stopped = False
 
     @abstractmethod
     def get_min_sample_size(self):

@@ -1,7 +1,7 @@
 
 Welcome to the R2B2 auditing tool!
 
-Select an audit type (brla, minerva): brla
+Select an audit type (brla, minerva, athena): brla
 Enter desired risk limit (e.g. use 0.1 for 10%): 0.1
 Enter maximum fraction of ballots to draw during audit: 0.2
 
