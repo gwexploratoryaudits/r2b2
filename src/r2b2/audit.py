@@ -334,18 +334,23 @@ class Audit(ABC):
     def truncate_dist_null(self):
         """Update risk schedule and truncate null distribution for each subaudit."""
         for loser in self.sub_audits.keys():
-            self.sub_audits[loser].risk_schedule.append(
-                sum(self.sub_audits[loser].distribution_null[self.sub_audits[loser].min_winner_ballots[-1]:]))
-            self.sub_audits[loser].distribution_null = self.sub_audits[loser].distribution_null[:self.sub_audits[loser].
-                                                                                                min_winner_ballots[-1]]
+            self._truncate_dist_null_pairwise(loser)
+
+    def _truncate_dist_null_pairwise(self, loser: str):
+        self.sub_audits[loser].risk_schedule.append(
+            sum(self.sub_audits[loser].distribution_null[self.sub_audits[loser].min_winner_ballots[-1]:]))
+        self.sub_audits[loser].distribution_null = self.sub_audits[loser].distribution_null[:self.sub_audits[loser].min_winner_ballots[-1]]
 
     def truncate_dist_reported(self):
         """Update stopping prob schedule and truncate reported distribution for each subaudit."""
         for loser in self.sub_audits.keys():
-            self.sub_audits[loser].stopping_prob_schedule.append(
-                sum(self.sub_audits[loser].distribution_reported_tally[self.sub_audits[loser].min_winner_ballots[-1]:]))
-            self.sub_audits[loser].distribution_reported_tally = self.sub_audits[loser].distribution_reported_tally[:self.sub_audits[loser].
-                                                                                                                    min_winner_ballots[-1]]
+            self._truncate_dist_reported_pairwise(loser)
+
+    def _truncate_dist_reported_pairwise(self, loser):
+        self.sub_audits[loser].stopping_prob_schedule.append(
+            sum(self.sub_audits[loser].distribution_reported_tally[self.sub_audits[loser].min_winner_ballots[-1]:]))
+        self.sub_audits[loser].distribution_reported_tally = self.sub_audits[loser].distribution_reported_tally[:self.sub_audits[loser].
+                                                                                                                min_winner_ballots[-1]]
 
     def __get_interval(self, dist: List[float]):
         """Get relevant interval [l, u] of given distribution.
