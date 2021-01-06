@@ -63,8 +63,7 @@ class Contest:
     reported_winners: List[str]
     contest_type: ContestType
     tally: Dict[str, int]
-    winner_prop: float
-    sub_contests: List[PairwiseContest]
+    sub_contests: Dict[str, List[PairwiseContest]]
 
     def __init__(self, contest_ballots: int, tally: Dict[str, int], num_winners: int, reported_winners: List[str],
                  contest_type: ContestType):
@@ -109,21 +108,30 @@ class Contest:
         self.num_candidates = len(self.candidates)
         self.reported_winners = sorted(reported_winners, key=self.candidates.index)
         self.contest_type = contest_type
-        self.winner_prop = float(self.tally[self.reported_winners[0]]) / float(self.contest_ballots)
         # For each reported winner get pairwise sub-contests where they have > 50% of the (sub)tally
         # These sub-contests provide the two-candidate, no-irrelevant ballots assumption
-        self.sub_contests = []
+        self.sub_contests = {}
         for rw in self.reported_winners:
             rw_ballots = self.tally[rw]
+            self.sub_contests[rw] = []
             for candidate in self.candidates:
                 if rw_ballots > self.tally[candidate]:
-                    self.sub_contests.append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
+                    self.sub_contests[rw].append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
 
-    def find_sub_contest(self, reported_winner, reported_loser):
-        for i in range(len(self.sub_contests)):
-            if self.sub_contests[i].reported_winner == reported_winner and self.sub_contests[i].reported_loser == reported_loser:
-                return i
-        return -1
+    def get_sub_contests(self, reported_winner: str):
+        """Get list of subcontests for a reported winner.
+
+        Args:
+            reported_winner (str): Candidate that is reported winner in desired pairwise
+                subcontest.
+
+        Returns:
+            List[PairwiseContest]: List of pairwise subcontests for given reported winner.
+        """
+        if reported_winner not in self.reported_winners:
+            raise ValueError('reported winner must be a reported winner in contest.')
+
+        return self.sub_contests[reported_winner]
 
     def __repr__(self):
         """String representation of Contest class."""

@@ -2,6 +2,7 @@
 import math
 from abc import ABC
 from abc import abstractmethod
+from typing import Dict
 from typing import List
 
 import click
@@ -11,6 +12,85 @@ from scipy.stats import binom
 from scipy.stats import hypergeom
 
 from r2b2.contest import Contest
+from r2b2.contest import PairwiseContest
+
+
+class PairwiseAudit():
+    """Store audit information for pairwise comparison.
+
+    The PairwiseAudit class hold the audit data for a single pair of candidates.
+
+    Attributes:
+        sub_contest (PairwiseContest): Pairwise contest data for relevant pair of candidates.
+        min_sample_size (int): The smallest valid sample size. The minimum round size where
+            kmin <= round
+        risk_schedule (List[float]): Schedule of risk assocaited with each previous round.
+            Corresponds to tail of null distribution.
+        stopping_prob_schedule (List[float]): Schedule of stopping probabilities associated
+            with each previous round. Corresponds to tail of reported tally distribution.
+        pvalue_schedule (List[float]): Schedule of pvalues associated with each previous round.
+            Corresponds to ratio of risk and stopping probability.
+        distribution_null (Dict[str, List[float]]): Current distribution associated with a tied
+            election for each pairwise subcontest.
+        distribution_reported_tally (Dict[str, List[float]]): Current distribution associated
+            with reported tally for each pairwise subcontest.
+        min_winner_ballots (List[int]): List of stopping sizes (kmin values) for each round.
+        sample_loser_ballots (List[int]): List of ballots found for loser in this pair for each
+            round.
+        stopped (bool): Indicates if pairwise audit has stopped.
+    """
+
+    sub_contest: PairwiseContest
+    min_sample_size: int
+    risk_schedule: List[float]
+    stopping_prob_schedule: List[float]
+    pvalue_schedule: List[float]
+    distribution_null: List[float]
+    distribution_reported_tally: List[float]
+    min_winner_ballots: List[int]
+    sample_loser_ballots: List[int]
+    stopped: bool
+
+    def __init__(self, sub_contest: PairwiseContest):
+        self.sub_contest = sub_contest
+        self.min_sample_size = 1
+        self.risk_schedule = []
+        self.stopping_prob_schedule = []
+        self.pvalue_schedule = []
+        self.distribution_null = [1.0]
+        self.distribution_reported_tally = [1.0]
+        self.min_winner_ballots = []
+        self.sample_loser_ballots = []
+        self.stopped = False
+
+    def __repr__(self):
+        return 'loser: {}, min_sample_size: {}, risk_schedule: {}, sprob_schedule: {}, pvalue_schedule: {}, min_winner_ballots: {}, \
+                sample_loser_ballots: {}, stopped: {}'.format(self.sub_contest.reported_loser, self.min_sample_size, self.risk_schedule,
+                                                              self.stopping_prob_schedule, self.pvalue_schedule, self.min_winner_ballots,
+                                                              self.sample_loser_ballots, self.stopped)
+
+    def __str__(self):
+        title_str = 'Pairwise Audit\n--------------\n'
+        sub_contest_str = 'Subcontest Loser: {}\n'.format(self.sub_contest.reported_loser)
+        min_sample_size_str = 'Minimum Sample Size: {}\n'.format(self.min_sample_size)
+        risk_sched_str = 'Risk Schedule: {}\n'.format(self.risk_schedule)
+        sprob_sched_str = 'Stopping Probability Schedule: {}\n'.format(self.stopping_prob_schedule)
+        pval_str = 'p-Value Schedule: {}\n'.format(self.pvalue_schedule)
+        min_win_ballot_str = 'Minimum Winner Ballots: {}\n'.format(self.min_winner_ballots)
+        sample_str = 'Sampled Loser Ballots: {}\n'.format(self.sample_loser_ballots)
+        stop_str = 'Stopped: {}\n'.format(self.stopped)
+        return (title_str + sub_contest_str + min_sample_size_str + risk_sched_str + sprob_sched_str + pval_str + min_win_ballot_str +
+                sample_str + stop_str + '\n')
+
+    def _reset(self):
+        self.risk_schedule = []
+        self.stopping_prob_schedule = []
+        self.pvalue_schedule = []
+        self.distribution_null = [1.0]
+        self.distribution_reported_tally = [1.0]
+        self.min_winner_ballots = []
+        self.sample_loser_ballots = []
+        self.stopped = False
 
 
 class Audit(ABC):
@@ -28,38 +108,37 @@ class Audit(ABC):
             draw during the course of the audit.
         replacement (bool): Indicates if the audit sampling should be done with (true) or without
             (false) replacement.
-        min_sample_size (int): The smallest valid sample size. The minimum round size where
-            kmin <= round size
         rounds (List[int]): List of round sizes (i.e. sample sizes).
-        min_winner_ballots (List[int]): List of stopping sizes (kmin values) for each round size in
-            rounds.
         sample_winner_ballots (List[int]): List of ballots found for the reported winner in each
             round size.
-        risk_schedule (List[float]): Schedule of risk associated with each previous round.
-            Corresponds to tail of null distribution.
-        stopping_prob_schedule (List[float]): Schedule of stopping probabilities associated
-            with each previous round. Corresponds to tail of reported tally distribution.
-        distribution_null (List[float]): Current distribution associated with a tied election.
-        distribution_reported_tally (List[float]): Current distribution associated with reported
-            tally.
+        pvalue_schedule (List[float]): Schedule of pvalues for overall audit in each round. In
+            each round, the overall pvalue is the maximum pvalue of all subaudits.
         contest (Contest): Contest on which to run the audit.
+        reported_winner (str): Candidate (from reported winners of contest) to be reported winner
+            of the audit. Stopping condition will be evaluated pairwise for each other candidate as
+            (reported_winner, candidate) pair. If not provided, default to candidate with highest
+            reported tally.
+        sub_audits (Dict[str, PairwiseAudit]): Dict of PairwiseAudits wthin audit indexed by loser.
     """
 
     alpha: float
     beta: float
     max_fraction_to_draw: float
     replacement: bool
-    min_sample_size: int
     rounds: List[int]
-    min_winner_ballots: List[int]
     sample_winner_ballots: List[int]
-    risk_schedule: List[float]
-    stopping_prob_schedule: List[float]
-    distribution_null: List[float]
-    distribution_reported_tally: List[float]
+    pvalue_schedule: List[float]
     contest: Contest
+    reported_winner: str
+    sub_audits: Dict[str, PairwiseAudit]
 
-    def __init__(self, alpha: float, beta: float, max_fraction_to_draw: float, replacement: bool, contest: Contest):
+    def __init__(self,
+                 alpha: float,
+                 beta: float,
+                 max_fraction_to_draw: float,
+                 replacement: bool,
+                 contest: Contest,
+                 reported_winner: str = None):
         """Create an instance of an Audit.
 
         Note:
@@ -83,21 +162,27 @@ class Audit(ABC):
             raise TypeError('replacement must be boolean.')
         if type(contest) is not Contest:
             raise TypeError('contest must be a Contest object')
+        if reported_winner is None:
+            reported_winner = contest.candidates[0]
+        if type(reported_winner) is not str:
+            raise TypeError('reported_winner must be a string')
+        if reported_winner not in contest.reported_winners:
+            raise ValueError('reported_winner must be a reported winner in the given contest.')
 
         self.alpha = alpha
         self.beta = beta
         self.max_fraction_to_draw = max_fraction_to_draw
         self.replacement = replacement
         self.contest = contest
-        self.min_sample_size = 1
+        self.reported_winner = reported_winner
         self.rounds = []
-        self.min_winner_ballots = []
         self.sample_winner_ballots = []
-        self.risk_schedule = []
-        self.stopping_prob_schedule = []
         self.pvalue_schedule = []
-        self.distribution_null = [1.0]
-        self.distribution_reported_tally = [1.0]
+        self.sub_audits = {}
+        # Get pairwise subcontests for reported winner and create pairwise audits
+        sub_contests = self.contest.get_sub_contests(self.reported_winner)
+        for sub_contest in sub_contests:
+            self.sub_audits[sub_contest.reported_loser] = PairwiseAudit(sub_contest)
 
     def __repr__(self):
         """String representation of Audit class.
@@ -105,8 +190,8 @@ class Audit(ABC):
         Note:
             Can (and perhaps should) be overwritten in subclass.
         """
-        return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__, self.alpha, self.beta, self.max_fraction_to_draw,
-                                                 self.replacement, repr(self.contest))
+        return '{}: [{}, {}, {}, {}, {}, {}]'.format(self.__class__.__name__, self.alpha, self.beta, self.max_fraction_to_draw,
+                                                     self.replacement, self.reported_winner, repr(self.contest))
 
     def __str__(self):
         """Human readable string (i.e. printable) representation of Audit class.
@@ -118,100 +203,151 @@ class Audit(ABC):
         alpha_str = 'Alpha: {}\n'.format(self.alpha)
         beta_str = 'Beta: {}\n'.format(self.beta)
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
-        replacement_str = 'Replacement: {}\n\n'.format(self.replacement)
-        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + str(self.contest)
+        replacement_str = 'Replacement: {}\n'.format(self.replacement)
+        winner_str = 'Reported Winner: {}\n\n'.format(self.reported_winner)
+        return title_str + alpha_str + beta_str + max_frac_str + replacement_str + winner_str + str(self.contest)
 
     def current_dist_null(self):
-        """Update distribution_null for current round."""
+        """Update distribution_null for each sub audit for current round."""
+        if len(self.rounds) == 0:
+            raise Exception('No rounds exist.')
+        if len(self.rounds) != len(self.sample_winner_ballots):
+            raise Exception('Number of rounds is {}, but there are only {} winner ballot samples'.format(
+                len(self.rounds), len(self.sample_winner_ballots)))
 
+        # If not first round, compute marginal sample draw
         if len(self.rounds) == 1:
-            round_draw = self.rounds[0]
+            winner_round_draw = self.sample_winner_ballots[0]
         else:
-            round_draw = self.rounds[-1] - self.rounds[-2]
+            winner_round_draw = self.sample_winner_ballots[-1] - self.sample_winner_ballots[-2]
+        # For each pairwise sub audit, update null distribution
+        for loser, sub_audit in self.sub_audits.items():
+            if len(self.rounds) != len(sub_audit.sample_loser_ballots):
+                raise Exception('Number of rounds is {}, but there are only {} ballot samples for {}.'.format(
+                    len(self.rounds), len(sub_audit.sample_loser_ballots), loser))
+            # If not first round, compute marginal sample
+            if len(sub_audit.sample_loser_ballots) == 1:
+                loser_round_draw = sub_audit.sample_loser_ballots[0]
+            else:
+                loser_round_draw = sub_audit.sample_loser_ballots[-1] - sub_audit.sample_loser_ballots[-2]
+            # Update pairwise distribution using pairwise sample total as round size
+            self._current_dist_null_pairwise(loser, sub_audit, winner_round_draw + loser_round_draw)
+
+    def _current_dist_null_pairwise(self, loser: str, sub_audit: PairwiseAudit, round_draw: int):
+        """Update distribution_null for a single PairwiseAudit"""
 
         # Distribution updating is dependent on sampling with or without replacement
         if self.replacement:
             distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, 0.5)
             # Compute convolution to get new distribution (except 1st round)
             if len(self.rounds) == 1:
-                self.distribution_null = distribution_round_draw
+                self.sub_audits[loser].distribution_null = distribution_round_draw
             else:
-                self.distribution_null = convolve(self.distribution_null, distribution_round_draw, method='direct')
+                self.sub_audits[loser].distribution_null = convolve(self.sub_audits[loser].distribution_null, distribution_round_draw, method='direct')
         else:
-            half_contest_ballots = math.floor(self.contest.contest_ballots / 2)
+            half_contest_ballots = math.floor(sub_audit.sub_contest.contest_ballots / 2)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_null = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots, half_contest_ballots,
-                                                       round_draw)
+                self.sub_audits[loser].distribution_null = hypergeom.pmf(np.arange(round_draw + 1), sub_audit.sub_contest.contest_ballots,
+                                                                         half_contest_ballots, round_draw)
             else:
                 distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
-                interval = self.__get_interval(self.distribution_null)
+                interval = self.__get_interval(self.sub_audits[loser].distribution_null)
                 # For every possible number of winner ballots in previous rounds
                 # and every possibility in the current round
                 # compute probability of their simultaneity
                 for prev_round_possibility in range(interval[0], interval[1] + 1):
-                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
+                    unsampled_contest_ballots = sub_audit.sub_contest.contest_ballots - self.rounds[-2]
                     unsampled_winner_ballots = half_contest_ballots - prev_round_possibility
 
                     curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
                                                     round_draw)
                     for curr_round_possibility in range(round_draw + 1):
-                        component_prob = self.distribution_null[prev_round_possibility] * curr_round_draw[curr_round_possibility]
+                        component_prob = sub_audit.distribution_null[prev_round_possibility] * curr_round_draw[curr_round_possibility]
                         distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
-                self.distribution_null = distribution_round_draw
+                self.sub_audits[loser].distribution_null = distribution_round_draw
 
     def current_dist_reported(self):
-        """Update distribution_reported_tally for current round."""
+        """Update distribution_reported_tally for each subaudit for current round."""
 
+        if len(self.rounds) == 0:
+            raise Exception('No rounds exist')
+        if len(self.rounds) != len(self.sample_winner_ballots):
+            raise Exception('Number of rounds is {}, but there are only {} winner ballot samples'.format(
+                len(self.rounds), len(self.sample_winner_ballots)))
+
+        # If not first round, compute marginal sample draw
         if len(self.rounds) == 1:
-            round_draw = self.rounds[0]
+            winner_round_draw = self.sample_winner_ballots[0]
         else:
-            round_draw = self.rounds[-1] - self.rounds[-2]
+            winner_round_draw = self.sample_winner_ballots[-1] - self.sample_winner_ballots[-2]
+        # For each pairwise sub audit, update dist_reported
+        for loser, sub_audit in self.sub_audits.items():
+            if len(self.rounds) != len(sub_audit.sample_loser_ballots):
+                raise Exception('Number of rounds is {}, but there are only {} ballot samples for {}.'.format(
+                    len(self.rounds), len(sub_audit.sample_loser_ballots), loser))
+            # If not first round, compute marginal sample
+            if len(sub_audit.sample_loser_ballots) == 1:
+                loser_round_draw = sub_audit.sample_loser_ballots[0]
+            else:
+                loser_round_draw = sub_audit.sample_loser_ballots[-1] - sub_audit.sample_loser_ballots[-2]
+            # Update distr_reported using pairwise round size
+            self._current_dist_reported_pairwise(loser, sub_audit, winner_round_draw + loser_round_draw)
+
+    def _current_dist_reported_pairwise(self, loser: str, sub_audit: PairwiseAudit, round_draw: int):
+        """Update dist_reported for a single PairwiseAudit"""
 
         if self.replacement:
-            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, self.contest.winner_prop)
+            distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, sub_audit.sub_contest.winner_prop)
             if len(self.rounds) == 1:
-                self.distribution_reported_tally = distribution_round_draw
+                self.sub_audits[loser].distribution_reported_tally = distribution_round_draw
             else:
-                self.distribution_reported_tally = convolve(self.distribution_reported_tally, distribution_round_draw, method='direct')
+                self.sub_audits[loser].distribution_reported_tally = convolve(sub_audit.distribution_reported_tally,
+                                                                                 distribution_round_draw, method='direct')
         else:
-            reported_winner_ballots = int(self.contest.winner_prop * self.contest.contest_ballots)
+            reported_winner_ballots = int(sub_audit.sub_contest.winner_prop * sub_audit.sub_contest.contest_ballots)
             if len(self.rounds) == 1:
                 # Simply compute hypergeometric for 1st round distribution
-                self.distribution_reported_tally = hypergeom.pmf(np.arange(round_draw + 1), self.contest.contest_ballots,
-                                                                 reported_winner_ballots, round_draw)
+                self.sub_audits[loser].distribution_reported_tally = hypergeom.pmf(np.arange(round_draw + 1),
+                                                                                   sub_audit.sub_contest.contest_ballots,
+                                                                                   reported_winner_ballots, round_draw)
             else:
                 distribution_round_draw = [0 for i in range(self.rounds[-1] + 1)]
                 # Get relevant interval of previous round distribution
-                interval = self.__get_interval(self.distribution_reported_tally)
+                interval = self.__get_interval(sub_audit.distribution_reported_tally)
                 # For every possible number of winner ballots in previous rounds
                 # and every possibility in the current round
                 # compute probability of their simultaneity
                 for prev_round_possibility in range(interval[0], interval[1] + 1):
-                    unsampled_contest_ballots = self.contest.contest_ballots - self.rounds[-2]
+                    unsampled_contest_ballots = self.sub_audits[loser].sub_contest.contest_ballots - self.rounds[-2]
                     unsampled_winner_ballots = reported_winner_ballots - prev_round_possibility
 
                     curr_round_draw = hypergeom.pmf(np.arange(round_draw + 1), unsampled_contest_ballots, unsampled_winner_ballots,
                                                     round_draw)
                     for curr_round_possibility in range(round_draw + 1):
-                        component_prob = self.distribution_reported_tally[prev_round_possibility] * curr_round_draw[curr_round_possibility]
+                        component_prob = self.sub_audits[loser].distribution_reported_tally[prev_round_possibility] * curr_round_draw[
+                            curr_round_possibility]
                         distribution_round_draw[prev_round_possibility + curr_round_possibility] += component_prob
-                self.distribution_reported_tally = distribution_round_draw
+                self.sub_audits[loser].distribution_reported_tally = distribution_round_draw
 
     def truncate_dist_null(self):
-        """Update the risk schedule and truncate the null distribution."""
-        self.risk_schedule.append(sum(self.distribution_null[self.min_winner_ballots[-1]:]))
-        self.distribution_null = self.distribution_null[:self.min_winner_ballots[-1]]
+        """Update risk schedule and truncate null distribution for each subaudit."""
+        for loser in self.sub_audits.keys():
+            self.sub_audits[loser].risk_schedule.append(
+                sum(self.sub_audits[loser].distribution_null[self.sub_audits[loser].min_winner_ballots[-1]:]))
+            self.sub_audits[loser].distribution_null = self.sub_audits[loser].distribution_null[:self.sub_audits[loser].
+                                                                                                min_winner_ballots[-1]]
 
     def truncate_dist_reported(self):
-        """Update the stopping probability schedule and truncate the reported distribution."""
-        self.stopping_prob_schedule.append(
-            sum(self.distribution_reported_tally[self.min_winner_ballots[-1]:]))
-        self.distribution_reported_tally = self.distribution_reported_tally[
-            :self.min_winner_ballots[-1]]
+        """Update stopping prob schedule and truncate reported distribution for each subaudit."""
+        for loser in self.sub_audits.keys():
+            self.sub_audits[loser].stopping_prob_schedule.append(
+                sum(self.sub_audits[loser].distribution_reported_tally[self.sub_audits[loser].min_winner_ballots[-1]:]))
+            self.sub_audits[loser].distribution_reported_tally = self.sub_audits[loser].distribution_reported_tally[:self.sub_audits[loser].
+                                                                                                                    min_winner_ballots[-1]]
 
-    def __get_interval(self, dist):
+    def __get_interval(self, dist: List[float]):
         """Get relevant interval [l, u] of given distribution.
 
         Find levels l and u such that cdf(l) < tolerance and 1 - cdf(u) < tolerance. The purpose of
@@ -249,8 +385,8 @@ class Audit(ABC):
                 break
         return interval
 
-    def asn(self):
-        """Compute ASN as described in BRAVO paper.
+    def asn(self, loser: str):
+        """Compute ASN as described in BRAVO paper for pair of candidates.
 
         Given the fractional margin for the reported winner and the risk limit (alpha) produce the
         average number of ballots sampled during the audit.
@@ -258,7 +394,7 @@ class Audit(ABC):
         Returns:
             int: ASN value.
         """
-        winner_prop = self.contest.winner_prop
+        winner_prop = self.sub_audits[loser].sub_contest.winner_prop
         loser_prop = 1.0 - winner_prop
         margin = (2 * winner_prop) - 1
         z_w = math.log(margin + 1)
@@ -280,7 +416,8 @@ class Audit(ABC):
 
         self.__reset()
         click.echo('\n==================\nBeginning Audit...\n==================\n')
-        sample_size = self.min_sample_size
+        # FIXME: no overall minimum sample size exists, so max of all sub audit mins used
+        sample_size = max(sub_audit.min_sample_size for sub_audit in self.sub_audits.values())
         max_sample_size = self.contest.contest_ballots * self.max_fraction_to_draw
         previous_votes_for_winner = 0
         prev_sample_size = 0
@@ -294,14 +431,16 @@ class Audit(ABC):
                 click.echo('\n+--------------------------------------------------+')
                 click.echo('|{:^50}|'.format('Audit Statistics'))
                 click.echo('|{:50}|'.format(' '))
-                click.echo('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
-                click.echo('|{:<50}|'.format('Maximum Sample Size: {}'.format(max_sample_size)))
+                # FIXME: no more notion of overall audit minimum sample size
+                # click.echo('|{:<50}|'.format('Minimum Sample Size: {}'.format(self.min_sample_size)))
+                click.echo('|{:<30}{:<20}|'.format('Maximum Sample Size: ', max_sample_size))
+                click.echo('|{:<30}{:<20}|'.format('Risk-Limit: ', self.alpha))
+                click.echo('|{:<30}{:<20.12f}|'.format('Current Risk Level: ', self.get_risk_level()))
                 click.echo('|{:50}|'.format(' '))
-                click.echo('|{:^16}|{:^16}|{:^16}|'.format('Round', 'Stopping Prob.', 'Risk Expended'))
-                click.echo('|----------------|----------------|----------------|')
+                click.echo('|{:^24}|{:^25}|'.format('Round', 'p-value'))
+                click.echo('|------------------------|-------------------------|')
                 for r in range(1, curr_round):
-                    click.echo('|{:^16}|{:^16}|{:^16}|'.format(r, '{:.12f}'.format(self.stopping_prob_schedule[r - 1]),
-                                                               '{:.12f}'.format(self.risk_schedule[r - 1])))
+                    click.echo('|{:^24}|{:^25}|'.format(r, '{:.12f}'.format(self.pvalue_schedule[r - 1])))
                 click.echo('+--------------------------------------------------+')
 
             while click.confirm('Would you like to enter a desired stopping probability for this round?'):
@@ -316,20 +455,26 @@ class Audit(ABC):
                                        type=click.IntRange(prev_sample_size + 1, max_sample_size))
             self.rounds.append(sample_size)
 
+            sample_size_remaining = sample_size
+            votes_for_winner = click.prompt(
+                'Enter total number of votes for {} (reported winner) found in sample'.format(self.reported_winner),
+                type=click.IntRange(previous_votes_for_winner, previous_votes_for_winner + sample_size_remaining))
+            self.sample_winner_ballots.append(votes_for_winner)
+            sample_size_remaining -= votes_for_winner
+            for loser in self.sub_audits.keys():
+                if curr_round == 1:
+                    previous_votes_for_loser = 0
+                else:
+                    previous_votes_for_loser = self.sub_audits[loser].sample_loser_ballots[-1]
+                votes_for_loser = click.prompt('Enter total number of votes for {} found in sample'.format(loser),
+                                               type=click.IntRange(previous_votes_for_loser,
+                                                                   previous_votes_for_loser + sample_size_remaining))
+                self.sub_audits[loser].sample_loser_ballots.append(votes_for_loser)
+                sample_size_remaining -= votes_for_loser
+
+            # Update all pairwise distributions
             self.current_dist_null()
             self.current_dist_reported()
-
-            while click.confirm('Would you like to enter a hypothetical number of votes for reported winner?'):
-                hypothetical_votes_for_winner = click.prompt(
-                    'Enter the hypothetical number of (total) reported winner votes in sample',
-                    type=click.IntRange(previous_votes_for_winner,
-                                        previous_votes_for_winner + (sample_size - prev_sample_size)))
-                hypothetical_pvalue = self.compute_risk(hypothetical_votes_for_winner, sample_size)
-                click.echo('{:<50}'.format('Hypothetical p-value: {}'.format(hypothetical_pvalue)))
-
-            votes_for_winner = click.prompt('Enter total number of votes for reported winner found in sample',
-                                            type=click.IntRange(previous_votes_for_winner,
-                                                                previous_votes_for_winner + (sample_size - prev_sample_size)))
 
             stopping_condition_met = self.stopping_condition(votes_for_winner, verbose)
             click.echo('\n\n+----------------------------------------+')
@@ -343,12 +488,10 @@ class Audit(ABC):
                 click.echo('\n\nAudit Complete: User stopped.')
                 return
 
-            kmin = self.next_min_winner_ballots(sample_size)
-            self.min_winner_ballots.append(kmin)
+            self.next_min_winner_ballots(verbose)
             self.truncate_dist_null()
             self.truncate_dist_reported()
             previous_votes_for_winner = votes_for_winner
-            self.sample_winner_ballots.append(votes_for_winner)
 
         click.echo('\n\nAudit Complete: Reached max sample size.')
 
@@ -356,17 +499,14 @@ class Audit(ABC):
         """Reset attributes modified during run()."""
 
         self.rounds = []
-        self.min_winner_ballots = []
         self.sample_winner_ballots = []
-        self.risk_schedule = []
-        self.stopping_prob_schedule = []
         self.pvalue_schedule = []
-        self.distribution_null = [1.0]
-        self.distribution_reported_tally = [1.0]
+        for loser in self.sub_audits.keys():
+            self.sub_audits[loser]._reset()
 
     @abstractmethod
-    def get_min_sample_size(self):
-        """Get the smallest valid sample size."""
+    def get_min_sample_size(self, sub_audit: PairwiseAudit):
+        """Get the minimum valid sample size in a sub audit"""
 
         pass
 
@@ -379,39 +519,82 @@ class Audit(ABC):
 
         pass
 
-    @abstractmethod
     def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
         """Determine if the audits stopping condition has been met.
 
+        The audit stopping condition is met if and only if each pairwise stopping condition
+        is met.
+
+        Note: To be used during live/interactive audit execution.
+        """
+        stop = True
+        max_pvalue = 0
+        for loser in self.sub_audits.keys():
+            # If pairwise audit has already stopped, do not compute round
+            if self.sub_audits[loser].stopped:
+                continue
+            # Evaluate stopping condition for pairwise audit
+            if not self.stopping_condition_pairwise(votes_for_winner, loser, verbose):
+                stop = False
+            if self.sub_audits[loser].pvalue_schedule[-1] > max_pvalue:
+                max_pvalue = self.sub_audits[loser].pvalue_schedule[-1]
+        self.pvalue_schedule.append(max_pvalue)
+        if verbose:
+            click.echo('\nRisk Level: {}'.format(self.get_risk_level()))
+        return stop
+
+    @abstractmethod
+    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
+        """Determine if pairwise subcontest meets stopping condition."""
+
+        pass
+
+    def next_min_winner_ballots(self, verbose: bool = False):
+        """Compute next stopping size of given (actual) sample sizes for all subaudits.
+
+        Note:
+            To be used during live audit execution (with run()).
+        """
+        winner_round_draw = self.sample_winner_ballots[-1]
+        if verbose:
+            click.echo('\n+----------------------------------------+')
+            click.echo('|{:^40}|'.format('Minimum Winner Ballots Needed in Round'))
+            click.echo('|{:^40}|'.format('--------------------------------------'))
+        for loser, sub_audit in self.sub_audits.items():
+            loser_round_draw = sub_audit.sample_loser_ballots[-1]
+            kmin = self.next_min_winner_ballots_pairwise(winner_round_draw + loser_round_draw, sub_audit)
+            self.sub_audits[loser].min_winner_ballots.append(kmin)
+            if verbose:
+                if kmin is None:
+                    kmin = 'Inf.'
+                click.echo('|{:<30} {:<9}|'.format(loser, kmin))
+        if verbose:
+            click.echo('\n+----------------------------------------+')
+
+    @abstractmethod
+    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
+        """Compute next stopping size of given (actual) sample size for a subaudit.
+
         Note: To be used during live/interactive audit execution.
         """
 
         pass
 
     @abstractmethod
-    def next_min_winner_ballots(self, sample_size) -> int:
-        """Compute next stopping size of given (actual) sample size.
-
-        Note: To be used during live/interactive audit execution.
-        """
+    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, progress: bool = False, *args, **kwargs):
+        """Compute the stopping size(s) for any number of sample sizes for a given subaudit."""
 
         pass
 
     @abstractmethod
-    def compute_min_winner_ballots(self, progress: bool = False, *args, **kwargs):
-        """Compute the stopping size(s) for any number of sample sizes."""
+    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, progress: bool = False, *args, **kwargs):
+        """Compute all stopping sizes from the minimum sample size on for a given subaudit."""
 
         pass
 
     @abstractmethod
-    def compute_all_min_winner_ballots(self, progress: bool = False, *args, **kwargs):
-        """Compute all stopping sizes from the minimum sample size on."""
-
-        pass
-
-    @abstractmethod
-    def compute_risk(self, *args, **kwargs):
-        """Compute the current risk level of the audit.
+    def compute_risk(self, sub_audit: PairwiseAudit, *args, **kwargs):
+        """Compute the current risk level of a given subaudit.
 
         Returns:
             Current risk level of the audit (as defined per audit implementation).

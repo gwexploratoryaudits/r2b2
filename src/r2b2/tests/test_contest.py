@@ -16,7 +16,7 @@ def test_simple_contest():
     for cand in simplecontest.candidates:
         assert cand in simplecontest.tally.keys()
     assert simplecontest.reported_winners[0] == 'a'
-    assert simplecontest.winner_prop == 0.6
+    assert len(simplecontest.sub_contests) == 1
 
 
 def test_sorting_tally():
@@ -35,12 +35,13 @@ def test_sorting_tally():
 
 def test_pairwise_sub_contests():
     contest = Contest(100, {'a': 50, 'b': 20, 'c': 10, 'd': 10, 'e': 5}, 1, ['a'], ContestType.PLURALITY)
-    assert len(contest.sub_contests) == 4
+    assert len(contest.sub_contests) == 1
+    assert len(contest.sub_contests['a']) == 4
     for i in range(4):
-        assert contest.sub_contests[i].reported_winner == 'a'
-        assert contest.sub_contests[i].reported_loser in ['b', 'c', 'd', 'e']
-        assert contest.sub_contests[i].reported_winner_ballots == 50
-        assert contest.sub_contests[i].reported_loser_ballots == contest.tally[contest.sub_contests[i].reported_loser]
+        assert contest.sub_contests['a'][i].reported_winner == 'a'
+        assert contest.sub_contests['a'][i].reported_loser in ['b', 'c', 'd', 'e']
+        assert contest.sub_contests['a'][i].reported_winner_ballots == 50
+        assert contest.sub_contests['a'][i].reported_loser_ballots == contest.tally[contest.sub_contests['a'][i].reported_loser]
 
 
 def test_repr():

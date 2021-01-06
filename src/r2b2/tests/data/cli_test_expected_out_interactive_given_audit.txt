@@ -36,6 +36,7 @@ BayesianRLA without replacement
 -------------------------------
 Risk Limit: 0.1
 Maximum Fraction to Draw: 0.2
+Reported Winner: A
 Contest
 -------
 Contest Ballots: 1000
@@ -60,8 +61,8 @@ Beginning Audit...
 
 Would you like to enter a desired stopping probability for this round? [y/N]: n
 Enter next sample size (as a running total): 200
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 175
+Enter total number of votes for A (reported winner) found in sample: 175
+Enter total number of votes for B found in sample: 25
 
 
 +----------------------------------------+
