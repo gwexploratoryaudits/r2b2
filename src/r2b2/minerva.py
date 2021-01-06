@@ -8,6 +8,7 @@ from scipy.stats import binom
 from scipy.stats import norm
 
 from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
 from r2b2.contest import Contest
 
 
@@ -28,25 +29,25 @@ class Minerva(Audit):
         min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
         contest (Contest): Contest to be audited.
     """
-
-    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest, reported_winner: str = None):
         """Initialize a Minerva audit."""
+        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest, reported_winner)
+        for loser, sub_audit in self.sub_audits.items():
+            self.sub_audits[loser].min_sample_size = self.get_min_sample_size(sub_audit)
 
-        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
-        self.min_sample_size = self.get_min_sample_size()
-
-    def get_min_sample_size(self, min_sprob: float = 10 ** (-6)):
+    def get_min_sample_size(self, sub_audit: PairwiseAudit, min_sprob: float = 10**(-6)):
         """Computes the minimum sample size that has a stopping size (kmin). Here we find a
         practical minimum instead of the theoretical minimum (BRAVO's minimum) to avoid
         floating-point imprecisions in the later convolution process.
 
         Args:
+            sub_audit (PairwiseAudit): subaudit with two candidates to get minium sample size for.
             min_sprob (float): Round sizes with below min_sprob stopping probability are excluded.
         Returns:
             int: The minimum sample size of the audit, adherent to the min_sprob.
         """
 
-        return self.next_sample_size(sprob=min_sprob)
+        return self._next_sample_size_pairwise(sub_audit, sprob=min_sprob)[0]
 
     def satisfactory_sample_size(self, left, right, sprob, num_dist, denom_dist):
         """Helper method that returns True if the round size satisfies the stopping probability."""
@@ -69,7 +70,7 @@ class Minerva(Audit):
         else:
             return False
 
-    def kmin_search_upper_bound(self, n):
+    def kmin_search_upper_bound(self, n, sub_audit: PairwiseAudit):
         """
         The Minerva kmin is no greater than the BRAVO kmin, so the latter serves
         as an upper bound for a kmin binary search.
@@ -77,8 +78,8 @@ class Minerva(Audit):
         (Solve for k: (p/.5)^k * ((1-p)/.5)^(n-k) > 1/alpha)
         """
 
-        x = (1 - self.contest.winner_prop) / .5
-        y = math.log(self.contest.winner_prop / (1 - self.contest.winner_prop))
+        x = (1 - sub_audit.sub_contest.winner_prop) / .5
+        y = math.log(sub_audit.sub_contest.winner_prop / (1 - sub_audit.sub_contest.winner_prop))
         return math.ceil((-n * math.log(x) - math.log(self.alpha)) / y)
 
     def sample_size_kmin(self, left, right, num_dist, denom_dist, sum_num_right, sum_denom_right, orig_right):
@@ -92,8 +93,8 @@ class Minerva(Audit):
         sum_denom = sum(denom_dist[mid:orig_right]) + sum_denom_right
         satisfies_risk = self.alpha * sum_num > sum_denom
 
-        sum_num_prev = sum_num + num_dist[mid-1]
-        sum_denom_prev = sum_denom + denom_dist[mid-1]
+        sum_num_prev = sum_num + num_dist[mid - 1]
+        sum_denom_prev = sum_denom + denom_dist[mid - 1]
         satisfies_risk_prev = self.alpha * (sum_num_prev) > (sum_denom_prev)
 
         if satisfies_risk and not satisfies_risk_prev:
@@ -105,10 +106,10 @@ class Minerva(Audit):
         else:
             raise Exception("sample_size_sprob: k not monotonic.")
 
-    def find_sprob(self, n):
+    def find_sprob(self, n, sub_audit: PairwiseAudit):
         """Helper method to find the stopping probability of a given prospective round size."""
-        p0 = (self.contest.contest_ballots // 2) / self.contest.contest_ballots
-        p1 = self.contest.winner_prop
+        p0 = (sub_audit.sub_contest.contest_ballots // 2) / sub_audit.sub_contest.contest_ballots
+        p1 = sub_audit.sub_contest.winner_prop
 
         # The number of ballots that will be drawn this round.
         if len(self.rounds) > 0:
@@ -119,16 +120,15 @@ class Minerva(Audit):
         num_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p1)
         denom_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p0)
         if len(self.rounds) > 0:
-            num_dist = convolve(self.distribution_reported_tally, num_dist_round_draw, method='fft')
-            denom_dist = convolve(self.distribution_null, denom_dist_round_draw, method='fft')
+            num_dist = convolve(sub_audit.distribution_reported_tally, num_dist_round_draw, method='fft')
+            denom_dist = convolve(sub_audit.distribution_null, denom_dist_round_draw, method='fft')
         else:
             num_dist = num_dist_round_draw
             denom_dist = denom_dist_round_draw
 
         # We find the kmin for this would-be round size.
-        right = min(self.kmin_search_upper_bound(n), len(num_dist))
-        kmin = self.sample_size_kmin(len(num_dist) // 2, right, num_dist, denom_dist, sum(num_dist[right:]),
-                                     sum(denom_dist[right:]), right)
+        right = min(self.kmin_search_upper_bound(n, sub_audit), len(num_dist))
+        kmin = self.sample_size_kmin(len(num_dist) // 2, right, num_dist, denom_dist, sum(num_dist[right:]), sum(denom_dist[right:]), right)
 
         # If there isn't a kmin, clearly we need a larger round size.
         if kmin == 0:
@@ -146,7 +146,7 @@ class Minerva(Audit):
 
         return kmin, sprob_round
 
-    def binary_search_estimate(self, left, right, sprob):
+    def binary_search_estimate(self, left, right, sprob, sub_audit: PairwiseAudit):
         """Method to use binary search approximation to find a round size estimate."""
 
         # An additional check to ensure proper input.
@@ -155,7 +155,7 @@ class Minerva(Audit):
 
         mid = (left + right) // 2
 
-        sprob_kmin_pair = self.find_sprob(mid)
+        sprob_kmin_pair = self.find_sprob(mid, sub_audit)
 
         # This round size is returned if it has satisfactory stopping probability and a round size one less
         # does not, or if it has satisfactory stopping probability and exceeds the desired stopping probability
@@ -165,23 +165,28 @@ class Minerva(Audit):
                 assert sprob_kmin_pair[0] > 0
                 return mid, sprob_kmin_pair[0], sprob_kmin_pair[1]
             else:
-                right_sprob_kmin_pair = self.find_sprob(mid + 1)
+                right_sprob_kmin_pair = self.find_sprob(mid + 1, sub_audit)
                 if right_sprob_kmin_pair[1] >= sprob:
-                    return mid + 1, self.find_sprob(mid + 1)[0], self.find_sprob(mid + 1)[1]
+                    return mid + 1, self.find_sprob(mid + 1, sub_audit)[0], self.find_sprob(mid + 1, sub_audit)[1]
 
             return 0, 0, 0.0
 
         if sprob_kmin_pair[1] >= sprob:
-            return self.binary_search_estimate(left, mid, sprob)
+            return self.binary_search_estimate(left, mid, sprob, sub_audit)
         else:
-            return self.binary_search_estimate(mid, right, sprob)
+            return self.binary_search_estimate(mid, right, sprob, sub_audit)
 
     def next_sample_size_gaussian(self, sprob=.9):
         """This is a rougher but quicker round size estimate for very narrow margins."""
         z_a = norm.isf(sprob)
         z_b = norm.isf(self.alpha * sprob)
-        p = self.contest.winner_prop
-        return math.ceil(((z_a * math.sqrt(p * (1 - p)) - .5 * z_b) / (p - .5)) ** 2)
+        possible_sample_sizes = []
+
+        for sub_audit in self.sub_audits.values():
+            p = sub_audit.sub_contest.winner_prop
+            possible_sample_sizes.append(math.ceil(((z_a * math.sqrt(p * (1 - p)) - .5 * z_b) / (p - .5))**2))
+
+        return max(possible_sample_sizes)
 
     def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
         """
@@ -194,64 +199,82 @@ class Minerva(Audit):
         """
 
         # If the audit has already terminated, there is no next_sample_size.
-        if len(self.min_winner_ballots) > 0 and self.sample_winner_ballots[-1] >= self.min_winner_ballots[-1]:
+        if all([sub_audit.stopped for sub_audit in self.sub_audits.values()]):
             if verbose:
-                return self.rounds[-1], 0, 1
+                return self.rounds[-1], 0, 0
             return self.rounds[-1]
 
+        estimates = []
+        for sub_audit in self.sub_audits.values():
+            estimates.append(self._next_sample_size_pairwise(sub_audit, sprob))
+
+        max_estimate = [0, 0, 0]
+        for estimate in estimates:
+            if estimate[0] > max_estimate[0]:
+                max_estimate = estimate
+
+        if verbose:
+            return max_estimate
+        return max_estimate[0]
+
+    def _next_sample_size_pairwise(self, sub_audit: PairwiseAudit, sprob=0.9):
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
         start = 10000
-        if len(self.rounds) > 0:
-            init_upper_bound = self.get_upper_bound(self.rounds[-1] + 1, start)
+        subsequent_round = len(self.rounds) > 0
+        previous_round = 0
+        if subsequent_round:
+            winner_ballots = self.sample_winner_ballots[-1]
+            loser_ballots = sub_audit.sample_loser_ballots[-1]
+            previous_round = winner_ballots + loser_ballots
+            init_upper_bound = self.get_upper_bound(previous_round + 1, start)
         else:
             init_upper_bound = start
         upper_bound = init_upper_bound
-        while upper_bound < 10 ** 7:
+        while upper_bound < 10**7:
             if len(self.rounds) > 0:
                 # Ensure upper bound is sufficiently large.
                 if upper_bound == init_upper_bound:
-                    estimate = self.binary_search_estimate(self.rounds[-1] + 1, upper_bound, sprob)
+                    estimate = self.binary_search_estimate(previous_round + 1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob)
+                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
             else:
                 if upper_bound == init_upper_bound:
-                    estimate = self.binary_search_estimate(1, upper_bound, sprob)
+                    estimate = self.binary_search_estimate(1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob)
+                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
             if estimate[0] > 0:
-                if verbose:
-                    return estimate
-                return estimate[0]
+                return estimate
             upper_bound *= 2
         return 0
+
 
     def get_upper_bound(self, n, start):
         while start <= n:
             start *= 2
         return start
 
-    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
+    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the audit is complete."""
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
+        if loser not in self.sub_audits.keys():
+            raise ValueError('loser must be a reported loser in a valid subaudit.')
 
-        tail_null = sum(self.distribution_null[votes_for_winner:])
-        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
-
-        pvalue = self.compute_risk(votes_for_winner)
-        self.pvalue_schedule.append(pvalue)
+        tail_null = sum(self.sub_audits[loser].distribution_null[votes_for_winner:])
+        tail_reported = sum(self.sub_audits[loser].distribution_reported_tally[votes_for_winner:])
+        self.sub_audits[loser].pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
-            click.echo('\np-value: {}'.format(pvalue))
-            click.echo('\nRisk Level: {}'.format(self.get_risk_level()))
+            click.echo('\n({}) p-value: {}'.format(loser, self.sub_audits[loser].pvalue_schedule[-1]))
 
-        return self.alpha * tail_reported > tail_null
+        self.sub_audits[loser].stopped = (self.alpha * tail_reported) > tail_null
+        return self.sub_audits[loser].stopped
 
-    def next_min_winner_ballots(self, sample_size) -> int:
+    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
         """Compute kmin in interactive context."""
-        return self.find_kmin(False)
+        return self.find_kmin(sub_audit, sample_size, False)
 
-    def compute_min_winner_ballots(self, rounds: List[int], *args, **kwargs):
-        """Compute the minimum number of winner ballots for a round schedule.
+    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: List[int], *args, **kwargs):
+        """Compute the minimum number of winner ballots for a round schedule of a pairwise audit.
 
         Extend the audit's round schedule with the passed (partial) round schedule, and then extend
         the audit's minimum number of winner ballots schedule with the corresponding minimums to
@@ -267,23 +290,32 @@ class Minerva(Audit):
             raise ValueError('Sample sizes must exceed past sample sizes.')
 
         for i in range(len(rounds)):
-            if rounds[i] < self.min_sample_size:
+            if rounds[i] < sub_audit.min_sample_size:
                 raise ValueError('Sample size must be >= minimum sample size.')
             if rounds[i] > self.contest.contest_ballots * self.max_fraction_to_draw:
-                raise ValueError(
-                    'Sample size cannot exceed the maximum fraction of contest ballots to draw.')
+                raise ValueError('Sample size cannot exceed the maximum fraction of contest ballots to draw.')
+            if rounds[i] > sub_audit.sub_contest.contest_ballots:
+                raise ValueError('Sample size cannot exceed the total number of ballots in sub contest.')
             if i >= 1 and rounds[i] <= rounds[i - 1]:
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
 
-        for sample_size in rounds:
-            self.rounds.append(sample_size)
-            self.current_dist_null()
-            self.current_dist_reported()
-            self.find_kmin(True)
-            self.truncate_dist_null()
-            self.truncate_dist_reported()
+        previous_sample = 0
+        for round_size in rounds:
+            self.rounds.append(round_size)
+            # Compute marginal round size
+            sample_size = round_size - previous_sample
+            # Update current distributions for pairwise subaudit
+            self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            # Find kmin for pairwise subaudit and append kmin
+            self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+            # Truncate distributions for pairwise subaudit
+            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            # Update previous round size for next sample computation
+            previous_sample = round_size
 
-    def find_kmin(self, append: bool):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, loser: str = None):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
@@ -292,22 +324,26 @@ class Minerva(Audit):
             outside this method during an interactive audit.
         """
 
-        for possible_kmin in range(self.rounds[-1] // 2 + 1, len(self.distribution_null)):
-            tail_null = sum(self.distribution_null[possible_kmin:])
-            tail_reported = sum(self.distribution_reported_tally[possible_kmin:])
+        for possible_kmin in range(sample_size // 2 + 1, len(sub_audit.distribution_null)):
+            tail_null = sum(sub_audit.distribution_null[possible_kmin:])
+            tail_reported = sum(sub_audit.distribution_reported_tally[possible_kmin:])
 
             # Minerva's stopping criterion: tail_reported / tail_null > 1 / alpha.
             if self.alpha * tail_reported > tail_null:
                 if append:
-                    self.min_winner_ballots.append(possible_kmin)
+                    if loser is None:
+                        raise Exception('must specify loser to append kmin.')
+                    self.sub_audits[loser].min_winner_ballots.append(possible_kmin)
                 return possible_kmin
 
         # Sentinel of None plays nice with truncation.
         if append:
-            self.min_winner_ballots.append(None)
+            if loser is None:
+                raise Exception('must specify loser to append kmin.')
+            self.sub_audits[loser].min_winner_ballots.append(None)
         return None
 
-    def compute_all_min_winner_ballots(self, max_sample_size: int = None, *args, **kwargs):
+    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum number of winner ballots for the complete (that is, ballot-by-ballot)
         round schedule. Note that Minerva ballot-by-ballot is equivalent to the BRAVO audit.
 
@@ -327,38 +363,42 @@ class Minerva(Audit):
             raise Exception("This audit already has an (at least partial) round schedule.")
         if max_sample_size is None:
             max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
-        if max_sample_size < self.min_sample_size:
+        if max_sample_size > sub_audit.sub_contest.contest_ballots:
+            max_sample_size = sub_audit.sub_contest.contest_ballots
+        if max_sample_size < sub_audit.min_sample_size:
             raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
-        if max_sample_size > self.contest.contest_ballots:
-            raise ValueError("Maximum sample size cannot exceed total contest ballots.")
 
-        for sample_size in range(self.min_sample_size, max_sample_size + 1):
+        for sample_size in range(sub_audit.min_sample_size, max_sample_size + 1):
             self.rounds.append(sample_size)
-            self.current_dist_null()
-            self.current_dist_reported()
             # First kmin computed directly.
-            if sample_size == self.min_sample_size:
-                current_kmin = self.find_kmin(True)
+            if sample_size == sub_audit.min_sample_size:
+                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
             else:
-                tail_null = sum(self.distribution_null[current_kmin:])
-                tail_reported = sum(self.distribution_reported_tally[current_kmin:])
+                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                tail_null = sum(sub_audit.distribution_null[current_kmin:])
+                tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
                 if self.alpha * tail_reported > tail_null:
-                    self.min_winner_ballots.append(current_kmin)
+                    sub_audit.min_winner_ballots.append(current_kmin)
                 else:
                     current_kmin += 1
-                    self.min_winner_ballots.append(current_kmin)
-            self.truncate_dist_null()
-            self.truncate_dist_reported()
+                    sub_audit.min_winner_ballots.append(current_kmin)
+            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
 
-    def compute_risk(self, votes_for_winner: int, *args, **kwargs):
+    def compute_risk(self, votes_for_winner: int, loser: str, *args, **kwargs):
         """Return the hypothetical pvalue if votes_for_winner were obtained in the most recent
         round."""
 
-        tail_null = sum(self.distribution_null[votes_for_winner:])
-        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
+        sub_audit = self.sub_audits[loser]
+        tail_null = sum(sub_audit.distribution_null[votes_for_winner:])
+        tail_reported = sum(sub_audit.distribution_reported_tally[votes_for_winner:])
 
         if tail_reported == 0:
             return 0
+
         return tail_null / tail_reported
 
     def get_risk_level(self):

@@ -246,7 +246,7 @@ def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, rou
         audit = BRLA(risk_limit, max_fraction_to_draw, contest)
     else:
         raise click.BadArgumentUsage('No valid audit type found.')
-    
+
     # Get loser for pairwise audit
     if loser is not None and loser not in audit.sub_audits.keys():
         click.echo('loser [{}] is not valid.'.format(loser))
@@ -267,7 +267,10 @@ def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, rou
             out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[loser].min_sample_size])
     else:
         kmins = audit.compute_all_min_winner_ballots(audit.sub_audits[loser], progress=verbose)
-        for r in range(audit.sub_audits[loser].min_sample_size, min(audit.sub_audits[loser].sub_contest.contest_ballots, math.ceil(max_fraction_to_draw * contest.contest_ballots) + 1)):
+        for r in range(
+                audit.sub_audits[loser].min_sample_size,
+                min(audit.sub_audits[loser].sub_contest.contest_ballots,
+                    math.ceil(max_fraction_to_draw * contest.contest_ballots) + 1)):
             out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[loser].min_sample_size])
 
     # Write or print output

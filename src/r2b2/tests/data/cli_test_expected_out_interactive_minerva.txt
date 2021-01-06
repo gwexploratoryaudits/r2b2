@@ -41,6 +41,7 @@ Alpha: 0.1
 Beta: 0.0
 Maximum Fraction to Draw: 0.1
 Replacement: True
+Reported Winner: A
 
 Contest
 -------
@@ -66,8 +67,8 @@ Beginning Audit...
 
 Would you like to enter a desired stopping probability for this round? [y/N]: n
 Enter next sample size (as a running total): 100
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 57
+Enter total number of votes for A (reported winner) found in sample: 57
+Enter total number of votes for B found in sample: 43
 
 
 +----------------------------------------+
@@ -82,8 +83,8 @@ Would you like to force stop the audit [y/N]: n
 
 Would you like to enter a desired stopping probability for this round? [y/N]: n
 Enter next sample size (as a running total): 200
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 112
+Enter total number of votes for A (reported winner) found in sample: 112
+Enter total number of votes for B found in sample: 88
 
 
 +----------------------------------------+
@@ -98,8 +99,8 @@ Would you like to force stop the audit [y/N]: n
 
 Would you like to enter a desired stopping probability for this round? [y/N]: n
 Enter next sample size (as a running total): 400
-Would you like to enter a hypothetical number of votes for reported winner? [y/N]: n
-Enter total number of votes for reported winner found in sample: 221
+Enter total number of votes for A (reported winner) found in sample: 221
+Enter total number of votes for B found in sample: 179
 
 
 +----------------------------------------+
