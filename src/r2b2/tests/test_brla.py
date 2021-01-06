@@ -16,17 +16,18 @@ def test_simple_brla():
     simplebrla.rounds.append(20)
     assert simplebrla.stopping_condition(20)
     assert not simplebrla.stopping_condition(0)
-    test_min_winner_ballots = simplebrla.next_min_winner_ballots(20)
+    test_min_winner_ballots = simplebrla.next_min_winner_ballots_pairwise(20, simplebrla.sub_audits['b'])
     assert test_min_winner_ballots >= 10
     assert test_min_winner_ballots <= 20
-    bulk_min_winner_ballots = simplebrla.compute_all_min_winner_ballots()
-    assert len(bulk_min_winner_ballots) == (20 - simplebrla.min_sample_size) + 1
+    bulk_min_winner_ballots = simplebrla.compute_all_min_winner_ballots(simplebrla.sub_audits['b'])
+    assert len(bulk_min_winner_ballots) == (20 - simplebrla.sub_audits['b'].min_sample_size) + 1
 
 
 def test_str():
     simplebrla = BRLA(0.1, 0.2, default_contest)
     brla_str = 'BayesianRLA without replacement\n-------------------------------\n'
     brla_str += 'Risk Limit: 0.1\nMaximum Fraction to Draw: 0.2\n'
+    brla_str += 'Reported Winner: a\n'
     brla_str += str(default_contest)
     assert str(simplebrla) == brla_str
 
@@ -36,14 +37,12 @@ def test_exceptions():
     with pytest.raises(Exception):
         simplebrla.stopping_condition(10)
     with pytest.raises(ValueError):
-        simplebrla.compute_min_winner_ballots([])
+        simplebrla.compute_min_winner_ballots(simplebrla.sub_audits['b'], [])
     with pytest.raises(ValueError):
-        simplebrla.compute_min_winner_ballots([0, 1])
+        simplebrla.compute_min_winner_ballots(simplebrla.sub_audits['b'], [0, 1])
     with pytest.raises(ValueError):
-        simplebrla.compute_min_winner_ballots([10, 5])
+        simplebrla.compute_min_winner_ballots(simplebrla.sub_audits['b'], [10, 5])
     with pytest.raises(ValueError):
-        simplebrla.compute_min_winner_ballots([100])
+        simplebrla.compute_min_winner_ballots(simplebrla.sub_audits['b'], [100])
     with pytest.raises(ValueError):
-        simplebrla.compute_all_min_winner_ballots(0)
-    with pytest.raises(ValueError):
-        simplebrla.compute_all_min_winner_ballots(1000)
+        simplebrla.compute_all_min_winner_ballots(simplebrla.sub_audits['b'], 0)

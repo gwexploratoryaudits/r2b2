@@ -3,6 +3,7 @@ import json
 import pytest
 
 from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.tests import util as util
@@ -15,25 +16,27 @@ class SimpleAudit(Audit):
     def __init__(self, alpha: float, beta: float, max_fraction_to_draw: int, replacement: bool, contest: Contest):
         super().__init__(alpha, beta, max_fraction_to_draw, replacement, contest)
 
-    def get_min_sample_size(self):
+    def get_min_sample_size(self, sub_audit: PairwiseAudit):
         return 5
 
     def next_sample_size(self):
         return 20
 
-    def stopping_condition(self, votes_for_winner: int) -> bool:
+    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool) -> bool:
+        self.sub_audits[loser].pvalue_schedule.append(0)
+        self.sub_audits[loser].stopped = True
         return True
 
-    def next_min_winner_ballots(self):
+    def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit):
         return 10
 
-    def compute_risk(self):
+    def compute_risk(self, sub_audit: PairwiseAudit):
         return 0.1
 
-    def compute_min_winner_ballots(self):
+    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit):
         return 60
 
-    def compute_all_min_winner_ballots(self):
+    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit):
         return [1, 2, 3, 4]
 
     def get_risk_level(self):
@@ -43,54 +46,60 @@ class SimpleAudit(Audit):
 def test_simple_audit():
     """Tests creation of a basic Audit object."""
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    sub_audit = simpleaudit1.sub_audits['b']
     assert simpleaudit1.alpha == 0.1
     assert simpleaudit1.beta == 0.05
     assert simpleaudit1.max_fraction_to_draw == 0.1
     assert simpleaudit1.replacement
     assert simpleaudit1.contest is default_contest
-    assert simpleaudit1.min_sample_size == 1
-    simpleaudit1.min_sample_size = simpleaudit1.get_min_sample_size()
-    assert simpleaudit1.min_sample_size == 5
+    assert simpleaudit1.sub_audits['b'].min_sample_size == 1
+    assert simpleaudit1.get_min_sample_size(None) == 5
     assert simpleaudit1.next_sample_size() == 20
     assert simpleaudit1.stopping_condition(10)
-    assert simpleaudit1.next_min_winner_ballots() == 10
-    assert simpleaudit1.compute_risk() == 0.1
-    assert simpleaudit1.compute_min_winner_ballots() == 60
+    assert simpleaudit1.next_min_winner_ballots_pairwise(sub_audit) == 10
+    assert simpleaudit1.compute_risk(sub_audit) == 0.1
+    assert simpleaudit1.compute_min_winner_ballots(sub_audit) == 60
 
 
 def test_simple_audit_execution():
     """Test basic properties of updating attributes."""
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.5, True, default_contest)
     simpleaudit2 = SimpleAudit(0.1, 0.05, 0.1, False, default_contest)
+    sub_audit1 = simpleaudit1.sub_audits['b']
+    sub_audit2 = simpleaudit2.sub_audits['b']
     for i in range(1, 6):
         simpleaudit1.rounds.append(10 * i)
-        simpleaudit1.min_winner_ballots.append((10 * i) - 5)
+        simpleaudit1.sample_winner_ballots.append((10 * i) - 6)
+        sub_audit1.sample_loser_ballots.append((10 * i) - ((10 * i) - 6))
+        sub_audit1.min_winner_ballots.append((10 * i) - 5)
         simpleaudit1.current_dist_null()
         simpleaudit1.truncate_dist_null()
-        assert len(simpleaudit1.risk_schedule) == i
-        assert simpleaudit1.risk_schedule[i - 1] >= 0.0
-        assert simpleaudit1.risk_schedule[i - 1] <= 1.0
-        assert len(simpleaudit1.distribution_null) == (10 * i) - 5
+        assert len(sub_audit1.risk_schedule) == i
+        assert sub_audit1.risk_schedule[i - 1] >= 0.0
+        assert sub_audit1.risk_schedule[i - 1] <= 1.0
+        assert len(sub_audit1.distribution_null) == (10 * i) - 5
         simpleaudit1.current_dist_reported()
         simpleaudit1.truncate_dist_reported()
-        assert len(simpleaudit1.stopping_prob_schedule) == i
-        assert simpleaudit1.stopping_prob_schedule[i - 1] >= 0.0
-        assert simpleaudit1.stopping_prob_schedule[i - 1] <= 1.0000001
-        assert len(simpleaudit1.distribution_reported_tally) == (10 * i) - 5
+        assert len(sub_audit1.stopping_prob_schedule) == i
+        assert sub_audit1.stopping_prob_schedule[i - 1] >= 0.0
+        assert sub_audit1.stopping_prob_schedule[i - 1] <= 1.0000001
+        assert len(sub_audit1.distribution_reported_tally) == (10 * i) - 5
         simpleaudit2.rounds.append(10 * i)
-        simpleaudit2.min_winner_ballots.append((10 * i) - 5)
+        simpleaudit2.sample_winner_ballots.append((10 * i) - 6)
+        sub_audit2.sample_loser_ballots.append((10 * i) - ((10 * i) - 6))
+        sub_audit2.min_winner_ballots.append((10 * i) - 5)
         simpleaudit2.current_dist_null()
         simpleaudit2.truncate_dist_null()
-        assert len(simpleaudit2.risk_schedule) == i
-        assert simpleaudit2.risk_schedule[i - 1] >= 0.0
-        assert simpleaudit2.risk_schedule[i - 1] <= 1.0
-        assert len(simpleaudit2.distribution_null) == (10 * i) - 5
+        assert len(sub_audit2.risk_schedule) == i
+        assert sub_audit2.risk_schedule[i - 1] >= 0.0
+        assert sub_audit2.risk_schedule[i - 1] <= 1.0
+        assert len(sub_audit2.distribution_null) == (10 * i) - 5
         simpleaudit2.current_dist_reported()
         simpleaudit2.truncate_dist_reported()
-        assert len(simpleaudit2.stopping_prob_schedule) == i
-        assert simpleaudit2.stopping_prob_schedule[i - 1] >= 0.0
-        assert simpleaudit2.stopping_prob_schedule[i - 1] <= 1.0000001
-        assert len(simpleaudit2.distribution_reported_tally) == (10 * i) - 5
+        assert len(sub_audit2.stopping_prob_schedule) == i
+        assert sub_audit2.stopping_prob_schedule[i - 1] >= 0.0
+        assert sub_audit2.stopping_prob_schedule[i - 1] <= 1.0000001
+        assert len(sub_audit2.distribution_reported_tally) == (10 * i) - 5
 
 
 def test_repr():
@@ -102,7 +111,8 @@ def test_repr():
 def test_str():
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
     audit_str = 'Audit\n-----\nAlpha: 0.1\nBeta: 0.05\n'
-    audit_str += 'Maximum Fraction to Draw: 0.1\nReplacement: True\n\n'
+    audit_str += 'Maximum Fraction to Draw: 0.1\nReplacement: True\n'
+    audit_str += 'Reported Winner: a\n\n'
     audit_str += str(simpleaudit1.contest)
     assert str(simpleaudit1) == audit_str
 
@@ -168,7 +178,7 @@ def test_asn():
         winner_ballots = data[test]['winner_ballots']
         contest = Contest(contest_ballots, {'A': winner_ballots, 'B': contest_ballots - winner_ballots}, 1, ['A'], ContestType.PLURALITY)
         audit = SimpleAudit(data[test]['alpha'], 0.0, 1.0, True, contest)
-        assert audit.asn() == data[test]['asn']
+        assert audit.asn('B') == data[test]['asn']
 
 
 def test_get_interval():
