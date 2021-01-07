@@ -6,6 +6,7 @@ import click
 from scipy.stats import binom
 
 from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
 from r2b2.contest import Contest
 
 
@@ -26,21 +27,21 @@ class Athena(Audit):
         min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
         contest (Contest): Contest to be audited.
     """
-
-    def __init__(self, alpha: float, delta: float, max_fraction_to_draw: float, contest: Contest):
+    def __init__(self, alpha: float, delta: float, max_fraction_to_draw: float, contest: Contest, reported_winner: str = None):
         """Initialize an Athena audit."""
         if delta <= 0:
             raise ValueError("Delta must be > 0.")
 
-        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest, reported_winner)
 
         # The delta condition is an additional stopping rule imposed by the Athena (proper) audit,
         # but p-values reported are identical to Minerva. (We do not attempt to amalgamate the
         # Minerva p-value and the BRAVO p-value into a single p-value.)
         self.delta = delta
-        self.min_sample_size = self.get_min_sample_size()
+        for loser, sub_audit in self.sub_audits.items():
+            self.sub_audits[loser].min_sample_size = self.get_min_sample_size(sub_audit)
 
-    def get_min_sample_size(self, min_sprob: float = 10 ** (-6)):
+    def get_min_sample_size(self, sub_audit: PairwiseAudit, min_sprob: float = 10**(-6)):
         """Computes the minimum sample size that has a stopping size (kmin). Here we find a
         practical minimum instead of the theoretical minimum (BRAVO's minimum) to avoid
         floating-point imprecisions in the later convolution process.
@@ -52,16 +53,16 @@ class Athena(Audit):
         """
 
         # p0 is not .5 for contests with odd total ballots.
-        p0 = (self.contest.contest_ballots // 2) / self.contest.contest_ballots
-        p1 = self.contest.winner_prop
-        max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        p0 = (sub_audit.sub_contest.contest_ballots // 2) / sub_audit.sub_contest.contest_ballots
+        p1 = sub_audit.sub_contest.winner_prop
+        max_sample_size = math.ceil(sub_audit.sub_contest.contest_ballots * self.max_fraction_to_draw)
 
         # There may not be a point n' such that all n >= n' are acceptable round sizes and all
         # n < n' are unacceptable round sizes.
         for n in range(1, max_sample_size):
-            num_dist = binom.pmf(range(n+1), n, p1)
-            denom_dist = binom.pmf(range(n+1), n, p0)
-            if self.satisfactory_sample_size(n // 2, n+1, min_sprob, num_dist, denom_dist):
+            num_dist = binom.pmf(range(n + 1), n, p1)
+            denom_dist = binom.pmf(range(n + 1), n, p0)
+            if self.satisfactory_sample_size(n // 2, n + 1, min_sprob, num_dist, denom_dist):
                 return n
 
         return max_sample_size
@@ -75,8 +76,7 @@ class Athena(Audit):
 
         sum_num = sum(num_dist[mid:])
         sum_denom = sum(denom_dist[mid:])
-        satisfies_risk = self.alpha * sum_num > sum_denom and (
-            self.delta * num_dist[mid] > denom_dist[mid]) and sum_denom > 0
+        satisfies_risk = self.alpha * sum_num > sum_denom and (self.delta * num_dist[mid] > denom_dist[mid]) and sum_denom > 0
         satisfies_sprob = sum_num > sprob
 
         if satisfies_risk and satisfies_sprob:
@@ -91,30 +91,31 @@ class Athena(Audit):
     def next_sample_size(self, *args, **kwargs):
         pass
 
-    def stopping_condition(self, votes_for_winner: int, verbose: bool = False) -> bool:
+    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the audit is complete."""
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
+        if loser not in self.sub_audits.keys():
+            raise ValueError('loser must be a reported loser in a valid subaudit.')
 
-        tail_null = sum(self.distribution_null[votes_for_winner:])
-        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
-        point_null = self.distribution_null[votes_for_winner]
-        point_reported = self.distribution_reported_tally[votes_for_winner]
+        tail_null = sum(self.sub_audits[loser].distribution_null[votes_for_winner:])
+        tail_reported = sum(self.sub_audits[loser].distribution_reported_tally[votes_for_winner:])
+        point_null = self.sub_audits[loser].distribution_null[votes_for_winner]
+        point_reported = self.sub_audits[loser].distribution_reported_tally[votes_for_winner]
 
         # The delta condition does not affect the p-value reported here; this could mean
         # that a p-value < alpha will be reported, yet the audit cannot stop.
-        self.pvalue_schedule.append(tail_null / tail_reported)
+        self.sub_audits[loser].pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
             click.echo('\nMinerva p-value: {}'.format(tail_null / tail_reported))
-            click.echo('\nMinerva Risk Level: {}'.format(self.get_risk_level()))
 
         return self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null
 
-    def next_min_winner_ballots(self, sample_size) -> int:
+    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
         """Compute kmin in interactive context."""
-        return self.find_kmin(False)
+        return self.find_kmin(sub_audit, sample_size, False)
 
-    def compute_min_winner_ballots(self, rounds: List[int], *args, **kwargs):
+    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: List[int], *args, **kwargs):
         """Compute the minimum number of winner ballots for a round schedule.
 
         Extend the audit's round schedule with the passed (partial) round schedule, and then extend
@@ -132,23 +133,32 @@ class Athena(Audit):
             raise ValueError('Sample sizes must exceed past sample sizes.')
 
         for i in range(len(rounds)):
-            if rounds[i] < self.min_sample_size:
+            if rounds[i] < sub_audit.min_sample_size:
                 raise ValueError('Sample size must be >= minimum sample size.')
             if rounds[i] > self.contest.contest_ballots * self.max_fraction_to_draw:
-                raise ValueError(
-                    'Sample size cannot exceed the maximum fraction of contest ballots to draw.')
+                raise ValueError('Sample size cannot exceed the maximum fraction of contest ballots to draw.')
+            if rounds[i] > sub_audit.sub_contest.contest_ballots:
+                raise ValueError('Sample size cannot exceed subaudit contest ballots.')
             if i >= 1 and rounds[i] <= rounds[i - 1]:
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
 
-        for sample_size in rounds:
-            self.rounds.append(sample_size)
-            self.current_dist_null()
-            self.current_dist_reported()
-            self.find_kmin(True)
-            self.truncate_dist_null()
-            self.truncate_dist_reported()
+        previous_sample = 0
+        for round_size in rounds:
+            self.rounds.append(round_size)
+            # Compute marginal round size
+            sample_size = round_size - previous_sample
+            # Update current distributions for pairwise subaudit
+            self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            # Find kmin for pairwise subaudit and append kmin
+            self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+            # Truncate distributions for pairwise subaudit
+            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            # Update previous round size for next sample computation
+            previous_sample = round_size
 
-    def find_kmin(self, append: bool):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, loser: str = None):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
@@ -157,25 +167,29 @@ class Athena(Audit):
             outside this method during an interactive audit.
         """
 
-        for possible_kmin in range(self.rounds[-1] // 2 + 1, len(self.distribution_null)):
-            tail_null = sum(self.distribution_null[possible_kmin:])
-            tail_reported = sum(self.distribution_reported_tally[possible_kmin:])
-            point_null = self.distribution_null[possible_kmin]
-            point_reported = self.distribution_reported_tally[possible_kmin]
+        for possible_kmin in range(sample_size // 2 + 1, len(sub_audit.distribution_null)):
+            tail_null = sum(sub_audit.distribution_null[possible_kmin:])
+            tail_reported = sum(sub_audit.distribution_reported_tally[possible_kmin:])
+            point_null = sub_audit.distribution_null[possible_kmin]
+            point_reported = sub_audit.distribution_reported_tally[possible_kmin]
 
             # Athena's stopping criterion: tail_reported / tail_null > 1 / alpha,
             # and point_reported / point_null > 1 / delta.
             if self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null:
                 if append:
-                    self.min_winner_ballots.append(possible_kmin)
+                    if loser is None:
+                        raise Exception('must specify loser to append kmin.')
+                    self.sub_audits[loser].min_winner_ballots.append(possible_kmin)
                 return possible_kmin
 
         # Sentinel of None plays nice with truncation.
         if append:
-            self.min_winner_ballots.append(None)
+            if loser is None:
+                raise Exception('must specify loser to append kmin.')
+            self.sub_audits[loser].min_winner_ballots.append(None)
         return None
 
-    def compute_all_min_winner_ballots(self, max_sample_size: int = None, *args, **kwargs):
+    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum number of winner ballots for the complete (that is, ballot-by-ballot)
         round schedule.
 
@@ -195,37 +209,38 @@ class Athena(Audit):
             raise Exception("This audit already has an (at least partial) round schedule.")
         if max_sample_size is None:
             max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
-        if max_sample_size < self.min_sample_size:
+        if max_sample_size < sub_audit.min_sample_size:
             raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
-        if max_sample_size > self.contest.contest_ballots:
+        if max_sample_size > sub_audit.sub_contest.contest_ballots:
             raise ValueError("Maximum sample size cannot exceed total contest ballots.")
 
-        for sample_size in range(self.min_sample_size, max_sample_size + 1):
+        for sample_size in range(sub_audit.min_sample_size, max_sample_size + 1):
             self.rounds.append(sample_size)
-            self.current_dist_null()
-            self.current_dist_reported()
             # First kmin computed directly.
-            if sample_size == self.min_sample_size:
-                current_kmin = self.find_kmin(True)
+            if sample_size == sub_audit.min_sample_size:
+                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
             else:
-                tail_null = sum(self.distribution_null[current_kmin:])
-                tail_reported = sum(self.distribution_reported_tally[current_kmin:])
-                point_null = self.distribution_reported_tally[current_kmin]
-                point_reported = self.distribution_reported_tally[current_kmin]
-                if self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null:
-                    self.min_winner_ballots.append(current_kmin)
+                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                tail_null = sum(sub_audit.distribution_null[current_kmin:])
+                tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
+                if self.alpha * tail_reported > tail_null:
+                    sub_audit.min_winner_ballots.append(current_kmin)
                 else:
                     current_kmin += 1
-                    self.min_winner_ballots.append(current_kmin)
-            self.truncate_dist_null()
-            self.truncate_dist_reported()
+                    sub_audit.min_winner_ballots.append(current_kmin)
+            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
 
-    def compute_risk(self, votes_for_winner: int, *args, **kwargs):
+    def compute_risk(self, votes_for_winner: int, loser: str, *args, **kwargs):
         """Return the hypothetical (Minerva) p-value if votes_for_winner were obtained in the most recent
         round."""
 
-        tail_null = sum(self.distribution_null[votes_for_winner:])
-        tail_reported = sum(self.distribution_reported_tally[votes_for_winner:])
+        sub_audit = self.sub_audits[loser]
+        tail_null = sum(sub_audit.distribution_null[votes_for_winner:])
+        tail_reported = sum(sub_audit.distribution_reported_tally[votes_for_winner:])
         return tail_null / tail_reported
 
     def get_risk_level(self):
