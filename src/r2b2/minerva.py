@@ -94,7 +94,7 @@ class Minerva(Audit):
 
         sum_num_prev = sum_num + num_dist[mid-1]
         sum_denom_prev = sum_denom + denom_dist[mid-1]
-        satisfies_risk_prev = self.alpha * (sum_num_prev + 0) > (sum_denom_prev + 0)
+        satisfies_risk_prev = self.alpha * (sum_num_prev) > (sum_denom_prev)
 
         if satisfies_risk and not satisfies_risk_prev:
             return mid
