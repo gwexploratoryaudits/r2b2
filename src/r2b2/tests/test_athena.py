@@ -37,7 +37,7 @@ def test_athena_minerva_paper():
 
 def test_interactive_athena():
     runner = CliRunner()
-    user_in = 'athena\n0.1\n0.1\n100000\n2\nA\n75000\nB\n25000\n1\nA\nMAJORITY\ny\n1\ny\n50\nn\n31\nn\n100\nn\n70\n'
+    user_in = 'athena\n0.1\n0.1\n100000\n2\nA\n75000\nB\n25000\n1\nA\nMAJORITY\ny\n1\ny\nn\n50\nn\n31\nn\nn\n100\nn\n70\n'
     result = runner.invoke(cli, 'interactive', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_athena.txt', 'r')
     expected_out = output_file.read()

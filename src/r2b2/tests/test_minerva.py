@@ -133,7 +133,7 @@ def test_minerva_kmins():
 
 def test_interactive_minerva():
     runner = CliRunner()
-    user_in = 'minerva\n0.1\n0.1\n100000\n2\nA\n60000\nB\n40000\n1\nA\nMAJORITY\ny\ny\n100\nn\n57\nn\n200\nn\n112\nn\n400\nn\n221\n'
+    user_in = 'minerva\n0.1\n0.1\n100000\n2\nA\n60000\nB\n40000\n1\nA\nMAJORITY\ny\ny\nn\n100\nn\n57\nn\nn\n200\nn\n112\nn\nn\n400\nn\n221\n'
     result = runner.invoke(cli, 'interactive', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_interactive_minerva.txt', 'r')
     expected_out = output_file.read()
@@ -143,7 +143,7 @@ def test_interactive_minerva():
 
 def test_compute_risk_minerva():
     runner = CliRunner()
-    user_in = 'minerva\n0.1\n0.1\n100000\n2\nA\n60000\nB\n40000\n1\nA\nMAJORITY\ny\ny\n100\ny\n57\nn\n60\n'
+    user_in = 'minerva\n0.1\n0.1\n100000\n2\nA\n60000\nB\n40000\n1\nA\nMAJORITY\ny\ny\nn\n100\ny\n57\nn\n60\n'
     result = runner.invoke(cli, 'interactive', input=user_in)
     output_file = open('src/r2b2/tests/data/cli_test_expected_out_compute_risk_minerva.txt', 'r')
     expected_out = output_file.read()

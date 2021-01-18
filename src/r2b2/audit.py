@@ -304,7 +304,10 @@ class Audit(ABC):
                                                                '{:.12f}'.format(self.risk_schedule[r - 1])))
                 click.echo('+--------------------------------------------------+')
 
-            self.next_sample_size()
+            while click.confirm('Would you like to enter a desired stopping probability for this round?'):
+                desired_sprob = click.prompt('Enter desired stopping probability for this round (.9 recommended)', type=click.FloatRange(0, 1))
+                next_sample_size = self.next_sample_size()
+                click.echo('|{:<50}|'.format('Recommended next sample size: {}'.format(next_sample_size)))
 
             if curr_round > 1:
                 prev_sample_size = sample_size
