@@ -13,14 +13,16 @@ def state_trial(state, alpha, sample_size):
     sim = MMRR(alpha,
                election.contests[state],
                sample_size,
-               sample_mult = 1.5,
-               max_rounds = 2,
-               sim_args={'description': 'Two round Minerva (90% then 1.5x) (2020)'},
+               sample_mult=1.5,
+               max_rounds=5,
+               sim_args={'description': 'Multi round Minerva (90% then 1.5x)'},
+               user='',
+               pwd='',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'
                })
-    sim.run(40)
+    sim.run(10000)
     return sim.analyze()
 
 
