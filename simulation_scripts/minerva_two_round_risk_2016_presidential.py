@@ -1,7 +1,7 @@
 import json
 import logging
 
-from r2b2.simulation.minerva import MinervaRandomMultiRoundRisk as MRMRR
+from r2b2.simulation.minerva import MinervaMultiRoundRisk as MMRR
 from r2b2.tests.util import parse_election
 
 election = parse_election('data/2016_presidential.json')
@@ -9,14 +9,15 @@ sample_size_file = 'data/2016_presidential_one_round_sample_sizes.json'
 
 
 def state_trial(state, alpha, sample_size):
-    sim = MRMRR(
+    sim = MMRR(
         alpha,
         election.contests[state],
         sample_size,
-        5,
+        sample_mult=1.5,
+        max_rounds=2,
         sim_args={
             'description':
-            'MutiRound Minerva with initial sample size from PV MATLAB, next rounds random multiple [0.5, 1.5] of initial sample size.'
+            'Two Round Minerva with initial sample size from PV MATLAB, next round 1.5x of initial sample size.'
         },
         reported_args={
             'name': state,

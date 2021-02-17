@@ -69,17 +69,18 @@ with open('poorvi_2020.json', 'r') as fd:
         poorvi_state = poorvi_election_results[state]['contests']['presidential']
         total_ballots += poorvi_state['ballots_cast']
     new_election = {
-            "name:": "2020 Presidential",
-            "total_ballots:": total_ballots,
+            "name": "2020 Presidential",
+            "total_ballots": total_ballots,
             "contests": {}
         }
-    for state in poorvi_election_results:
-        poorvi_state = poorvi_election_results[state]['contests']['presidential']
+    for state_name in poorvi_election_results.keys():
+        state = poorvi_election_results[state_name]
+        poorvi_state = poorvi_election_results[state_name]['contests']['presidential']
         if poorvi_state['margin'] > 0:
             reported_winner = 'Biden'
         else:
             reported_winner = 'Trump'
-        new_election['contests'][state] = {
+        new_election['contests'][state_name] = {
             "contest_ballots": poorvi_state['ballots_cast'],
             "tally": {
                 "Biden": poorvi_state['results'][0],
@@ -89,8 +90,10 @@ with open('poorvi_2020.json', 'r') as fd:
             "reported_winners": [ reported_winner ],
             "contest_type": "PLURALITY"
         }
-        new_sample_sizes[state] = {}
-        new_sample_sizes[state]['Minerva_pv_scaled:'] = [116,217]
+        new_sample_sizes[state_name] = {}
+        if state_name == 'Georgia' or state_name == 'Wisconsin' or state_name == 'Arizona':
+            continue
+        new_sample_sizes[state_name]['Minerva_pv_scaled'] = poorvi_election_results[state_name]['round_sizes_Minerva_EoR_scaled']
     with open('2020_presidential.json', 'w') as outfile:
         json.dump(new_election, outfile, indent=2)
     with open('2020_presidential_sample_sizes.json', 'w') as outfile:
