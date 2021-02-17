@@ -1,6 +1,6 @@
 {
-  "name:": "2020 Presidential",
-  "total_ballots:": 158528503,
+  "name": "2020 Presidential",
+  "total_ballots": 158528503,
   "contests": {
     "Alabama": {
       "contest_ballots": 2323282,
