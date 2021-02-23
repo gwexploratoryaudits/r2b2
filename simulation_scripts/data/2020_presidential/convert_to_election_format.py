@@ -1,5 +1,8 @@
 """
 Quick script to convert Poorvi's json to the election format r2b2 uses.
+
+Poorvi's found at:
+    https://github.com/gwexploratoryaudits/brla_explore/blob/poorvi/R2Audits/Athena/Scripts/2020_Presidential/pred_both_first_rounds_10.json
 """
 import json
 """
@@ -91,8 +94,10 @@ with open('poorvi_2020.json', 'r') as fd:
             "contest_type": "PLURALITY"
         }
         new_sample_sizes[state_name] = {}
+        """
         if state_name == 'Georgia' or state_name == 'Wisconsin' or state_name == 'Arizona':
             continue
+        """
         new_sample_sizes[state_name]['Minerva_pv_scaled'] = poorvi_election_results[state_name]['round_sizes_Minerva_EoR_scaled']
     with open('2020_presidential.json', 'w') as outfile:
         json.dump(new_election, outfile, indent=2)
