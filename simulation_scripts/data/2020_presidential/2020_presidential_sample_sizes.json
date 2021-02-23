@@ -11,7 +11,12 @@
       1361
     ]
   },
-  "Arizona": {},
+  "Arizona": {
+    "Minerva_pv_scaled": [
+      710152,
+      1476426
+    ]
+  },
   "Arkansas": {
     "Minerva_pv_scaled": [
       91,
@@ -54,7 +59,12 @@
       12537
     ]
   },
-  "Georgia": {},
+  "Georgia": {
+    "Minerva_pv_scaled": [
+      1223054,
+      2542764
+    ]
+  },
   "Hawaii": {
     "Minerva_pv_scaled": [
       82,
@@ -283,7 +293,12 @@
       90
     ]
   },
-  "Wisconsin": {},
+  "Wisconsin": {
+    "Minerva_pv_scaled": [
+      171837,
+      357255
+    ]
+  },
   "Wyoming": {
     "Minerva_pv_scaled": [
       37,

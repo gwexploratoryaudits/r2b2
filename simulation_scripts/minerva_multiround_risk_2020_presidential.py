@@ -37,9 +37,6 @@ if __name__ == '__main__':
             if margin < 0.05:
                 print('Skipping',contest,'with margin',round(margin,5))
                 continue
-            if contest == 'Georgia' or contest == 'Wisconsin' or contest == 'Arizona':
-                print('Skipping',contest)
-                continue
             sample_size = sample_sizes[contest]['Minerva_pv_scaled'][0]
             computed_risk = state_trial(contest, 0.1, sample_size)
             logging.info('{}: {}'.format(contest, computed_risk))
