@@ -1,0 +1,51 @@
+Alabama 96005
+Alaska 95000
+Skipping Arizona with margin 0.00314
+Arkansas 95000
+California 95000
+Colorado 85837
+Connecticut 85000
+Delaware 85000
+DistrictOfColumbia 85000
+Skipping Florida with margin 0.0339
+Skipping Georgia with margin 0.00239
+Hawaii 85000
+Idaho 85000
+Illinois 85000
+Indiana 85000
+Iowa 81736
+Kansas 85000
+Kentucky 85000
+Louisiana 85000
+Maine 80972
+Maryland 75000
+Massachusetts 75000
+Skipping Michigan with margin 0.02827
+Minnesota 75000
+Mississippi 75000
+Missouri 75000
+Montana 75000
+Nebraska 75000
+Skipping Nevada with margin 0.02446
+NewHampshire 75000
+NewJersey 75000
+NewMexico 75000
+NewYork 75000
+Skipping NorthCarolina with margin 0.01368
+NorthDakota 75000
+Ohio 75000
+Oklahoma 75000
+Oregon 75000
+Skipping Pennsylvania with margin 0.01178
+RhodeIsland 75000
+SouthCarolina 30399
+SouthDakota 20000
+Tennessee 20000
+Texas 20000
+Utah 20000
+Vermont 20000
+Virginia 20000
+Washington 20000
+WestVirginia 20000
+Skipping Wisconsin with margin 0.00638
+Wyoming 20000
