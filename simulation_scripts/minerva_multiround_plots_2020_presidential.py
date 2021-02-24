@@ -9,28 +9,29 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(user='reader', pwd='icanread')
+    db = DBInterface(user='', pwd='')
     risks = []
     sprobs = []
     ratios = []
     margins = []
-    dc_risk = 0.0
-    dc_sprob = 0.0
 
     for contest in election.contests:
-        if contest == 'Georgia' or contest == 'Wisconsin' or contest == 'Arizona':
+        winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
+        tally = sum(election.contests[contest].tally.values())
+        loser_tally = tally - winner_tally
+        margin = (winner_tally - loser_tally) / tally
+        if margin < 0.05:
             continue
-
         audit_id = db.audit_lookup('minerva', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
         tied_sim = db.db.simulations.find_one({
             'reported': reported_id,
             'underlying': 'tie',
             'audit': audit_id,
-            'description': 'Two round Minerva (90% then 1.5x) (2020)',
+            'description': 'Multi round Minerva (90% then 1.5x)',
             'invalid_ballots': True,
             'sample_mult':1.5,
-            'max_rounds':2
+            'max_rounds': 5
         })
         if tied_sim is None:
             # For several low margin states, we didn't run simulations
@@ -54,12 +55,6 @@ if __name__ == '__main__':
         winner_prop = election.contests[contest].tally[election.contests[contest].reported_winners[0]] / sum(
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
-
-        if contest == 'District of Columbia':
-            dc_risk = tied_sim['analysis']
-            """
-            dc_sprob = sprob_sim['analysis']
-            """
 
     # Plot risks vs. margins
     plt.plot(margins, risks, 'bo')
