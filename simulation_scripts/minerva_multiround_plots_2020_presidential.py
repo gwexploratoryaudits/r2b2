@@ -9,19 +9,13 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(user='', pwd='')
+    db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
     sprobs = []
     ratios = []
     margins = []
 
     for contest in election.contests:
-        winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
-        tally = sum(election.contests[contest].tally.values())
-        loser_tally = tally - winner_tally
-        margin = (winner_tally - loser_tally) / tally
-        if margin < 0.05:
-            continue
         audit_id = db.audit_lookup('minerva', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
         tied_sim = db.db.simulations.find_one({
@@ -58,8 +52,9 @@ if __name__ == '__main__':
 
     # Plot risks vs. margins
     plt.plot(margins, risks, 'bo')
-    plt.xlabel('Reported Margin')
-    plt.ylabel('Experimental Risk (One-round Minerva, Alpha=10%)')
+    plt.xlabel('Reported Margin (2020 Presidential Election by State)')
+    plt.ylabel('Experimental Risk')
+    plt.title('Experimental Risk in Multiround Minerva (Risk Limit 10%, Max 5 Rounds)\nFirst round 90% stopping prob., then 1.5x for remaining')
     plt.grid()
     plt.show()
 
