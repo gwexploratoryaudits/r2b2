@@ -9,7 +9,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(user='', pwd='')
+    db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
     sprobs = []
     ratios = []
@@ -52,8 +52,9 @@ if __name__ == '__main__':
 
     # Plot risks vs. margins
     plt.plot(margins, risks, 'bo')
-    plt.xlabel('Reported Margin')
-    plt.ylabel('Experimental Risk (One-round Minerva, Alpha=10%)')
+    plt.xlabel('Reported Margin (2020 Presidential Election by State)')
+    plt.ylabel('Experimental Risk')
+    plt.title('Experimental Risk in Multiround Minerva (Risk Limit 10%, Max 5 Rounds)\nFirst round 90% stopping prob., then 1.5x for remaining')
     plt.grid()
     plt.show()
 
