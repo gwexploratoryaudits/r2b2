@@ -20,7 +20,7 @@ for contest in election.contests.keys():
     if margin < 0.05:
         print('Skipping',contest,'with margin',round(margin,5))
         continue
-    #if not(contest=='NewMexico'):
+    #if not(contest=='Wyoming'):
     #    continue
     contest_obj = election.contests[contest]
     query = {
