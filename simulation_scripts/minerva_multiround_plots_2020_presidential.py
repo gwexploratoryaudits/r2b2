@@ -16,12 +16,6 @@ if __name__ == '__main__':
     margins = []
 
     for contest in election.contests:
-        winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
-        tally = sum(election.contests[contest].tally.values())
-        loser_tally = tally - winner_tally
-        margin = (winner_tally - loser_tally) / tally
-        if margin < 0.05:
-            continue
         audit_id = db.audit_lookup('minerva', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
         tied_sim = db.db.simulations.find_one({
