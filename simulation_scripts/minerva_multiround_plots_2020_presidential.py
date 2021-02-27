@@ -79,7 +79,7 @@ if __name__ == '__main__':
     """
 
     # Histogram of risks
-    histogram(risks, 'Experimental Risks (One-round Minerva, Alpha=10%)', bins=20)
+    histogram(risks, 'Experimental Risks', bins=20)
 
     # Analysis
     avg_risk = 'Average Risk: {:%}\n'.format(sum(risks) / len(risks))
