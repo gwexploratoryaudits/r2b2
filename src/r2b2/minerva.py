@@ -247,7 +247,6 @@ class Minerva(Audit):
             upper_bound *= 2
         return 0
 
-
     def get_upper_bound(self, n, start):
         while start <= n:
             start *= 2

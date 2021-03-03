@@ -102,6 +102,17 @@ def test_simple_audit_execution():
         assert len(sub_audit2.distribution_reported_tally) == (10 * i) - 5
 
 
+def test_simple_audit_execute_rounds():
+    """Test execute_round method."""
+    simpleaudit1 = SimpleAudit(0.1, 0.05, 0.5, True, default_contest)
+    simpleaudit1.execute_round(10, {'a': 10, 'b': 0})
+    assert simpleaudit1.rounds == [10]
+    assert simpleaudit1.sample_winner_ballots == [10]
+    assert simpleaudit1.sub_audits['b'].sample_loser_ballots == [0]
+    assert simpleaudit1.sub_audits['b'].stopped
+    assert simpleaudit1.stopped
+
+
 def test_repr():
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
     simpleaudit2 = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
