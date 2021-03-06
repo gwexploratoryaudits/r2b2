@@ -206,8 +206,13 @@ class Minerva(Audit):
 
         estimates = []
         for sub_audit in self.sub_audits.values():
-            estimates.append(self._next_sample_size_pairwise(sub_audit, sprob))
+            # Scale estimates by pairwise invalid proportion
+            proportion = float(sub_audit.sub_contest.contest_ballots) / float(self.contest.contest_ballots)
+            estimate = self._next_sample_size_pairwise(sub_audit, sprob)
+            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
+            estimates.append(scaled_estimate)
 
+        # Return the maximum scaled next round size estimate
         max_estimate = [0, 0, 0]
         for estimate in estimates:
             if estimate[0] > max_estimate[0]:
