@@ -133,6 +133,30 @@ def test_minerva_kmins():
     assert minerva.sub_audits['B'].min_winner_ballots == [58, 113, 221]
 
 
+def test_execute_round_minerva():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva(.1, .1, contest)
+    assert not minerva.execute_round(100, {'A': 57, 'B': 43})
+    assert not minerva.stopped
+    assert minerva.sample_winner_ballots == [57]
+    assert minerva.sub_audits['B'].sample_loser_ballots == [43]
+    assert not minerva.sub_audits['B'].stopped
+    assert minerva.rounds == [100]
+    assert not minerva.execute_round(200, {'A': 112, 'B': 88})
+    assert not minerva.stopped
+    assert minerva.sample_winner_ballots == [57, 112]
+    assert minerva.sub_audits['B'].sample_loser_ballots == [43, 88]
+    assert not minerva.sub_audits['B'].stopped
+    assert minerva.rounds == [100, 200]
+    assert minerva.execute_round(400, {'A': 221, 'B': 179})
+    assert minerva.stopped
+    assert minerva.sample_winner_ballots == [57, 112, 221]
+    assert minerva.sub_audits['B'].sample_loser_ballots == [43, 88, 179]
+    assert minerva.sub_audits['B'].stopped
+    assert minerva.rounds == [100, 200, 400]
+    assert minerva.get_risk_level() < 0.1
+
+
 def test_interactive_minerva():
     runner = CliRunner()
     user_in = \
