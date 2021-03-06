@@ -109,7 +109,8 @@ class Athena(Audit):
         if verbose:
             click.echo('\nMinerva p-value: {}'.format(tail_null / tail_reported))
 
-        return self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null
+        self.sub_audits[loser].stopped = (self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null)
+        return self.sub_audits[loser].stopped
 
     def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
         """Compute kmin in interactive context."""

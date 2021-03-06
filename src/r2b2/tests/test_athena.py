@@ -35,6 +35,24 @@ def test_athena_minerva_paper():
     assert minerva.sub_audits['B'].min_winner_ballots == [31]
 
 
+def test_athena_execute_round():
+    contest = Contest(100000, {'A': 75000, 'B': 25000}, 1, ['A'], ContestType.MAJORITY)
+    athena = Athena(.1, 1, .1, contest)
+    assert not athena.execute_round(50, {'A': 31, 'B': 19})
+    assert not athena.stopped
+    assert athena.sample_winner_ballots == [31]
+    assert athena.sub_audits['B'].sample_loser_ballots == [19]
+    assert not athena.sub_audits['B'].stopped
+    assert athena.rounds == [50]
+    assert athena.execute_round(100, {'A': 70, 'B': 30})
+    assert athena.stopped
+    assert athena.sample_winner_ballots == [31, 70]
+    assert athena.sub_audits['B'].sample_loser_ballots == [19, 30]
+    assert athena.sub_audits['B'].stopped
+    assert athena.rounds == [50, 100]
+    assert athena.get_risk_level() < 0.1
+
+
 def test_interactive_athena():
     runner = CliRunner()
     user_in = 'athena\n0.1\n0.1\n100000\n2\nA\n75000\nB\n25000\n1\nA\nMAJORITY\ny\n1\ny\nn\n50\n31\n19\nn\nn\n100\n70\n30\n'
