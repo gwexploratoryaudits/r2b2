@@ -201,7 +201,7 @@ class Minerva(Audit):
         # If the audit has already terminated, there is no next_sample_size.
         if all([sub_audit.stopped for sub_audit in self.sub_audits.values()]):
             if verbose:
-                return self.rounds[-1], 0, 0
+                return self.rounds[-1], 0, 1
             return self.rounds[-1]
 
         estimates = []

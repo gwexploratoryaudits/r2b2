@@ -24,6 +24,12 @@ def test_minerva_second_round_estimate_2016():
             continue
 
         contest = Contest(clinton + trump, tally, 1, [max(tally, key=tally.get)], ContestType.PLURALITY)
+        if tally['Clinton'] > tally['Trump']:
+            rep_winner = 'Clinton'
+            rep_loser = 'Trump'
+        else:
+            rep_winner = 'Trump'
+            rep_loser = 'Clinton'
 
         for sim_type in ['underlying_reported_first_5', 'underlying_reported_not_stop_5', 'underlying_tied_first_5']:
             out['data_check'][state][sim_type] = []
@@ -31,18 +37,16 @@ def test_minerva_second_round_estimate_2016():
                 n = trial['relevant_sample_size']
                 k = trial['winner_ballots']
                 minerva = Minerva(.1, 1.0, contest)
-                minerva.rounds.append(n)
-                minerva.current_dist_null()
-                minerva.current_dist_reported()
-                p_value = minerva.compute_risk(k)
-                stop = minerva.stopping_condition(k)
-                minerva.find_kmin(True)
-                minerva.truncate_dist_null()
-                minerva.truncate_dist_reported()
-                minerva.sample_winner_ballots.append(k)
+                minerva.execute_round(n, {rep_winner: k, rep_loser: n-k})
+                p_value = minerva.get_risk_level()
+                stop = minerva.stopped
+                if stop:
+                    minerva.next_min_winner_ballots()
+                    minerva.truncate_dist_null()
+                    minerva.truncate_dist_reported()
                 next_round_data = minerva.next_sample_size(verbose=True)
                 out['data_check'][state][sim_type].append(
-                    {"n": n, "k": k, "p_value": p_value, "stop": bool(stop), "kmin": minerva.min_winner_ballots[-1],
+                    {"n": n, "k": k, "p_value": p_value, "stop": bool(stop), "kmin": minerva.sub_audits[rep_loser].min_winner_ballots[-1],
                         "next_round_size": next_round_data[0], "next_round_kmin": next_round_data[1],
                         "next_round_sprob": next_round_data[2]})
 
