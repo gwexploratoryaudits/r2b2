@@ -29,11 +29,11 @@ class Minerva(Audit):
         min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
         contest (Contest): Contest to be audited.
     """
-    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest, reported_winner: str = None):
+    def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize a Minerva audit."""
-        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest, reported_winner)
-        for loser, sub_audit in self.sub_audits.items():
-            self.sub_audits[loser].min_sample_size = self.get_min_sample_size(sub_audit)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
+        for pair, sub_audit in self.sub_audits.items():
+            self.sub_audits[pair].min_sample_size = self.get_min_sample_size(sub_audit)
 
     def get_min_sample_size(self, sub_audit: PairwiseAudit, min_sprob: float = 10**(-6)):
         """Computes the minimum sample size that has a stopping size (kmin). Here we find a
@@ -136,7 +136,7 @@ class Minerva(Audit):
 
         # For the audit to stop, we need to get kmin winner ballots minus the winner ballots we already have.
         if len(self.rounds) > 0:
-            needed = kmin - self.sample_winner_ballots[-1]
+            needed = kmin - self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
         else:
             needed = kmin
 
@@ -228,8 +228,8 @@ class Minerva(Audit):
         subsequent_round = len(self.rounds) > 0
         previous_round = 0
         if subsequent_round:
-            winner_ballots = self.sample_winner_ballots[-1]
-            loser_ballots = sub_audit.sample_loser_ballots[-1]
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
             previous_round = winner_ballots + loser_ballots
             init_upper_bound = self.get_upper_bound(previous_round + 1, start)
         else:
@@ -257,24 +257,27 @@ class Minerva(Audit):
             start *= 2
         return start
 
-    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
+    def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the audit is complete."""
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
-        if loser not in self.sub_audits.keys():
-            raise ValueError('loser must be a reported loser in a valid subaudit.')
+        if pair not in self.sub_audits.keys():
+            raise ValueError('Candidate pait must be a valid subaudit.')
 
-        tail_null = sum(self.sub_audits[loser].distribution_null[votes_for_winner:])
-        tail_reported = sum(self.sub_audits[loser].distribution_reported_tally[votes_for_winner:])
-        self.sub_audits[loser].pvalue_schedule.append(tail_null / tail_reported)
+        votes_for_winner = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        tail_null = sum(self.sub_audits[pair].distribution_null[votes_for_winner:])
+        tail_reported = sum(self.sub_audits[pair].distribution_reported_tally[votes_for_winner:])
+        self.sub_audits[pair].pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
-            click.echo('\n({}) p-value: {}'.format(loser, self.sub_audits[loser].pvalue_schedule[-1]))
+            click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[loser].stopped = (self.alpha * tail_reported) > tail_null
-        return self.sub_audits[loser].stopped
+        self.sub_audits[pair].stopped = (self.alpha * tail_reported) > tail_null
+        return self.sub_audits[pair].stopped
 
-    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
+    def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute kmin in interactive context."""
+        sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
+            sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
 
     def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: List[int], *args, **kwargs):
@@ -304,22 +307,22 @@ class Minerva(Audit):
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
 
         previous_sample = 0
+        pair = sub_audit.get_pair_str()
         for round_size in rounds:
             self.rounds.append(round_size)
-            # Compute marginal round size
-            sample_size = round_size - previous_sample
             # Update current distributions for pairwise subaudit
-            self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-            self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            self._current_dist_null_pairwise(pair, sub_audit, True)
+            self._current_dist_reported_pairwise(pair, sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
-            self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+            sample_size = round_size - previous_sample
+            self.find_kmin(sub_audit, sample_size, True, pair)
             # Truncate distributions for pairwise subaudit
-            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
-            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_null_pairwise(pair)
+            self._truncate_dist_reported_pairwise(pair)
             # Update previous round size for next sample computation
             previous_sample = round_size
 
-    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, loser: str = None):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, pair: str = None):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
@@ -335,16 +338,16 @@ class Minerva(Audit):
             # Minerva's stopping criterion: tail_reported / tail_null > 1 / alpha.
             if self.alpha * tail_reported > tail_null:
                 if append:
-                    if loser is None:
-                        raise Exception('must specify loser to append kmin.')
-                    self.sub_audits[loser].min_winner_ballots.append(possible_kmin)
+                    if pair is None:
+                        raise Exception('must specify candidate pair to append kmin.')
+                    self.sub_audits[pair].min_winner_ballots.append(possible_kmin)
                 return possible_kmin
 
         # Sentinel of None plays nice with truncation.
         if append:
-            if loser is None:
-                raise Exception('must specify loser to append kmin.')
-            self.sub_audits[loser].min_winner_ballots.append(None)
+            if pair is None:
+                raise Exception('must specify candidate pair to append kmin.')
+            self.sub_audits[pair].min_winner_ballots.append(None)
         return None
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
@@ -372,16 +375,17 @@ class Minerva(Audit):
         if max_sample_size < sub_audit.min_sample_size:
             raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
 
+        pair = sub_audit.get_pair_str()
         for sample_size in range(sub_audit.min_sample_size, max_sample_size + 1):
             self.rounds.append(sample_size)
             # First kmin computed directly.
             if sample_size == sub_audit.min_sample_size:
-                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-                current_kmin = self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+                self._current_dist_null_pairwise(pair, sub_audit, True)
+                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True, pair)
             else:
-                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
-                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                self._current_dist_null_pairwise(pair, sub_audit, True)
+                self._current_dist_reported_pairwise(pair, sub_audit, True)
                 tail_null = sum(sub_audit.distribution_null[current_kmin:])
                 tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
                 if self.alpha * tail_reported > tail_null:
@@ -389,14 +393,14 @@ class Minerva(Audit):
                 else:
                     current_kmin += 1
                     sub_audit.min_winner_ballots.append(current_kmin)
-            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
-            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_null_pairwise(pair)
+            self._truncate_dist_reported_pairwise(pair)
 
-    def compute_risk(self, votes_for_winner: int, loser: str, *args, **kwargs):
+    def compute_risk(self, votes_for_winner: int, pair: str, *args, **kwargs):
         """Return the hypothetical pvalue if votes_for_winner were obtained in the most recent
         round."""
 
-        sub_audit = self.sub_audits[loser]
+        sub_audit = self.sub_audits[pair]
         tail_null = sum(sub_audit.distribution_null[votes_for_winner:])
         tail_reported = sum(sub_audit.distribution_reported_tally[votes_for_winner:])
 

@@ -23,7 +23,6 @@ BayesianRLA without replacement
 -------------------------------
 Risk Limit: 0.1
 Maximum Fraction to Draw: 0.1
-Reported Winner: CandidateA
 Contest
 -------
 Contest Ballots: 10000

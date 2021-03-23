@@ -27,19 +27,19 @@ class Athena(Audit):
         min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
         contest (Contest): Contest to be audited.
     """
-    def __init__(self, alpha: float, delta: float, max_fraction_to_draw: float, contest: Contest, reported_winner: str = None):
+    def __init__(self, alpha: float, delta: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize an Athena audit."""
         if delta <= 0:
             raise ValueError("Delta must be > 0.")
 
-        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest, reported_winner)
+        super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
 
         # The delta condition is an additional stopping rule imposed by the Athena (proper) audit,
         # but p-values reported are identical to Minerva. (We do not attempt to amalgamate the
         # Minerva p-value and the BRAVO p-value into a single p-value.)
         self.delta = delta
-        for loser, sub_audit in self.sub_audits.items():
-            self.sub_audits[loser].min_sample_size = self.get_min_sample_size(sub_audit)
+        for pair, sub_audit in self.sub_audits.items():
+            self.sub_audits[pair].min_sample_size = self.get_min_sample_size(sub_audit)
 
     def get_min_sample_size(self, sub_audit: PairwiseAudit, min_sprob: float = 10**(-6)):
         """Computes the minimum sample size that has a stopping size (kmin). Here we find a
@@ -91,29 +91,32 @@ class Athena(Audit):
     def next_sample_size(self, *args, **kwargs):
         pass
 
-    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
+    def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the audit is complete."""
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
-        if loser not in self.sub_audits.keys():
-            raise ValueError('loser must be a reported loser in a valid subaudit.')
+        if pair not in self.sub_audits.keys():
+            raise ValueError('pair must be a reported pair in a valid subaudit.')
 
-        tail_null = sum(self.sub_audits[loser].distribution_null[votes_for_winner:])
-        tail_reported = sum(self.sub_audits[loser].distribution_reported_tally[votes_for_winner:])
-        point_null = self.sub_audits[loser].distribution_null[votes_for_winner]
-        point_reported = self.sub_audits[loser].distribution_reported_tally[votes_for_winner]
+        votes_for_winner = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        tail_null = sum(self.sub_audits[pair].distribution_null[votes_for_winner:])
+        tail_reported = sum(self.sub_audits[pair].distribution_reported_tally[votes_for_winner:])
+        point_null = self.sub_audits[pair].distribution_null[votes_for_winner]
+        point_reported = self.sub_audits[pair].distribution_reported_tally[votes_for_winner]
 
         # The delta condition does not affect the p-value reported here; this could mean
         # that a p-value < alpha will be reported, yet the audit cannot stop.
-        self.sub_audits[loser].pvalue_schedule.append(tail_null / tail_reported)
+        self.sub_audits[pair].pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
             click.echo('\nMinerva p-value: {}'.format(tail_null / tail_reported))
 
-        self.sub_audits[loser].stopped = (self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null)
-        return self.sub_audits[loser].stopped
+        self.sub_audits[pair].stopped = (self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null)
+        return self.sub_audits[pair].stopped
 
-    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
+    def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute kmin in interactive context."""
+        sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
+            sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
 
     def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: List[int], *args, **kwargs):
@@ -144,18 +147,19 @@ class Athena(Audit):
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
 
         previous_sample = 0
+        pair = sub_audit.get_pair_str()
         for round_size in rounds:
             self.rounds.append(round_size)
             # Compute marginal round size
             sample_size = round_size - previous_sample
             # Update current distributions for pairwise subaudit
-            self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-            self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
+            self._current_dist_null_pairwise(pair, sub_audit, True)
+            self._current_dist_reported_pairwise(pair, sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
-            self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+            self.find_kmin(sub_audit, sample_size, True, pair)
             # Truncate distributions for pairwise subaudit
-            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
-            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_null_pairwise(pair)
+            self._truncate_dist_reported_pairwise(pair)
             # Update previous round size for next sample computation
             previous_sample = round_size
 
@@ -215,16 +219,17 @@ class Athena(Audit):
         if max_sample_size > sub_audit.sub_contest.contest_ballots:
             raise ValueError("Maximum sample size cannot exceed total contest ballots.")
 
+        pair = sub_audit.get_pair_str()
         for sample_size in range(sub_audit.min_sample_size, max_sample_size + 1):
             self.rounds.append(sample_size)
             # First kmin computed directly.
             if sample_size == sub_audit.min_sample_size:
-                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, sample_size)
-                current_kmin = self.find_kmin(sub_audit, sample_size, True, sub_audit.sub_contest.reported_loser)
+                self._current_dist_null_pairwise(pair, sub_audit, True)
+                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True, pair)
             else:
-                self._current_dist_null_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
-                self._current_dist_reported_pairwise(sub_audit.sub_contest.reported_loser, sub_audit, 1)
+                self._current_dist_null_pairwise(pair, sub_audit, True)
+                self._current_dist_reported_pairwise(pair, sub_audit, True)
                 tail_null = sum(sub_audit.distribution_null[current_kmin:])
                 tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
                 if self.alpha * tail_reported > tail_null:
@@ -232,8 +237,8 @@ class Athena(Audit):
                 else:
                     current_kmin += 1
                     sub_audit.min_winner_ballots.append(current_kmin)
-            self._truncate_dist_null_pairwise(sub_audit.sub_contest.reported_loser)
-            self._truncate_dist_reported_pairwise(sub_audit.sub_contest.reported_loser)
+            self._truncate_dist_null_pairwise(pair)
+            self._truncate_dist_reported_pairwise(pair)
 
     def compute_risk(self, votes_for_winner: int, loser: str, *args, **kwargs):
         """Return the hypothetical (Minerva) p-value if votes_for_winner were obtained in the most recent

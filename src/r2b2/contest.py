@@ -63,7 +63,7 @@ class Contest:
     reported_winners: List[str]
     contest_type: ContestType
     tally: Dict[str, int]
-    sub_contests: Dict[str, List[PairwiseContest]]
+    sub_contests: List[PairwiseContest]
 
     def __init__(self, contest_ballots: int, tally: Dict[str, int], num_winners: int, reported_winners: List[str],
                  contest_type: ContestType):
@@ -110,13 +110,13 @@ class Contest:
         self.contest_type = contest_type
         # For each reported winner get pairwise sub-contests where they have > 50% of the (sub)tally
         # These sub-contests provide the two-candidate, no-irrelevant ballots assumption
-        self.sub_contests = {}
+        self.sub_contests = []
+        losers = [c for c in self.candidates if c not in self.reported_winners]
         for rw in self.reported_winners:
             rw_ballots = self.tally[rw]
-            self.sub_contests[rw] = []
-            for candidate in self.candidates:
+            for candidate in losers:
                 if rw_ballots > self.tally[candidate]:
-                    self.sub_contests[rw].append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
+                    self.sub_contests.append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
 
     def get_sub_contests(self, reported_winner: str):
         """Get list of subcontests for a reported winner.

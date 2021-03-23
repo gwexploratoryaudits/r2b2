@@ -26,7 +26,6 @@ class Sprob():
         min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
         contest (Contest): Contest to be audited.
     """
-
     def __init__(self, rounds: List[int], min_winner_ballots: List[int], contest: Contest):
         self.rounds = rounds
         self.min_winner_ballots = min_winner_ballots
@@ -50,7 +49,7 @@ class Sprob():
         if self.min_winner_ballots[0] > self.rounds[0]:
             raise ValueError("Kmins cannot exceed respective round sizes; first kmin must exist.")
         for i in range(1, len(self.rounds)):
-            if self.rounds[i] <= self.rounds[i-1]:
+            if self.rounds[i] <= self.rounds[i - 1]:
                 raise ValueError("Round schedule must strictly increase.")
             if self.min_winner_ballots[i] is not None and self.min_winner_ballots[i] > self.rounds[i]:
                 raise ValueError("Kmins cannot exceed respective round sizes.")
@@ -69,10 +68,10 @@ class Sprob():
         p = self.contest.winner_prop
         if round_index == 0:
             n = self.rounds[round_index]
-            self.distribution = binom.pmf(range(n+1), n, p)
+            self.distribution = binom.pmf(range(n + 1), n, p)
         else:
             n = self.rounds[round_index] - self.rounds[round_index - 1]
-            self.distribution = fftconvolve(self.distribution, binom.pmf(range(n+1), n, p))
+            self.distribution = fftconvolve(self.distribution, binom.pmf(range(n + 1), n, p))
 
     def truncate_dist(self, round_index):
         """Sums and truncates the distribution at the kmin."""
@@ -89,5 +88,5 @@ class Sprob():
         if len(self.sprobs) != len(self.rounds):
             self.compute_sprobs
 
-        return (sum([self.rounds[i] * self.sprobs[i] for i in range(len(self.rounds))]) +
-                (1 - sum(self.sprobs)) * self.contest.contest_ballots)
+        return (sum([self.rounds[i] * self.sprobs[i]
+                     for i in range(len(self.rounds))]) + (1 - sum(self.sprobs)) * self.contest.contest_ballots)

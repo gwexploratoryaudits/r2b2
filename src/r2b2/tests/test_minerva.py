@@ -27,8 +27,8 @@ def test_min_sample_size():
     contest2 = Contest(100000, {'A': 51000, 'B': 49000}, 1, ['A'], ContestType.MAJORITY)
     minerva2 = Minerva(.05, .05, contest2)
 
-    assert minerva1.sub_audits['B'].min_sample_size == 13
-    assert minerva2.sub_audits['B'].min_sample_size == 840
+    assert minerva1.sub_audits['A-B'].min_sample_size == 13
+    assert minerva2.sub_audits['A-B'].min_sample_size == 840
 
 
 def test_kmin_upper_bound():
@@ -37,8 +37,8 @@ def test_kmin_upper_bound():
     contest2 = Contest(100000, {'A': 90000, 'B': 10000}, 1, ['A'], ContestType.MAJORITY)
     minerva2 = Minerva(.1, .1, contest2)
 
-    assert minerva1.kmin_search_upper_bound(200, minerva1.sub_audits['B']) == 116
-    assert minerva2.kmin_search_upper_bound(2000, minerva2.sub_audits['B']) == 1467
+    assert minerva1.kmin_search_upper_bound(200, minerva1.sub_audits['A-B']) == 116
+    assert minerva2.kmin_search_upper_bound(2000, minerva2.sub_audits['A-B']) == 1467
 
 
 def test_minerva_first_round_estimate():
@@ -65,14 +65,14 @@ def test_minerva_first_round_gaussian_estimate():
 def test_minerva_second_round_estimate():
     contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva1 = Minerva(.1, .1, contest1)
-    minerva1.compute_min_winner_ballots(minerva1.sub_audits['B'], [100])
-    minerva1.sample_winner_ballots.append(54)
-    minerva1.sub_audits['B'].sample_loser_ballots.append(100 - 54)
+    minerva1.compute_min_winner_ballots(minerva1.sub_audits['A-B'], [100])
+    minerva1.sample_ballots['A'].append(54)
+    minerva1.sample_ballots['B'].append(100 - 54)
     contest2 = Contest(4504975 + 4617886, {'Trump': 4617886, 'Clinton': 4504975}, 1, ['Trump'], ContestType.PLURALITY)
     minerva2 = Minerva(.1, 1.0, contest2)
-    minerva2.compute_min_winner_ballots(minerva2.sub_audits['Clinton'], [45081])
-    minerva2.sample_winner_ballots.append(22634)
-    minerva2.sub_audits['Clinton'].sample_loser_ballots.append(45081 - 22634)
+    minerva2.compute_min_winner_ballots(minerva2.sub_audits['Trump-Clinton'], [45081])
+    minerva2.sample_ballots['Trump'].append(22634)
+    minerva2.sample_ballots['Clinton'].append(45081 - 22634)
 
     assert minerva1.next_sample_size() == 305
     assert minerva2.next_sample_size() == 111257
@@ -127,10 +127,10 @@ def test_minerva_second_round_estimate():
 def test_minerva_kmins():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva = Minerva(.1, .1, contest)
-    minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [100, 200, 400])
+    minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [100, 200, 400])
 
     # From existing software
-    assert minerva.sub_audits['B'].min_winner_ballots == [58, 113, 221]
+    assert minerva.sub_audits['A-B'].min_winner_ballots == [58, 113, 221]
 
 
 def test_execute_round_minerva():
@@ -138,21 +138,21 @@ def test_execute_round_minerva():
     minerva = Minerva(.1, .1, contest)
     assert not minerva.execute_round(100, {'A': 57, 'B': 43})
     assert not minerva.stopped
-    assert minerva.sample_winner_ballots == [57]
-    assert minerva.sub_audits['B'].sample_loser_ballots == [43]
-    assert not minerva.sub_audits['B'].stopped
+    assert minerva.sample_ballots['A'] == [57]
+    assert minerva.sample_ballots['B'] == [43]
+    assert not minerva.sub_audits['A-B'].stopped
     assert minerva.rounds == [100]
     assert not minerva.execute_round(200, {'A': 112, 'B': 88})
     assert not minerva.stopped
-    assert minerva.sample_winner_ballots == [57, 112]
-    assert minerva.sub_audits['B'].sample_loser_ballots == [43, 88]
-    assert not minerva.sub_audits['B'].stopped
+    assert minerva.sample_ballots['A'] == [57, 112]
+    assert minerva.sample_ballots['B'] == [43, 88]
+    assert not minerva.sub_audits['A-B'].stopped
     assert minerva.rounds == [100, 200]
     assert minerva.execute_round(400, {'A': 221, 'B': 179})
     assert minerva.stopped
-    assert minerva.sample_winner_ballots == [57, 112, 221]
-    assert minerva.sub_audits['B'].sample_loser_ballots == [43, 88, 179]
-    assert minerva.sub_audits['B'].stopped
+    assert minerva.sample_ballots['A'] == [57, 112, 221]
+    assert minerva.sample_ballots['B'] == [43, 88, 179]
+    assert minerva.sub_audits['A-B'].stopped
     assert minerva.rounds == [100, 200, 400]
     assert minerva.get_risk_level() < 0.1
 
@@ -194,16 +194,16 @@ def test_bulk_minerva():
     # Ballot-by-ballot Minerva should yield identical stopping rules to BRAVO.
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva = Minerva(.1, .01, contest)
-    minerva.compute_all_min_winner_ballots(minerva.sub_audits['B'])
+    minerva.compute_all_min_winner_ballots(minerva.sub_audits['A-B'])
     # p0 not hardcoded as .5 for scalability with odd total contest ballots.
     p0 = (minerva.contest.contest_ballots // 2) / minerva.contest.contest_ballots
-    log_winner_multiplier = math.log(minerva.sub_audits['B'].sub_contest.winner_prop / p0)
-    log_loser_multiplier = math.log((1 - minerva.sub_audits['B'].sub_contest.winner_prop) / p0)
+    log_winner_multiplier = math.log(minerva.sub_audits['A-B'].sub_contest.winner_prop / p0)
+    log_loser_multiplier = math.log((1 - minerva.sub_audits['A-B'].sub_contest.winner_prop) / p0)
     log_rhs = math.log(1 / minerva.alpha)
 
     for i in range(len(minerva.rounds)):
         n = minerva.rounds[i]
-        kmin = minerva.sub_audits['B'].min_winner_ballots[i]
+        kmin = minerva.sub_audits['A-B'].min_winner_ballots[i]
         # Assert this kmin satisfies ratio, but a kmin one less does not.
         assert kmin * log_winner_multiplier + (n - kmin) * log_loser_multiplier > log_rhs
         assert (kmin - 1) * log_winner_multiplier + (n - kmin + 1) * log_loser_multiplier <= log_rhs
@@ -212,30 +212,30 @@ def test_bulk_minerva():
 def test_sentinel():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva = Minerva(.1, .1, contest)
-    minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [13, 14, 15])
-    assert minerva.sub_audits['B'].min_winner_ballots == [13, None, 14]
+    minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [13, 14, 15])
+    assert minerva.sub_audits['A-B'].min_winner_ballots == [13, None, 14]
 
 
 def test_exceptions():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva = Minerva(.1, .1, contest)
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [0])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [0])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [1, 2])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [1, 2])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [20, 20])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [20, 20])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [20, 19])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [20, 19])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [10001])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [10001])
 
-    minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [20])
+    minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [20])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [20])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [20])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [19])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [19])
     with pytest.raises(ValueError):
-        minerva.compute_min_winner_ballots(minerva.sub_audits['B'], [10001])
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [10001])
