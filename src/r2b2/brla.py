@@ -18,24 +18,6 @@ class BayesianRLA(Audit):
     plurality elections. For a given sample size, the audit software calculates a minimum number of
     votes for the reported winner that must be found in the sample to stop the audit and confirm
     the reported outcome.
-    def set_min_sample_sizes(self):
-        for loser in self.sub_audits.keys():
-            left = 1
-            right = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
-            if right > self.sub_audits[loser].sub_contest.contest_ballots:
-                right = self.sub_audits[loser].sub_contest.contest_ballots
-
-            while left < right:
-                proposed_min = (left + right) // 2
-                # FIXME: update for new next_min_winner_ballots
-                proposed_min_kmin = self.next_min_winner_ballots(proposed_min)
-
-                if proposed_min_kmin == -1:
-                    left = proposed_min + 1
-                else:
-                    # FIXME: update fro new next_min_winner_ballots
-                    previous_kmin = self.next_min_winner_ballots(proposed_min - 1)
-
 
     Attributes:
         alpha (float): Risk limit. Alpha represents the chance, that given an incorrectly called
@@ -63,12 +45,12 @@ class BayesianRLA(Audit):
 
         while left < right:
             proposed_min = (left + right) // 2
-            proposed_min_kmin = self.next_min_winner_ballots_pairwise(proposed_min, sub_audit)
+            proposed_min_kmin = self.next_min_winner_ballots_pairwise(sub_audit, proposed_min)
 
             if proposed_min_kmin == -1:
                 left = proposed_min + 1
             else:
-                previous_kmin = self.next_min_winner_ballots_pairwise(proposed_min - 1, sub_audit)
+                previous_kmin = self.next_min_winner_ballots_pairwise(sub_audit, proposed_min)
                 if previous_kmin == -1:
                     return proposed_min
                 else:
@@ -79,22 +61,22 @@ class BayesianRLA(Audit):
         title_str = 'BayesianRLA without replacement\n-------------------------------\n'
         alpha_str = 'Risk Limit: {}\n'.format(self.alpha)
         max_frac_str = 'Maximum Fraction to Draw: {}\n'.format(self.max_fraction_to_draw)
-        winner_str = 'Reported Winner: {}\n'.format(self.reported_winner)
-        return title_str + alpha_str + max_frac_str + winner_str + str(self.contest)
+        return title_str + alpha_str + max_frac_str + str(self.contest)
 
-    def stopping_condition_pairwise(self, votes_for_winner: int, loser: str, verbose: bool = False) -> bool:
+    def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
-        if loser not in self.sub_audits.keys():
-            raise ValueError('loser must be a reported loser in a valid subaudit.')
+        if pair not in self.sub_audits.keys():
+            raise ValueError('pair must be a valid subaudit.')
 
-        risk = self.compute_risk(self.sub_audits[loser], votes_for_winner, self.rounds[-1])
-        self.sub_audits[loser].pvalue_schedule.append(risk)
+        votes_for_winner = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        risk = self.compute_risk(self.sub_audits[pair], votes_for_winner, self.rounds[-1])
+        self.sub_audits[pair].pvalue_schedule.append(risk)
         if verbose:
             click.echo('\np-value: {}'.format(risk))
         return risk <= self.alpha
 
-    def next_min_winner_ballots_pairwise(self, sample_size: int, sub_audit: PairwiseAudit) -> int:
+    def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit, sample_size: int = 0) -> int:
         """Compute the stopping size requirement for a given subaudit and round.
 
         Args:
@@ -105,9 +87,17 @@ class BayesianRLA(Audit):
             int: The minimum number of votes cast for the reported winner in the current round
             size in order to stop the audit during that round. If round size is invalid, -1.
         """
+        rl = sub_audit.sub_contest.reported_loser
+        rw = sub_audit.sub_contest.reported_winner
 
         left = math.floor(sample_size / 2)
-        right = sample_size
+        if sample_size > 0:
+            right = sample_size
+        elif len(self.rounds) == 1:
+            right = self.sample_ballots[rl][0] + self.sample_ballots[rw][0]
+        else:
+            right = (self.sample_ballots[rl][-1] - self.sample_ballots[rl][-2]) + (self.sample_ballots[rw][-1] -
+                                                                                   self.sample_ballots[rw][-2])
 
         while left <= right:
             proposed_stop = (left + right) // 2
@@ -214,11 +204,11 @@ class BayesianRLA(Audit):
         if progress:
             with click.progressbar(self.rounds) as bar:
                 for sample_size in bar:
-                    min_winner_ballots.append(self.next_min_winner_ballots_pairwise(sample_size, sub_audit))
+                    min_winner_ballots.append(self.next_min_winner_ballots_pairwise(sub_audit, sample_size))
         else:
             for sample_size in self.rounds:
                 # Append kmin for valid sample sizes, -1 for invalid sample sizes
-                min_winner_ballots.append(self.next_min_winner_ballots_pairwise(sample_size, sub_audit))
+                min_winner_ballots.append(self.next_min_winner_ballots_pairwise(sub_audit, sample_size))
 
         return min_winner_ballots
 
@@ -248,7 +238,7 @@ class BayesianRLA(Audit):
         if max_sample_size < sub_audit.min_sample_size:
             raise ValueError('Maximum sample size must be greater than or equal to minimum size.')
 
-        current_kmin = self.next_min_winner_ballots_pairwise(sub_audit.min_sample_size, sub_audit)
+        current_kmin = self.next_min_winner_ballots_pairwise(sub_audit, sub_audit.min_sample_size)
         min_winner_ballots = [current_kmin]
 
         # For each additional ballot, the kmin can only increase by

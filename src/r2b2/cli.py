@@ -186,12 +186,12 @@ def interactive(election_mode, election_file, contest_file, audit_type, risk_lim
 @click.option('-o', '--output', type=click.File('w'), default=None, help='Write output into given file.')
 @click.option('-r', '--round-list', type=INT_LIST, default=None, help='Provide a list of round sizes to generate stopping sizes for.')
 @click.option('-f', '--full-audit-limit', type=int, default=None, help='Set maximum size for ballot by ballot output data.')
-@click.option('-l', '--loser', type=str, default=None, help='Select loser to generate data for.')
+@click.option('-p', '--pair', type=str, default=None, help='Select candidate pair to generate data for.')
 @click.argument('contest_file', type=str)
 @click.argument('audit_type', type=audit_types)
 @click.argument('risk_limit', type=click.FloatRange(0.0, 1.0))
 @click.argument('max_fraction_to_draw', type=click.FloatRange(0.0, 1.0))
-def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, round_list, full_audit_limit, loser, verbose):
+def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, round_list, full_audit_limit, pair, verbose):
     """Bulk auditing mode generates stopping sizes for a given fixed round schedule.
 
     Either provide a list of round sizes for which to generate stopping sizes or
@@ -248,30 +248,30 @@ def bulk(audit_type, risk_limit, max_fraction_to_draw, contest_file, output, rou
         raise click.BadArgumentUsage('No valid audit type found.')
 
     # Get loser for pairwise audit
-    if loser is not None and loser not in audit.sub_audits.keys():
-        click.echo('loser [{}] is not valid.'.format(loser))
-        loser = None
-    if loser is None:
-        losers = click.Choice(audit.sub_audits.keys())
-        loser = click.prompt('Select a loser to audit winner against', type=losers)
+    if pair is not None and pair not in audit.sub_audits.keys():
+        click.echo('pair [{}] is not valid.'.format(pair))
+        pair = None
+    if pair is None:
+        pairs = click.Choice(audit.sub_audits.keys())
+        pair = click.prompt('Select a pair to audit', type=pairs)
 
     out = '\n{:^20}|{:^20}\n'.format('Round Sizes', 'Stopping Sizes')
     out += '--------------------|--------------------\n'
     if round_list is not None:
-        kmins = audit.compute_min_winner_ballots(audit.sub_audits[loser], round_list, progress=verbose)
+        kmins = audit.compute_min_winner_ballots(audit.sub_audits[pair], round_list, progress=verbose)
         for i in range(len(kmins)):
             out += '{:^20}|{:^20}\n'.format(round_list[i], kmins[i])
     elif full_audit_limit is not None:
-        kmins = audit.compute_all_min_winner_ballots(audit.sub_audits[loser], full_audit_limit, progress=verbose)
-        for r in range(audit.sub_audits[loser].min_sample_size, full_audit_limit + 1):
-            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[loser].min_sample_size])
+        kmins = audit.compute_all_min_winner_ballots(audit.sub_audits[pair], full_audit_limit, progress=verbose)
+        for r in range(audit.sub_audits[pair].min_sample_size, full_audit_limit + 1):
+            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[pair].min_sample_size])
     else:
-        kmins = audit.compute_all_min_winner_ballots(audit.sub_audits[loser], progress=verbose)
+        kmins = audit.compute_all_min_winner_ballots(audit.sub_audits[pair], progress=verbose)
         for r in range(
-                audit.sub_audits[loser].min_sample_size,
-                min(audit.sub_audits[loser].sub_contest.contest_ballots,
+                audit.sub_audits[pair].min_sample_size,
+                min(audit.sub_audits[pair].sub_contest.contest_ballots,
                     math.ceil(max_fraction_to_draw * contest.contest_ballots) + 1)):
-            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[loser].min_sample_size])
+            out += '{:^20}|{:^20}\n'.format(r, kmins[r - audit.sub_audits[pair].min_sample_size])
 
     # Write or print output
     if output is not None:
@@ -325,8 +325,7 @@ def input_audit(contest: Contest,
                 alpha: float = None,
                 max_fraction_to_draw: float = None,
                 audit_type: str = None,
-                delta: float = None,
-                reported_winner: str = None) -> Audit:
+                delta: float = None) -> Audit:
     # Create an audit from user-input.
     click.echo('\nCreate a new Audit')
     click.echo('==================\n')
@@ -341,11 +340,11 @@ def input_audit(contest: Contest,
         delta = click.prompt('Enter the Athena delta value', type=click.FloatRange(0.0))
 
     if audit_type == 'brla':
-        return BRLA(alpha, max_fraction_to_draw, contest, reported_winner)
+        return BRLA(alpha, max_fraction_to_draw, contest)
     elif audit_type == 'minerva':
-        return Minerva(alpha, max_fraction_to_draw, contest, reported_winner)
+        return Minerva(alpha, max_fraction_to_draw, contest)
     elif audit_type == 'athena':
-        return Athena(alpha, delta, max_fraction_to_draw, contest, reported_winner)
+        return Athena(alpha, delta, max_fraction_to_draw, contest)
     # TODO: add creation for other types of audits.
     return None
 

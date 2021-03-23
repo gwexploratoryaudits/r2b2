@@ -18,5 +18,5 @@ def test_paper_data():
 
     for test in data['test_cases']:
         audit = BRLA(data['test_cases'][test]['risk'], 1.0, contest)
-        kmins = audit.compute_min_winner_ballots(audit.sub_audits['B'], rounds)
+        kmins = audit.compute_min_winner_ballots(audit.sub_audits['A-B'], rounds)
         assert kmins == data['test_cases'][test]['kmins']

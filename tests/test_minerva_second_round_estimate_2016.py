@@ -46,7 +46,8 @@ def test_minerva_second_round_estimate_2016():
                     minerva.truncate_dist_reported()
                 next_round_data = minerva.next_sample_size(verbose=True)
                 out['data_check'][state][sim_type].append(
-                    {"n": n, "k": k, "p_value": p_value, "stop": bool(stop), "kmin": minerva.sub_audits[rep_loser].min_winner_ballots[-1],
+                    {"n": n, "k": k, "p_value": p_value, "stop": bool(stop),
+                        "kmin": minerva.sub_audits[rep_winner+'-'+rep_loser].min_winner_ballots[-1],
                         "next_round_size": next_round_data[0], "next_round_kmin": next_round_data[1],
                         "next_round_sprob": next_round_data[2]})
 
