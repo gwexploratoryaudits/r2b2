@@ -1,3 +1,4 @@
+import json
 import math
 
 import pytest
@@ -10,6 +11,7 @@ from r2b2.minerva import Minerva
 from r2b2.tests import util as util
 
 default_contest = util.generate_contest(10000)
+tol = 0.000001
 
 
 def test_simple_minerva():
@@ -188,6 +190,30 @@ def test_next_sample_size_minerva():
     expected_out = output_file.read()
     assert result.output == expected_out
     output_file.close()
+
+
+def test_multiple_candidate_minerva():
+    test_file = 'src/r2b2/tests/data/full_multi_cand.json'
+    with open(test_file, 'r') as tf:
+        data = json.load(tf)
+        test = 'testx'
+        # Get contest from test
+        contest_data = data[test]['election']['contests']['contest_1']
+        contest = Contest(contest_data['contest_ballots'], contest_data['tally'], contest_data['num_winners'],
+                          contest_data['reported_winners'], ContestType[contest_data['contest_type']])
+        audit = Minerva(data[test]['alpha'], 1.0, contest)
+
+        for r in data[test]['rounds']:
+            sample_raw = data[test]['rounds'][r]['pvalue']['observations']
+            sample_size = sum(sample_raw)
+            sample = {}
+            for i, c in enumerate(contest.candidates):
+                sample[c] = sample_raw[i]
+            audit.execute_round(sample_size, sample)
+            assert abs(data[test]['rounds'][r]['pvalue']['expected']['pvalue'] - audit.pvalue_schedule[-1]) < tol
+            for pair in data[test]['rounds'][r]['pvalue']['expected']['pairwise']:
+                assert abs(data[test]['rounds'][r]['pvalue']['expected']['pairwise'][pair] -
+                           audit.sub_audits[pair].pvalue_schedule[-1]) < tol
 
 
 def test_bulk_minerva():

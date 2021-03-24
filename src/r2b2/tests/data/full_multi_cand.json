@@ -1,0 +1,49 @@
+{
+	"testx": {
+		"audit_type": "minerva",
+		"alpha": 0.1,
+		"election": {
+			"name": "ArloContest",
+			"total_ballots": 159,
+			"contests": {
+				"contest_1": {
+					"contest_ballots": 159,
+					"tally": {
+						"A": 83,
+						"B": 64,
+						"C": 10,
+						"D": 2
+					},
+					"num_winners": 3,
+					"reported_winners": [
+						"A",
+						"B",
+						"C"
+					],
+					"contest_type": "PLURALITY"
+				}
+			}
+		},
+		"rounds": {
+			"1": {
+				"pvalue": {
+					"contest": "contest_1",
+					"observations": [
+						57,
+						50,
+						3,
+						0
+					],
+					"expected": {
+						"pvalue": 0.216,
+						"pairwise": {
+							"A-D": 2.695986712726085e-17,
+							"B-D": 4.1371216824265505e-15,
+							"C-D": 0.216
+						}
+					}
+				}
+			}
+		}
+	}
+}
