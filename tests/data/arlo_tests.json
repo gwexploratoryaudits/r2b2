@@ -1,0 +1,221 @@
+{
+        "test1": {
+                "contest": {
+                        "contest_ballots": 1200,
+                        "tally": {
+                                "a": 600,
+                                "b": 400,
+                                "c": 100
+                        },
+                        "num_winners": 1,
+                        "reported_winners" : ["a"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 83,
+                               "sample": {"a": 40, "b": 40, "c": 3}
+                        },
+                        "2": {
+                                "sample_size": 200,
+                                "sample": {"a": 110, "b": 70, "c": 13}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.006382
+                }
+        },
+        "test2": {
+                "contest": {
+                        "contest_ballots": 1100,
+                        "tally": {
+                                "a": 400,
+                                "b": 400,
+                                "c": 200,
+                                "d": 100
+                        },
+                        "num_winners": 2,
+                        "reported_winners" : ["a", "b"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 100,
+                               "sample": {"a": 40, "b": 40, "c": 18, "d": 2}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.006465
+                }
+        },
+        "test3": {
+                "contest": {
+                        "contest_ballots": 1100,
+                        "tally": {
+                                "a": 400,
+                                "b": 400,
+                                "c": 200,
+                                "d": 100
+                        },
+                        "num_winners": 2,
+                        "reported_winners" : ["a", "b"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 100,
+                               "sample": {"a": 30, "b": 30, "c": 30, "d": 10}
+                        }
+                },
+                "expected": {
+                        "stopped": 0,
+                        "pvalue": 0.552702
+                }
+        },
+        "test4": {
+                "contest": {
+                        "contest_ballots": 1100,
+                        "tally": {
+                                "a": 400,
+                                "b": 400,
+                                "c": 200,
+                                "d": 100
+                        },
+                        "num_winners": 2,
+                        "reported_winners" : ["a", "b"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 100,
+                               "sample": {"a": 30, "b": 30, "c": 30, "d": 10}
+                        },
+                        "2": {
+                                "sample_size": 250,
+                                "sample": {"a": 80, "b": 80, "c": 55, "d": 35}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.083535
+                }
+        },
+        "test5": {
+                "contest": {
+                        "contest_ballots": 1200,
+                        "tally": {
+                                "a": 600,
+                                "b": 400,
+                                "c": 100
+                        },
+                        "num_winners": 1,
+                        "reported_winners" : ["a"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 100,
+                               "sample": {"a": 56, "b": 40, "c": 3}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.093394
+                }
+        },
+        "test6": {
+                "contest": {
+                        "contest_ballots": 10100100,
+                        "tally": {
+                                "a": 5100000,
+                                "b": 4900000,
+                                "c": 100
+                        },
+                        "num_winners": 1,
+                        "reported_winners" : ["a"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 10091,
+                               "sample": {"a": 5100, "b": 4990, "c": 1}
+                        }
+                },
+                "expected": {
+                        "stopped": 0,
+                        "pvalue": 0.168962
+                }
+        },
+        "test7": {
+                "contest": {
+                        "contest_ballots": 10100100,
+                        "tally": {
+                                "a": 5100000,
+                                "b": 4900000,
+                                "c": 100
+                        },
+                        "num_winners": 1,
+                        "reported_winners" : ["a"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 10091,
+                               "sample": {"a": 5100, "b": 4990, "c": 1}
+                        },
+                        "2": {
+                                "sample_size": 20091,
+                                "sample": {"a": 10200, "b": 9890, "c": 1}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.039079
+                }
+        },
+        "test8": {
+                "contest": {
+                        "contest_ballots": 10100100,
+                        "tally": {
+                                "a": 5100000,
+                                "b": 4900000,
+                                "c": 100
+                        },
+                        "num_winners": 1,
+                        "reported_winners" : ["a"],
+                        "contest_type": "PLURALITY"
+                },
+                "alpha": 0.1,
+                "audit_type": "minerva",
+                "rounds": {
+                        "1": {
+                               "sample_size": 100001,
+                               "sample": {"a": 50100, "b": 49900, "c": 1}
+                        },
+                        "2": {
+                                "sample_size": 200001,
+                                "sample": {"a": 101100, "b": 98900, "c": 1}
+                        }
+                },
+                "expected": {
+                        "stopped": 1,
+                        "pvalue": 0.001610
+                }
+        }
+}
