@@ -12,6 +12,7 @@ if __name__ == '__main__':
     db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
     sprobs = []
+    #ratios = []
     margins = []
 
     max_rounds = 5
@@ -36,9 +37,7 @@ if __name__ == '__main__':
             'underlying': 'reported',
             'audit': audit_id,
             'description': 'Multi round Minerva (90% then 1.5x)',
-            'invalid_ballots': True,
-            'sample_mult':1.5,
-            'max_rounds': max_rounds
+            'invalid_ballots': True
         })
 
         risks.append(tied_sim['analysis']['risk_by_round'])
@@ -49,37 +48,60 @@ if __name__ == '__main__':
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
 
+    # PLOT THE RISKS
+    plt.ylim(0,.1)
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
     # Plot risks vs. margins
-    print(risks)
     for r in range (1,max_rounds+1):
         risks_for_this_round = []
         for s in range(len(risks)):
             risks_for_this_round.append(risks[s][r-1])
-        # Uncomment the line below to fix the y-axis scale
-        #plt.ylim(0,.12)
-        plt.plot(margins, risks_for_this_round, 'bo')
-        plt.xlabel('Reported Margin')
-        title = 'Round '+str(r)+' Experimental Risk (90% then 1.5x Minerva)'
-        plt.title(title)
-        plt.ylabel('Experimental Risk')
-        plt.grid()
-        plt.show()
+        ax.scatter(margins, 
+                   risks_for_this_round, 
+                   s=len(margins),
+                   c=colors[r-1], 
+                   marker=markers[r-1], 
+                   label='Round'+str(r))
+    
+    title = '5 Rounds Experimental Risks (90% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Experimental Risk')
+    plt.xlabel('Reported Margin')
+    plt.grid()
+    plt.legend(loc='upper right')
+    plt.show()
 
+    # PLOT THE SPROBS
+    plt.ylim(.65,.95)
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
     # Plot sprobs vs. margins
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = []
         for s in range(len(sprobs)):
             sprobs_for_this_round.append(sprobs[s][r-1])
-        # Uncomment the line below to fix the y-axis scale
-        #plt.ylim(.65,1)
-        plt.plot(margins, sprobs_for_this_round, 'bo')
-        plt.xlabel('Reported Margin')
-        title = 'Round '+str(r)+' Experimental Stopping Probability (90% then 1.5x Minerva)'
-        plt.title(title)
-        plt.ylabel('Experimental Stopping Probability')
-        plt.grid()
-        plt.show()
+        ax.scatter(margins, 
+                   sprobs_for_this_round, 
+                   s=len(margins),
+                   c=colors[r-1], 
+                   marker=markers[r-1], 
+                   label='Round'+str(r))
+    
+    title = '5 Rounds Experimental Stopping Probability (90% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Experimental Stopping Probability')
+    plt.xlabel('Reported Margin')
+    plt.grid()
+    plt.legend(loc='lower right')
+    plt.show()
+
 
     """
     # Plot ratio vs. margin
