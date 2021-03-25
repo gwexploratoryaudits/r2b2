@@ -22,11 +22,9 @@ class Minerva(Audit):
 
     Attributes:
         alpha (float): Risk limit. Alpha represents the chance that, given an incorrectly called
-        election, the audit will fail to force a full recount.
+            election, the audit will fail to force a full recount.
         max_fraction_to_draw (float): The maximum number of ballots the auditors are willing to draw
-        as a fraction of the ballots in the contest.
-        rounds (List[int]): Cumulative round schedule.
-        min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
+            as a fraction of the ballots in the contest.
         contest (Contest): Contest to be audited.
     """
     def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
@@ -41,8 +39,9 @@ class Minerva(Audit):
         floating-point imprecisions in the later convolution process.
 
         Args:
-            sub_audit (PairwiseAudit): subaudit with two candidates to get minium sample size for.
+            sub_audit (PairwiseAudit): Get minimum sample size for this subaudit.
             min_sprob (float): Round sizes with below min_sprob stopping probability are excluded.
+        
         Returns:
             int: The minimum sample size of the audit, adherent to the min_sprob.
         """
@@ -194,8 +193,13 @@ class Minerva(Audit):
         Failing that, try to find an estimate no greater than 20000, and so on.
 
         Args:
-            verbose (bool): If true, the kmin and stopping probability of the next sample size will be returned
-            in addition to the next sample size itself.
+            sprob (float): Compute next sample for this stopping probability.
+            verbose (bool): If true, the kmin and stopping probability of the next sample size will
+                be returned in addition to the next sample size itself.
+
+        Return:
+            Return maxmimum next sample size estimate across all pairwise subaudits. If verbose,
+                return information as specified above.
         """
 
         # If the audit has already terminated, there is no next_sample_size.
@@ -223,6 +227,15 @@ class Minerva(Audit):
         return max_estimate[0]
 
     def _next_sample_size_pairwise(self, sub_audit: PairwiseAudit, sprob=0.9):
+        """Compute next sample size for a single pairwise subaudit.
+        
+        Args:
+            sub_audit (PairwiseAudit): Compute the sample size for this sub_audit.
+            sprob (float): Get the sample size for this stopping probability.
+
+        Return:
+            Estimate in the format [sample size, kmin, stopping probability].
+        """
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
         start = 10000
         subsequent_round = len(self.rounds) > 0
@@ -258,7 +271,14 @@ class Minerva(Audit):
         return start
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
-        """Check, without finding the kmin, whether the audit is complete."""
+        """Check, without finding the kmin, whether the subaudit is complete.
+        
+        Args:
+            pair (str): Dictionary key referencing pairwise subaudit to evaluate.
+
+        Returns:
+            bool: Whether or not the pairwise stopping condition has been met.
+        """
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
         if pair not in self.sub_audits.keys():
@@ -275,7 +295,14 @@ class Minerva(Audit):
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
-        """Compute kmin in interactive context."""
+        """Compute stopping size for a given subaudit.
+        
+        Args:
+            sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
+
+        Return:
+            int: Stopping size for most recent round.
+        """
         sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
             sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
@@ -288,6 +315,7 @@ class Minerva(Audit):
         meet the stopping condition.
 
         Args:
+            sub_audit (PairwiseAudit): Compute minimum winner ballots for this Pairwise subaudit.
             rounds (List[int]): A (partial) round schedule of the audit.
         """
         if len(rounds) < 1:
@@ -311,8 +339,8 @@ class Minerva(Audit):
         for round_size in rounds:
             self.rounds.append(round_size)
             # Update current distributions for pairwise subaudit
-            self._current_dist_null_pairwise(pair, sub_audit, True)
-            self._current_dist_reported_pairwise(pair, sub_audit, True)
+            self._current_dist_null_pairwise(sub_audit, True)
+            self._current_dist_reported_pairwise(sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
             sample_size = round_size - previous_sample
             self.find_kmin(sub_audit, sample_size, True)
@@ -326,11 +354,12 @@ class Minerva(Audit):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
+            sub_audit (PairwiseAudit): Find kmin for this subaudit.
+            sample_size (int): Sample size to find kmin for.
             append (bool): Optionally append the kmins to the min_winner_ballots list. This may
-            not always be desirable here because, for example, appending happens automatically
-            outside this method during an interactive audit.
+                not always be desirable here because, for example, appending happens automatically
+                outside this method during an interactive audit.
         """
-
         for possible_kmin in range(sample_size // 2 + 1, len(sub_audit.distribution_null)):
             tail_null = sum(sub_audit.distribution_null[possible_kmin:])
             tail_reported = sum(sub_audit.distribution_reported_tally[possible_kmin:])
@@ -350,20 +379,20 @@ class Minerva(Audit):
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum number of winner ballots for the complete (that is, ballot-by-ballot)
-        round schedule. Note that Minerva ballot-by-ballot is equivalent to the BRAVO audit.
+        round schedule.
 
         Note: Due to limited convolutional precision, results may be off somewhat after the
-        stopping probability very nearly equals 1.
+            stopping probability very nearly equals 1.
 
         Args:
+            sub_audit (PairwiseAudit): Compute minimum winner ballots for this pairwise subaudit.
             max_sample_size (int): Optionally set the maximum sample size to generate stopping sizes
-            (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
-            and the total contest ballots.
+                (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
+                and the total contest ballots.
 
         Returns:
             None, kmins are appended to the min_winner_ballots list.
         """
-
         if len(self.rounds) > 0:
             raise Exception("This audit already has an (at least partial) round schedule.")
         if max_sample_size is None:
@@ -378,12 +407,12 @@ class Minerva(Audit):
             self.rounds.append(sample_size)
             # First kmin computed directly.
             if sample_size == sub_audit.min_sample_size:
-                self._current_dist_null_pairwise(pair, sub_audit, True)
-                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                self._current_dist_null_pairwise(sub_audit, True)
+                self._current_dist_reported_pairwise(sub_audit, True)
                 current_kmin = self.find_kmin(sub_audit, sample_size, True)
             else:
-                self._current_dist_null_pairwise(pair, sub_audit, True)
-                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                self._current_dist_null_pairwise(sub_audit, True)
+                self._current_dist_reported_pairwise(sub_audit, True)
                 tail_null = sum(sub_audit.distribution_null[current_kmin:])
                 tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
                 if self.alpha * tail_reported > tail_null:
@@ -408,9 +437,10 @@ class Minerva(Audit):
         return tail_null / tail_reported
 
     def get_risk_level(self):
-        """Return the risk level of an interactive Minerva audit. Non-interactive and bulk Minerva
-        audits are not considered here since the sampled number of reported winner ballots is not
-        available.
+        """Return the risk level of an interactive Minerva audit. 
+        
+        Non-interactive and bulk Minerva audits are not considered here since the sampled number of
+        reported winner ballots is not available.
         """
 
         if len(self.pvalue_schedule) < 1:

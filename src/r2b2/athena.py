@@ -20,13 +20,14 @@ class Athena(Audit):
 
     Attributes:
         alpha (float): Risk limit. Alpha represents the chance that, given an incorrectly called
-        election, the audit will fail to force a full recount.
+            election, the audit will fail to force a full recount.
         max_fraction_to_draw (float): The maximum number of ballots the auditors are willing to draw
-        as a fraction of the ballots in the contest.
-        rounds (List[int]): Cumulative round schedule.
-        min_winner_ballots (List[int]): Stopping sizes (or kmins) respective to the round schedule.
-        contest (Contest): Contest to be audited.
+            as a fraction of the ballots in the contest.
+        delta (float): Delta value.
     """
+
+    delta: float
+
     def __init__(self, alpha: float, delta: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize an Athena audit."""
         if delta <= 0:
@@ -47,7 +48,9 @@ class Athena(Audit):
         floating-point imprecisions in the later convolution process.
 
         Args:
+            sub_audit (PairwiseAudit): Compute minimum sample size for this subaudit.
             min_sprob (float): Round sizes with below min_sprob stopping probability are excluded.
+
         Returns:
             int: The minimum sample size of the audit, adherent to the min_sprob.
         """
@@ -92,7 +95,15 @@ class Athena(Audit):
         pass
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
-        """Check, without finding the kmin, whether the audit is complete."""
+        """Check, without finding the kmin, whether the audit is complete.
+            
+        Args:
+            pair (str): Dictionary key referencing pairwise subaudit. Evaluate the stopping
+                condition for this subaudit.
+
+        Return:
+            bool: Whether or not the pairwise stopping condition has been met.
+        """
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
         if pair not in self.sub_audits.keys():
@@ -114,7 +125,14 @@ class Athena(Audit):
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
-        """Compute kmin in interactive context."""
+        """Compute stopping size for a given subaudit.
+        
+        Args:
+            sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
+
+        Return:
+            int: Stopping size for most recent round.
+        """
         sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
             sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
@@ -127,6 +145,7 @@ class Athena(Audit):
         meet the stopping condition.
 
         Args:
+            sub_audit (PairwiseAudit): Compute minimum winner ballots for this Pairwise subaudit.
             rounds (List[int]): A (partial) round schedule of the audit.
         """
 
@@ -153,8 +172,8 @@ class Athena(Audit):
             # Compute marginal round size
             sample_size = round_size - previous_sample
             # Update current distributions for pairwise subaudit
-            self._current_dist_null_pairwise(pair, sub_audit, True)
-            self._current_dist_reported_pairwise(pair, sub_audit, True)
+            self._current_dist_null_pairwise(sub_audit, True)
+            self._current_dist_reported_pairwise(sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
             self.find_kmin(sub_audit, sample_size, True)
             # Truncate distributions for pairwise subaudit
@@ -167,9 +186,11 @@ class Athena(Audit):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
+            sub_audit (PairwiseAudit): Find kmin for this subaudit.
+            sample_size (int): Sample size to find kmin for.
             append (bool): Optionally append the kmins to the min_winner_ballots list. This may
-            not always be desirable here because, for example, appending happens automatically
-            outside this method during an interactive audit.
+                not always be desirable here because, for example, appending happens automatically
+                outside this method during an interactive audit.
         """
 
         for possible_kmin in range(sample_size // 2 + 1, len(sub_audit.distribution_null)):
@@ -197,12 +218,13 @@ class Athena(Audit):
         round schedule.
 
         Note: Due to limited convolutional precision, results may be off somewhat after the
-        stopping probability very nearly equals 1.
+            stopping probability very nearly equals 1.
 
         Args:
+            sub_audit (PairwiseAudit): Compute minimum winner ballots for this pairwise subaudit.
             max_sample_size (int): Optionally set the maximum sample size to generate stopping sizes
-            (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
-            and the total contest ballots.
+                (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
+                and the total contest ballots.
 
         Returns:
             None, kmins are appended to the min_winner_ballots list.
@@ -222,12 +244,12 @@ class Athena(Audit):
             self.rounds.append(sample_size)
             # First kmin computed directly.
             if sample_size == sub_audit.min_sample_size:
-                self._current_dist_null_pairwise(pair, sub_audit, True)
-                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                self._current_dist_null_pairwise(sub_audit, True)
+                self._current_dist_reported_pairwise(sub_audit, True)
                 current_kmin = self.find_kmin(sub_audit, sample_size, True)
             else:
-                self._current_dist_null_pairwise(pair, sub_audit, True)
-                self._current_dist_reported_pairwise(pair, sub_audit, True)
+                self._current_dist_null_pairwise(sub_audit, True)
+                self._current_dist_reported_pairwise(sub_audit, True)
                 tail_null = sum(sub_audit.distribution_null[current_kmin:])
                 tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
                 if self.alpha * tail_reported > tail_null:
@@ -248,9 +270,10 @@ class Athena(Audit):
         return tail_null / tail_reported
 
     def get_risk_level(self):
-        """Return the risk level of an interactive Athena audit. Non-interactive and bulk Athena
-        audits are not considered here since the sampled number of reported winner ballots is not
-        available.
+        """Return the risk level of an interactive Athena audit. 
+        
+        Non-interactive and bulk Athena audits are not considered here since the sampled number of
+        reported winner ballots is not available.
         """
 
         if len(self.pvalue_schedule) < 1:
