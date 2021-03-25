@@ -105,11 +105,12 @@ def test_simple_audit_execution():
 def test_simple_audit_execute_rounds():
     """Test execute_round method."""
     simpleaudit1 = SimpleAudit(0.1, 0.05, 0.5, True, default_contest)
-    simpleaudit1.execute_round(10, {'a': 10, 'b': 0})
+    assert simpleaudit1.execute_round(10, {'a': 10, 'b': 0})
     assert simpleaudit1.rounds == [10]
     assert simpleaudit1.sample_ballots == {'a': [10], 'b': [0]}
     assert simpleaudit1.sub_audits['a-b'].stopped
     assert simpleaudit1.stopped
+    assert simpleaudit1.execute_round(20, {'a': 20, 'b': 0})
 
 
 def test_repr():
@@ -138,6 +139,12 @@ def test_pairwise_str():
     pw_audit_str += 'Minimum Winner Ballots: []\n'
     pw_audit_str += 'Stopped: False\n\n'
     assert str(simpleaudit.sub_audits['a-b']) == pw_audit_str
+
+
+def test_pairwise_repr():
+    simpleaudit = SimpleAudit(0.1, 0.01, 0.1, True, default_contest)
+    simpleaudit2 = SimpleAudit(0.1, 0.01, 0.1, True, default_contest)
+    assert repr(simpleaudit.sub_audits['a-b']) == repr(simpleaudit2.sub_audits['a-b'])
 
 
 def test_initialization_errors():
@@ -192,7 +199,7 @@ def test_initialization_errors():
         SimpleAudit(0.1, 0.05, 1.5, True, default_contest)
 
 
-def test_expections():
+def test_exceptions():
     simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
     with pytest.raises(Exception):
         simpleaudit.current_dist_null()
@@ -208,6 +215,17 @@ def test_expections():
         simpleaudit.current_dist_null()
     with pytest.raises(Exception):
         simpleaudit.current_dist_reported()
+    simpleaudit.rounds.append(2)
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_null()
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_reported()
+    simpleaudit.sample_ballots['b'].append(0)
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_null()
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_reported()
+
     simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
     simpleaudit.rounds.append(10)
     with pytest.raises(Exception):

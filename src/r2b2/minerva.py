@@ -41,7 +41,7 @@ class Minerva(Audit):
         Args:
             sub_audit (PairwiseAudit): Get minimum sample size for this subaudit.
             min_sprob (float): Round sizes with below min_sprob stopping probability are excluded.
-        
+
         Returns:
             int: The minimum sample size of the audit, adherent to the min_sprob.
         """
@@ -228,7 +228,7 @@ class Minerva(Audit):
 
     def _next_sample_size_pairwise(self, sub_audit: PairwiseAudit, sprob=0.9):
         """Compute next sample size for a single pairwise subaudit.
-        
+
         Args:
             sub_audit (PairwiseAudit): Compute the sample size for this sub_audit.
             sprob (float): Get the sample size for this stopping probability.
@@ -272,7 +272,7 @@ class Minerva(Audit):
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the subaudit is complete.
-        
+
         Args:
             pair (str): Dictionary key referencing pairwise subaudit to evaluate.
 
@@ -296,7 +296,7 @@ class Minerva(Audit):
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute stopping size for a given subaudit.
-        
+
         Args:
             sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
 
@@ -437,8 +437,8 @@ class Minerva(Audit):
         return tail_null / tail_reported
 
     def get_risk_level(self):
-        """Return the risk level of an interactive Minerva audit. 
-        
+        """Return the risk level of an interactive Minerva audit.
+
         Non-interactive and bulk Minerva audits are not considered here since the sampled number of
         reported winner ballots is not available.
         """

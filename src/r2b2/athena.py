@@ -96,7 +96,7 @@ class Athena(Audit):
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the audit is complete.
-            
+
         Args:
             pair (str): Dictionary key referencing pairwise subaudit. Evaluate the stopping
                 condition for this subaudit.
@@ -126,7 +126,7 @@ class Athena(Audit):
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute stopping size for a given subaudit.
-        
+
         Args:
             sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
 
@@ -260,18 +260,18 @@ class Athena(Audit):
             self._truncate_dist_null_pairwise(pair)
             self._truncate_dist_reported_pairwise(pair)
 
-    def compute_risk(self, votes_for_winner: int, loser: str, *args, **kwargs):
+    def compute_risk(self, votes_for_winner: int, pair: str, *args, **kwargs):
         """Return the hypothetical (Minerva) p-value if votes_for_winner were obtained in the most recent
         round."""
 
-        sub_audit = self.sub_audits[loser]
+        sub_audit = self.sub_audits[pair]
         tail_null = sum(sub_audit.distribution_null[votes_for_winner:])
         tail_reported = sum(sub_audit.distribution_reported_tally[votes_for_winner:])
         return tail_null / tail_reported
 
     def get_risk_level(self):
-        """Return the risk level of an interactive Athena audit. 
-        
+        """Return the risk level of an interactive Athena audit.
+
         Non-interactive and bulk Athena audits are not considered here since the sampled number of
         reported winner ballots is not available.
         """
