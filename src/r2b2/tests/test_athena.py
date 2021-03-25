@@ -21,6 +21,7 @@ def test_simple_athena():
     assert simple_athena.max_fraction_to_draw == .1
     assert len(simple_athena.rounds) == 0
     assert len(simple_athena.sub_audits['a-b'].min_winner_ballots) == 0
+    assert simple_athena.get_risk_level() is None
 
 
 def test_athena_minerva_paper():
@@ -84,9 +85,24 @@ def test_bulk_athena():
         assert (kmin - 1) * log_winner_multiplier + (n - kmin + 1) * log_loser_multiplier <= log_rhs
 
 
+def test_athena_next_sample_size():
+    # TODO: Create tests for ahtena next sample size
+    simple_athena = Athena(0.1, 1, 0.1, default_contest)
+    simple_athena.next_sample_size()
+    pass
+
+
 def test_exceptions():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    with pytest.raises(ValueError):
+        Athena(.1, 0, .1, contest)
     athena = Athena(.1, 1, .1, contest)
+    with pytest.raises(Exception):
+        athena.stopping_condition_pairwise('A-B')
+    athena.rounds.append(10)
+    with pytest.raises(ValueError):
+        athena.stopping_condition_pairwise('X')
+    athena.rounds = []
     with pytest.raises(ValueError):
         athena.compute_min_winner_ballots(athena.sub_audits['A-B'], [])
     with pytest.raises(ValueError):
