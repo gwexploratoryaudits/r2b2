@@ -126,6 +126,20 @@ def test_str():
     assert str(simpleaudit1) == audit_str
 
 
+def test_pairwise_str():
+    simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    pw_audit_str = 'Pairwise Audit\n--------------\n'
+    pw_audit_str += 'Subcontest Winner: a\n'
+    pw_audit_str += 'Subcontest Loser: b\n'
+    pw_audit_str += 'Minimum Sample Size: 1\n'
+    pw_audit_str += 'Risk Schedule: []\n'
+    pw_audit_str += 'Stopping Probability Schedule: []\n'
+    pw_audit_str += 'p-Value Schedule: []\n'
+    pw_audit_str += 'Minimum Winner Ballots: []\n'
+    pw_audit_str += 'Stopped: False\n\n'
+    assert str(simpleaudit.sub_audits['a-b']) == pw_audit_str
+
+
 def test_initialization_errors():
     """Tests exceptions are raised correctly by __init__()."""
     # alpha TypeError tests
@@ -176,6 +190,38 @@ def test_initialization_errors():
         SimpleAudit(0.1, 0.05, -0.1, True, default_contest)
     with pytest.raises(ValueError):
         SimpleAudit(0.1, 0.05, 1.5, True, default_contest)
+
+
+def test_expections():
+    simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_null()
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_reported()
+    simpleaudit.rounds.append(1)
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_null()
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_reported()
+    simpleaudit.sample_ballots['b'].append(0)
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_null()
+    with pytest.raises(Exception):
+        simpleaudit.current_dist_reported()
+    simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    simpleaudit.rounds.append(10)
+    with pytest.raises(Exception):
+        simpleaudit.execute_round(5, {'a': 5, 'b': 0})
+    with pytest.raises(Exception):
+        simpleaudit.execute_round(20, {'a': 5, 'b': 15})
+    with pytest.raises(Exception):
+        simpleaudit.execute_round(20, {})
+    simpleaudit = SimpleAudit(0.1, 0.05, 0.1, True, default_contest)
+    simpleaudit.rounds.append(10)
+    simpleaudit.sample_ballots['a'].append(5)
+    simpleaudit.sample_ballots['b'].append(5)
+    with pytest.raises(Exception):
+        simpleaudit.execute_round(20, {'a': 4, 'b': 4})
 
 
 def test_asn():

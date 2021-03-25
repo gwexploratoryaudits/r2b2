@@ -199,7 +199,7 @@ class Minerva(Audit):
         """
 
         # If the audit has already terminated, there is no next_sample_size.
-        if all([sub_audit.stopped for sub_audit in self.sub_audits.values()]):
+        if self.stopped:
             if verbose:
                 return self.rounds[-1], 0, 1
             return self.rounds[-1]
@@ -315,14 +315,14 @@ class Minerva(Audit):
             self._current_dist_reported_pairwise(pair, sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
             sample_size = round_size - previous_sample
-            self.find_kmin(sub_audit, sample_size, True, pair)
+            self.find_kmin(sub_audit, sample_size, True)
             # Truncate distributions for pairwise subaudit
             self._truncate_dist_null_pairwise(pair)
             self._truncate_dist_reported_pairwise(pair)
             # Update previous round size for next sample computation
             previous_sample = round_size
 
-    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, pair: str = None):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
@@ -338,15 +338,13 @@ class Minerva(Audit):
             # Minerva's stopping criterion: tail_reported / tail_null > 1 / alpha.
             if self.alpha * tail_reported > tail_null:
                 if append:
-                    if pair is None:
-                        raise Exception('must specify candidate pair to append kmin.')
+                    pair = sub_audit.get_pair_str()
                     self.sub_audits[pair].min_winner_ballots.append(possible_kmin)
                 return possible_kmin
 
         # Sentinel of None plays nice with truncation.
         if append:
-            if pair is None:
-                raise Exception('must specify candidate pair to append kmin.')
+            pair = sub_audit.get_pair_str()
             self.sub_audits[pair].min_winner_ballots.append(None)
         return None
 
@@ -382,7 +380,7 @@ class Minerva(Audit):
             if sample_size == sub_audit.min_sample_size:
                 self._current_dist_null_pairwise(pair, sub_audit, True)
                 self._current_dist_reported_pairwise(pair, sub_audit, True)
-                current_kmin = self.find_kmin(sub_audit, sample_size, True, pair)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True)
             else:
                 self._current_dist_null_pairwise(pair, sub_audit, True)
                 self._current_dist_reported_pairwise(pair, sub_audit, True)

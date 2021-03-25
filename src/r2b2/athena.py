@@ -156,14 +156,14 @@ class Athena(Audit):
             self._current_dist_null_pairwise(pair, sub_audit, True)
             self._current_dist_reported_pairwise(pair, sub_audit, True)
             # Find kmin for pairwise subaudit and append kmin
-            self.find_kmin(sub_audit, sample_size, True, pair)
+            self.find_kmin(sub_audit, sample_size, True)
             # Truncate distributions for pairwise subaudit
             self._truncate_dist_null_pairwise(pair)
             self._truncate_dist_reported_pairwise(pair)
             # Update previous round size for next sample computation
             previous_sample = round_size
 
-    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool, loser: str = None):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
@@ -182,16 +182,14 @@ class Athena(Audit):
             # and point_reported / point_null > 1 / delta.
             if self.alpha * tail_reported > tail_null and self.delta * point_reported > point_null:
                 if append:
-                    if loser is None:
-                        raise Exception('must specify loser to append kmin.')
-                    self.sub_audits[loser].min_winner_ballots.append(possible_kmin)
+                    pair = sub_audit.get_pair_str()
+                    self.sub_audits[pair].min_winner_ballots.append(possible_kmin)
                 return possible_kmin
 
         # Sentinel of None plays nice with truncation.
         if append:
-            if loser is None:
-                raise Exception('must specify loser to append kmin.')
-            self.sub_audits[loser].min_winner_ballots.append(None)
+            pair = sub_audit.get_pair_str()
+            self.sub_audits[pair].min_winner_ballots.append(None)
         return None
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
@@ -226,7 +224,7 @@ class Athena(Audit):
             if sample_size == sub_audit.min_sample_size:
                 self._current_dist_null_pairwise(pair, sub_audit, True)
                 self._current_dist_reported_pairwise(pair, sub_audit, True)
-                current_kmin = self.find_kmin(sub_audit, sample_size, True, pair)
+                current_kmin = self.find_kmin(sub_audit, sample_size, True)
             else:
                 self._current_dist_null_pairwise(pair, sub_audit, True)
                 self._current_dist_reported_pairwise(pair, sub_audit, True)

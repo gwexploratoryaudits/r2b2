@@ -21,6 +21,7 @@ def test_simple_minerva():
     assert simple_minerva.max_fraction_to_draw == .1
     assert len(simple_minerva.rounds) == 0
     assert len(simple_minerva.sub_audits) == 1
+    assert simple_minerva.get_risk_level() is None
 
 
 def test_min_sample_size():
