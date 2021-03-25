@@ -118,21 +118,6 @@ class Contest:
                 if rw_ballots > self.tally[candidate]:
                     self.sub_contests.append(PairwiseContest(rw, candidate, rw_ballots, self.tally[candidate]))
 
-    def get_sub_contests(self, reported_winner: str):
-        """Get list of subcontests for a reported winner.
-
-        Args:
-            reported_winner (str): Candidate that is reported winner in desired pairwise
-                subcontest.
-
-        Returns:
-            List[PairwiseContest]: List of pairwise subcontests for given reported winner.
-        """
-        if reported_winner not in self.reported_winners:
-            raise ValueError('reported winner must be a reported winner in contest.')
-
-        return self.sub_contests[reported_winner]
-
     def __repr__(self):
         """String representation of Contest class."""
         return '{}: [{}, {}, {}, {}, {}]'.format(self.__class__.__name__, self.contest_ballots, self.tally, self.num_winners,
