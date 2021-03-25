@@ -123,3 +123,18 @@ def test_exceptions():
         athena.compute_min_winner_ballots(athena.sub_audits['A-B'], [19])
     with pytest.raises(ValueError):
         athena.compute_min_winner_ballots(athena.sub_audits['A-B'], [10001])
+
+    contest2 = Contest(100, {'A': 60, 'B': 30}, 1, ['A'], ContestType.MAJORITY)
+    athena2 = Athena(0.1, 1, 1.0, contest2)
+    with pytest.raises(ValueError):
+        athena2.compute_min_winner_ballots(athena2.sub_audits['A-B'], [91])
+    athena2.rounds.append(10)
+    with pytest.raises(Exception):
+        athena2.compute_all_min_winner_ballots(athena2.sub_audits['A-B'])
+    athena2.rounds = []
+    with pytest.raises(ValueError):
+        athena2.compute_all_min_winner_ballots(athena2.sub_audits['A-B'], 0)
+    with pytest.raises(ValueError):
+        athena2.compute_all_min_winner_ballots(athena2.sub_audits['A-B'], 200)
+    with pytest.raises(ValueError):
+        athena2.compute_all_min_winner_ballots(athena2.sub_audits['A-B'], 0)

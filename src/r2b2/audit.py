@@ -207,7 +207,7 @@ class Audit(ABC):
 
     def _current_dist_null_pairwise(self, sub_audit: PairwiseAudit, bulk_use_round_size=False):
         """Update distribution_null for a single PairwiseAudit
-        
+
         Args:
             sub_audit (PairwiseAudit): Pairwise subaudit for which to update distribution.
             bulk_use_round_size (bool): Optional argument used by bulk methods. Since the bulk
@@ -223,6 +223,13 @@ class Audit(ABC):
             else:
                 round_draw = self.rounds[-1] - self.rounds[-2]
         elif len(self.rounds) == 1:
+            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
+                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
+                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
+            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
+                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
+                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
+
             round_draw = self.sample_ballots[sub_audit.sub_contest.reported_loser][0] + self.sample_ballots[
                 sub_audit.sub_contest.reported_winner][0]
         else:
@@ -283,7 +290,7 @@ class Audit(ABC):
 
     def _current_dist_reported_pairwise(self, sub_audit: PairwiseAudit, bulk_use_round_size=False):
         """Update dist_reported for a single PairwiseAudit.
-        
+
         Args:
             sub_audit (PairwiseAudit): Pairwise subaudit for which to update distriution.
             bulk_use_round_size (bool): Optional argument used by bulk methods. Since the bulk
@@ -300,6 +307,13 @@ class Audit(ABC):
             else:
                 round_draw = self.rounds[-1] - self.rounds[-2]
         elif len(self.rounds) == 1:
+            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
+                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
+                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
+            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
+                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
+                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
+
             round_draw = self.sample_ballots[sub_audit.sub_contest.reported_loser][0] + self.sample_ballots[
                 sub_audit.sub_contest.reported_winner][0]
         else:
@@ -356,7 +370,7 @@ class Audit(ABC):
 
     def _truncate_dist_null_pairwise(self, pair: str):
         """Update risk schedule and truncate null distribution for a single subaudit.
-        
+
         Args:
             pair (str): Dictionary key for subaudit (within the audit's subaudits) to truncate
                 distribution and update risk schedule.
@@ -373,12 +387,12 @@ class Audit(ABC):
 
     def _truncate_dist_reported_pairwise(self, pair):
         """Update stopping prob schedule and truncate reported distribution for a single subaudit.
-        
+
         Args:
             pair (str): Dictionary key for subaudit (within the audit's subaudits) to truncate
                 distribution and update stopping prob schedule.
         """
-        
+
         self.sub_audits[pair].stopping_prob_schedule.append(
             sum(self.sub_audits[pair].distribution_reported_tally[self.sub_audits[pair].min_winner_ballots[-1]:]))
         self.sub_audits[pair].distribution_reported_tally = self.sub_audits[pair].distribution_reported_tally[:self.sub_audits[pair].
@@ -532,7 +546,7 @@ class Audit(ABC):
                 for r in range(1, curr_round):
                     click.echo('|{:^24}|{:^25}|'.format(r, '{:.12f}'.format(self.pvalue_schedule[r - 1])))
                 click.echo('+--------------------------------------------------+')
-            
+
             # Get next round sample size given desired stopping probability
             while click.confirm('Would you like to enter a desired stopping probability for this round?'):
                 desired_sprob = click.prompt('Enter desired stopping probability for this round (.9 recommended)',
@@ -573,7 +587,7 @@ class Audit(ABC):
             click.echo('\n\n+----------------------------------------+')
             click.echo('|{:^40}|'.format('Stopping Condition Met? {}'.format(self.stopped)))
             click.echo('+----------------------------------------+')
-            
+
             # Determine if the audit should proceed
             if self.stopped:
                 click.echo('\n\nAudit Complete.')
@@ -581,7 +595,7 @@ class Audit(ABC):
             elif click.confirm('\nWould you like to force stop the audit'):
                 click.echo('\n\nAudit Complete: User stopped.')
                 return
-            
+
             # Compute kmin if audit has not stopped and truncate distributions
             self.next_min_winner_ballots(verbose)
             self.truncate_dist_null()
@@ -602,7 +616,7 @@ class Audit(ABC):
     @abstractmethod
     def get_min_sample_size(self, sub_audit: PairwiseAudit):
         """Get the minimum valid sample size in a sub audit
-        
+
         Args:
             sub_audit (PairwiseAudit): Get minimum sample size for this sub_audit.
         """
@@ -643,7 +657,7 @@ class Audit(ABC):
     @abstractmethod
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Determine if pairwise subcontest meets stopping condition.
-        
+
         Args:
             pair (str): Dictionary key referencing pairwise audit in audit's sub_audits.
 

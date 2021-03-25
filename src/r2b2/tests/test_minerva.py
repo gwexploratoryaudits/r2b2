@@ -22,6 +22,10 @@ def test_simple_minerva():
     assert len(simple_minerva.rounds) == 0
     assert len(simple_minerva.sub_audits) == 1
     assert simple_minerva.get_risk_level() is None
+    simple_minerva.rounds.append(10)
+    simple_minerva.stopped = True
+    assert simple_minerva.next_sample_size() == 10
+    assert simple_minerva.next_sample_size(verbose=True) == (10, 0, 1)
 
 
 def test_min_sample_size():
@@ -81,50 +85,33 @@ def test_minerva_second_round_estimate():
     assert minerva2.next_sample_size() == 111257
 
 
-# def test_minerva_georgia_senate_2020():
-#     ga_senate_race = Contest(2453876 + 2358432, {'A': 2453876, 'B': 2358432}, 1, ['A'], ContestType.PLURALITY)
-#
-#     ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
-#     irrelevant_scale_up = 1.0238785631
-#     estimates = []
-#     for sprob in [.7, .8, .9]:
-#         estimates.append(math.ceil(irrelevant_scale_up * ga_senate_audit.next_sample_size(sprob=sprob)))
-#     assert estimates == [10486, 13205, 18005]
-#     ga_senate_audit.rounds.append(9903)
-#     ga_senate_audit.current_dist_null()
-#     ga_senate_audit.current_dist_reported()
-#     assert abs(ga_senate_audit.compute_risk(4950) - 0.527638189598802) < .000001
-#     ga_senate_audit.find_kmin(True)
-#     ga_senate_audit.truncate_dist_null()
-#     ga_senate_audit.truncate_dist_reported()
-#     ga_senate_audit.rounds.append(24000)
-#     ga_senate_audit.current_dist_null()
-#     ga_senate_audit.current_dist_reported()
-#     assert abs(ga_senate_audit.compute_risk(11900) - 2.663358309286826) < .000001
-#     ga_senate_audit.find_kmin(True)
-#     ga_senate_audit.truncate_dist_null()
-#     ga_senate_audit.truncate_dist_reported()
-#     ga_senate_audit.rounds.append(45600)
-#     ga_senate_audit.current_dist_null()
-#     assert abs(ga_senate_audit.compute_risk(24000)) < .000001
-#
-#     ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
-#     ga_senate_audit.rounds.append(17605)
-#     ga_senate_audit.current_dist_null()
-#     ga_senate_audit.current_dist_reported()
-#     assert abs(ga_senate_audit.compute_risk(8900) - 0.081750333563781) < .000001
-#
-#     ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
-#     ga_senate_audit.rounds.append(17605)
-#     ga_senate_audit.current_dist_null()
-#     ga_senate_audit.current_dist_reported()
-#     assert ga_senate_audit.compute_risk(17605) == 0
-#
-#     ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
-#     ga_senate_audit.rounds.append(17605)
-#     ga_senate_audit.current_dist_null()
-#     ga_senate_audit.current_dist_reported()
-#     assert abs(ga_senate_audit.compute_risk(0) - 1) < .000001
+def test_minerva_georgia_senate_2020():
+    ga_senate_race = Contest(2453876 + 2358432, {'A': 2453876, 'B': 2358432}, 1, ['A'], ContestType.PLURALITY)
+
+    ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
+    irrelevant_scale_up = 1.0238785631
+    estimates = []
+    for sprob in [.7, .8, .9]:
+        estimates.append(math.ceil(irrelevant_scale_up * ga_senate_audit.next_sample_size(sprob=sprob)))
+    assert estimates == [10486, 13205, 18005]
+    ga_senate_audit.execute_round(9903, {'A': 4950, 'B': 9903-4950})
+    assert abs(ga_senate_audit.pvalue_schedule[-1] - 0.527638189598802) < .000001
+    ga_senate_audit.execute_round(24000, {'A': 11900, 'B': 24000-11900})
+    assert abs(ga_senate_audit.pvalue_schedule[-1] - 2.663358309286826) < .000001
+    ga_senate_audit.execute_round(45600, {'A': 24000, 'B': 45600-24000})
+    assert abs(ga_senate_audit.pvalue_schedule[-1]) < 0.000001
+
+    ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
+    ga_senate_audit.execute_round(17605, {'A': 8900, 'B': 17605-8900})
+    assert abs(ga_senate_audit.get_risk_level() - 0.081750333563781) < .000001
+
+    ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
+    ga_senate_audit.execute_round(17605, {'A': 17605, 'B': 0})
+    assert ga_senate_audit.get_risk_level() == 0
+
+    ga_senate_audit = Minerva(.1, 1.0, ga_senate_race)
+    ga_senate_audit.execute_round(17605, {'A': 0, 'B': 17605})
+    assert abs(ga_senate_audit.get_risk_level() - 1) < 0.000001
 
 
 def test_minerva_kmins():
@@ -266,3 +253,21 @@ def test_exceptions():
         minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [19])
     with pytest.raises(ValueError):
         minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], [10001])
+
+    contest2 = Contest(100, {'A': 60, 'B': 30}, 1, ['A'], ContestType.MAJORITY)
+    minerva2 = Minerva(.1, 1.0, contest2)
+    with pytest.raises(ValueError):
+        minerva2.compute_min_winner_ballots(minerva2.sub_audits['A-B'], [91])
+    minerva2.rounds = [10]
+    with pytest.raises(Exception):
+        minerva2.compute_all_min_winner_ballots(minerva2.sub_audits['A-B'])
+    minerva2.rounds = []
+    with pytest.raises(Exception):
+        minerva.compute_all_min_winner_ballots(minerva2.sub_audits['A-B'], 200)
+
+    minerva = Minerva(.1, .1, contest)
+    with pytest.raises(Exception):
+        minerva.stopping_condition_pairwise('A-B')
+    minerva.rounds.append(10)
+    with pytest.raises(ValueError):
+        minerva.stopping_condition_pairwise('x')
