@@ -11,8 +11,13 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 if __name__ == '__main__':
     db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
+    risk_stops = []
     sprobs = []
+    sprob_stops = []
+    ratios = []
     margins = []
+
+    total_to_start = 100000
 
     max_rounds = 5
 
@@ -41,63 +46,102 @@ if __name__ == '__main__':
             'max_rounds': max_rounds
         })
 
-        risks.append(tied_sim['analysis']['risk_by_round'])
+        risk_analysis = tied_sim['analysis']
+        risks.append(risk_analysis['risk_by_round'])
+        risk_stops.append(risk_analysis['stopped_by_round'])
 
-        sprobs.append(sprob_sim['analysis']['sprob_by_round'])
+        sprob_analysis = sprob_sim['analysis']
+        sprobs.append(sprob_analysis['sprob_by_round'])
+        sprob_stops.append(sprob_analysis['stopped_by_round'])
+
+        total_to_start = risk_analysis['remaining_by_round'][0]
 
         winner_prop = election.contests[contest].tally[election.contests[contest].reported_winners[0]] / sum(
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
 
+    """
     # Plot risks vs. margins
-    print(risks)
     for r in range (1,max_rounds+1):
-        risks_for_this_round = []
+        #risks_for_this_round = [] #conditional risks
+        absolute_risks_for_this_round = [] #absolute risks
         for s in range(len(risks)):
-            risks_for_this_round.append(risks[s][r-1])
+            #risks_for_this_round.append(risks[s][r-1]) #conditional risks
+            absolute_risk = risk_stops[s][r-1] / total_to_start
+            absolute_risks_for_this_round.append(absolute_risk)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(0,.12)
-        plt.plot(margins, risks_for_this_round, 'bo')
+        #plt.plot(margins, risks_for_this_round, 'bo') #conditional
+        plt.plot(margins, absolute_risks_for_this_round, 'bo')
         plt.xlabel('Reported Margin')
-        title = 'Round '+str(r)+' Experimental Risk (90% then 1.5x Minerva)'
+        title = 'Round '+str(r)+' Experimental Absolute Risk (90% then 1.5x Minerva)'
         plt.title(title)
         plt.ylabel('Experimental Risk')
         plt.grid()
         plt.show()
+    """
+
+    # Plot the total risk across all rounds
+    total_risks = []
+    for s in range(len(risks)):
+        total_risk = sum(risk_stops[s]) / total_to_start
+        total_risks.append(total_risk)
+    plt.plot(margins, total_risks, 'bo')
+    plt.xlabel('Reported Margin')
+    title = 'Experimental Total Risk (across 5 rounds) (90% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Experimental Risk')
+    plt.grid()
+    plt.show()
+
+    # Plot the total sprob across all rounds
+    total_sprobs = []
+    for s in range(len(sprobs)):
+        total_sprob = sum(sprob_stops[s]) / total_to_start
+        total_sprobs.append(total_sprob)
+    plt.plot(margins, total_sprobs, 'bo')
+    plt.xlabel('Reported Margin')
+    title = 'Experimental Total Stopping Probability (across 5 rounds) (90% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Experimental Stopping Probability')
+    plt.grid()
+    plt.show()
 
 
+    """
     # Plot sprobs vs. margins
     for r in range (1,max_rounds+1):
-        sprobs_for_this_round = []
+        sprobs_for_this_round = [] #conditional sprobs
+        absolute_sprobs_for_this_round = [] #absolute sprobs
         for s in range(len(sprobs)):
-            sprobs_for_this_round.append(sprobs[s][r-1])
+            #sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+            absolute_sprob = sprob_stops[s][r-1] / total_to_start
+            absolute_sprobs_for_this_round.append(absolute_sprob)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(margins, sprobs_for_this_round, 'bo')
+        #plt.plot(margins, sprobs_for_this_round, 'bo')
+        plt.plot(margins, absolute_sprobs_for_this_round, 'bo')
         plt.xlabel('Reported Margin')
-        title = 'Round '+str(r)+' Experimental Stopping Probability (90% then 1.5x Minerva)'
+        title = 'Round '+str(r)+' Experimental Absolute Stopping Probability (90% then 1.5x Minerva)'
         plt.title(title)
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
 
+    # Plot ratios vs. margins
+    for r in range (1,max_rounds+1):
+        ratios_for_this_round = []
+        for s in range(len(sprobs)):
+            ratio = risk_stops[s][r-1] / sprob_stops[s][r-1]
+            ratios_for_this_round.append(ratio)
+        # Uncomment the line below to fix the y-axis scale
+        #plt.ylim(0,.12)
+        plt.plot(margins, ratios_for_this_round, 'bo')
+        plt.xlabel('Reported Margin')
+        title = 'Round '+str(r)+' Experimental Minerva Ratio (90% then 1.5x Minerva)'
+        plt.title(title)
+        plt.ylabel('Experimental Minerva Ratio')
+        plt.grid()
+        plt.show()
     """
-    # Plot ratio vs. margin
-    #plt.plot(margins, ratios, 'bo')
-    plt.xlabel('Reported Margin')
-    plt.ylabel('Ratio Stop. Prob. to Risk (90% One-round Minerva, Alpha=10%)')
-    plt.grid()
-    plt.show()
 
-    # Histogram of sprobs
-    histogram(sprobs, 'Stopping Probabilities (90% One-round Minerva)', bins=20)
-
-
-    # Histogram of risks
-    histogram(risks, 'Experimental Risks', bins=20)
-
-    # Analysis
-    avg_risk = 'Average Risk: {:%}\n'.format(sum(risks) / len(risks))
-    avg_sprob = 'Average Stopping Prob: {:%}\n'.format(sum(sprobs) / len(sprobs))
-    print(avg_risk + avg_sprob)
-    """

@@ -1,5 +1,5 @@
 """
-Go through the risk simulations (multiround) that I did and redo the analysis
+Go through the sprob simulations (multiround) that I did and redo the analysis
 by computing the stopping probability by round as well as how many
 audits remained in each round.
 """
@@ -14,7 +14,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
     db = DBInterface(port=27020,user='sarah', pwd='haras')
-    risks = []
+    sprob_analyses = []
     margins = []
 
     max_rounds = 5
@@ -23,9 +23,9 @@ if __name__ == '__main__':
         print(contest)
         audit_id = db.audit_lookup('minerva', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
-        tied_sim = db.db.simulations.find_one({
+        sprob_sim = db.db.simulations.find_one({
             'reported': reported_id,
-            'underlying': 'tie',
+            'underlying': 'reported',
             'audit': audit_id,
             'description': 'Multi round Minerva (90% then 1.5x)',
             'invalid_ballots': True,
@@ -33,21 +33,11 @@ if __name__ == '__main__':
             'max_rounds': max_rounds
         })
 
-        if tied_sim is None:
+        if sprob_sim is None:
             # For several low margin states, we didn't run simulations
             continue
 
-        """
-        sprob_sim = db.db.simulations.find_one({
-            'reported': reported_id,
-            'underlying': 'reported',
-            'audit': audit_id,
-            'description': 'Multi round Minerva (90% then 1.5x)',
-            'invalid_ballots': True
-        })
-        """
-
-        risks.append(tied_sim['analysis'])
+        sprob_analyses.append(sprob_sim['analysis'])
 
         # new analysis code begins
 
@@ -55,7 +45,7 @@ if __name__ == '__main__':
         stopped = 0
         rounds_stopped = []
 
-        sim_id = tied_sim['_id']
+        sim_id = sprob_sim['_id']
         trials = db.trial_lookup(sim_id)
 
         # count up the stopping information from all the trials...
@@ -66,7 +56,7 @@ if __name__ == '__main__':
                 rounds_stopped.append(trial['round'])
 
         # Find stopping probability for each round
-        risk_by_round = [0]*max_rounds
+        sprob_by_round = [0]*max_rounds
         stopped_by_round = [0]*max_rounds
         remaining_by_round = [0]*(max_rounds+1)
         remaining_by_round[0] = num_trials #first round has all remaining
@@ -74,14 +64,14 @@ if __name__ == '__main__':
             stopped_this_round = rounds_stopped.count(r)
             stopped_by_round[r-1] = stopped_this_round
             if remaining_by_round[r-1] is not 0:
-                risk_by_round[r-1] = stopped_this_round / remaining_by_round[r-1]
+                sprob_by_round[r-1] =stopped_this_round/remaining_by_round[r-1]
             else:
-                risk_by_round[r-1] = -1
-            remaining_by_round[r] = remaining_by_round[r-1] - stopped_this_round
+                sprob_by_round[r-1] = -1
+            remaining_by_round[r] = remaining_by_round[r-1]-stopped_this_round
 
         analysis = { 
-            'risk': stopped / num_trials,
-            'risk_by_round': risk_by_round,
+            'sprob': stopped / num_trials,
+            'sprob_by_round': sprob_by_round,
             'remaining_by_round': remaining_by_round,
             'stopped_by_round': stopped_by_round
         }
