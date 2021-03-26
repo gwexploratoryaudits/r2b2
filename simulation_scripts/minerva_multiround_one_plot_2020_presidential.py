@@ -11,8 +11,9 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 if __name__ == '__main__':
     db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
+    risk_stops= []
     sprobs = []
-    #ratios = []
+    sprob_stops= []
     margins = []
 
     max_rounds = 5
@@ -40,14 +41,20 @@ if __name__ == '__main__':
             'invalid_ballots': True
         })
 
-        risks.append(tied_sim['analysis']['risk_by_round'])
 
+        risk_analysis = tied_sim['analysis']
+        risks.append(tied_sim['analysis']['risk_by_round'])
+        risk_stops.append(risk_analysis['stopped_by_round'])
+
+        sprob_analysis = sprob_sim['analysis']
         sprobs.append(sprob_sim['analysis']['sprob_by_round'])
+        sprob_stops.append(sprob_analysis['stopped_by_round'])
 
         winner_prop = election.contests[contest].tally[election.contests[contest].reported_winners[0]] / sum(
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
 
+    """
     # PLOT THE RISKS
     plt.ylim(0,.1)
     colors= ['b','r','g','c','m']
@@ -102,24 +109,33 @@ if __name__ == '__main__':
     plt.legend(loc='lower right')
     plt.show()
 
-
     """
-    # Plot ratio vs. margin
-    #plt.plot(margins, ratios, 'bo')
+
+    # PLOT THE RATIOS
+    # Plot ratios vs. margins
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    for r in range (max_rounds,0,-1):
+        ratios_for_this_round = []
+        for s in range(len(sprobs)):
+            ratio = risk_stops[s][r-1] / sprob_stops[s][r-1]
+            ratios_for_this_round.append(ratio)
+        ax.scatter(margins, 
+                   ratios_for_this_round, 
+                   s=len(margins),
+                   c=colors[r-1], 
+                   marker=markers[r-1], 
+                   label='Round'+str(r))
+    
+    title = '5 Rounds Experimental Minerva Ratio (90% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Experimental Minerva Ratio')
     plt.xlabel('Reported Margin')
-    plt.ylabel('Ratio Stop. Prob. to Risk (90% One-round Minerva, Alpha=10%)')
     plt.grid()
+    plt.legend(loc='lower right')
     plt.show()
 
-    # Histogram of sprobs
-    histogram(sprobs, 'Stopping Probabilities (90% One-round Minerva)', bins=20)
 
-
-    # Histogram of risks
-    histogram(risks, 'Experimental Risks', bins=20)
-
-    # Analysis
-    avg_risk = 'Average Risk: {:%}\n'.format(sum(risks) / len(risks))
-    avg_sprob = 'Average Stopping Prob: {:%}\n'.format(sum(sprobs) / len(sprobs))
-    print(avg_risk + avg_sprob)
-    """
