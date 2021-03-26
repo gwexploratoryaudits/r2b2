@@ -17,8 +17,8 @@ number of audits at the very beginning of the simulation: 10^6 in this case.)
 
 ### Ratio
 There are also plots of the Minerva ratio for each round which we claim is less
-than .1. Clearly in later rounds this doesn't happen; keep in mind that very
+than .1. Clearly in later rounds this doesn't happen; keep in mind that
 fewer audits make it into later rounds so these numbers are not as accurate.
-(In the first round, all are less than .1.)
+(Though in the first round, all are less than .1.)
 
 
