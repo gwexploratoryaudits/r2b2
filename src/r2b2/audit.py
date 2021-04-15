@@ -611,6 +611,9 @@ class Audit(ABC):
         self.pvalue_schedule = []
         for loser in self.sub_audits.keys():
             self.sub_audits[loser]._reset()
+        self.sample_ballots = {}
+        for candidate in self.contest.candidates:
+            self.sample_ballots[candidate] = []
         self.stopped = False
 
     @abstractmethod
