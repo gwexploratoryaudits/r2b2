@@ -253,6 +253,8 @@ class Audit(ABC):
                 self.sub_audits[pair].distribution_null = convolve(self.sub_audits[pair].distribution_null,
                                                                    distribution_round_draw,
                                                                    method='direct')
+                self.sub_audits[pair].distribution_null = [abs(p) for p in self.sub_audits[pair].distribution_null]
+ 
         else:
             half_contest_ballots = math.floor(sub_audit.sub_contest.contest_ballots / 2)
             if len(self.rounds) == 1:
@@ -337,6 +339,7 @@ class Audit(ABC):
                 self.sub_audits[pair].distribution_reported_tally = convolve(sub_audit.distribution_reported_tally,
                                                                              distribution_round_draw,
                                                                              method='direct')
+                self.sub_audits[pair].distribution_reported_tally = [abs(p) for p in self.sub_audits[pair].distribution_reported_tally]
         else:
             reported_winner_ballots = int(sub_audit.sub_contest.winner_prop * sub_audit.sub_contest.contest_ballots)
             if len(self.rounds) == 1:
