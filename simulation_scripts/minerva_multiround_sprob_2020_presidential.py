@@ -10,13 +10,13 @@ from pymongo import MongoClient
 election = parse_election('data/2020_presidential/2020_presidential.json')
 sample_size_file = 'data/2020_presidential/2020_presidential_sample_sizes.json'
 
-
 def state_trial(state, alpha, sample_size):
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='', password='')['r2b2']
     query = {'audit_type': 'minerva', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = election.contests[state]
+    print(contest_obj)
     query = {
         'contest_ballots': contest_obj.contest_ballots,
         'tally': contest_obj.tally,
@@ -45,9 +45,9 @@ def state_trial(state, alpha, sample_size):
     # Create simulation
     sim = MMRSP(alpha,
                election.contests[state],
-               sample_size,
-               sample_mult=1.5,
                max_rounds=5,
+               sample_size=sample_size,
+               sample_mult=1.5,
                sim_args={'description': 'Multi round Minerva (90% then 1.5x)'},
                user='',
                pwd='',
@@ -57,7 +57,7 @@ def state_trial(state, alpha, sample_size):
                })
   
     # Run simulation
-    trials_left = 5000 - num_trials
+    trials_left = 5040 - num_trials
     print('running',trials_left,'trials for',state)
     sim.run(trials_left)
     return sim.analyze()

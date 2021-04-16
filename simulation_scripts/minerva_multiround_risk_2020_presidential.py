@@ -36,15 +36,18 @@ def state_trial(state, alpha, sample_size):
         'max_rounds': 5
     }
     sim = db.simulations.find_one(query)
-    query = {'simulation' : sim['_id']}
-    num_trials = db.trials.count_documents(query)
+    if sim is not None:
+        query = {'simulation' : sim['_id']}
+        num_trials = db.trials.count_documents(query)
+    else:
+        num_trials = 0
 
     # Create simulation
     sim = MMRR(alpha,
                election.contests[state],
-               sample_size,
-               sample_mult=1.5,
                max_rounds=5,
+               sample_size=sample_size,
+               sample_mult=1.5,
                sim_args={'description': 'Multi round Minerva (90% then 1.5x)'},
                user='',
                pwd='',
@@ -54,7 +57,7 @@ def state_trial(state, alpha, sample_size):
                })
   
     # Run simulation
-    trials_left = 100000 - num_trials
+    trials_left = 200 - num_trials
     print('running',trials_left,'trials for',state)
     sim.run(trials_left)
     return sim.analyze()
