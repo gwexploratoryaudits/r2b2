@@ -96,6 +96,15 @@ class Minerva(Audit):
         sum_denom_prev = sum_denom + denom_dist[mid - 1]
         satisfies_risk_prev = self.alpha * (sum_num_prev) > (sum_denom_prev)
 
+        #print("num_dist",num_dist)
+        #print("denom_dist",denom_dist)
+        print("sum_num",str(sum_num))
+        print("sum_denom",str(sum_denom))
+        print("sum_num_prev",str(sum_num_prev))
+        print("sum_denom_prev",str(sum_denom_prev))
+        print("whole sum num",str(sum(num_dist)))
+        print("whole sum denom",str(sum(denom_dist)))
+
         if satisfies_risk and not satisfies_risk_prev:
             return mid
         elif satisfies_risk and satisfies_risk_prev:
@@ -124,6 +133,8 @@ class Minerva(Audit):
         if len(self.rounds) > 0:
             num_dist = convolve(sub_audit.distribution_reported_tally, num_dist_round_draw, method='fft')
             denom_dist = convolve(sub_audit.distribution_null, denom_dist_round_draw, method='fft')
+            num_dist = [abs(p) for p in num_dist]
+            denom_dist = [abs(p) for p in denom_dist]
         else:
             num_dist = num_dist_round_draw
             denom_dist = denom_dist_round_draw
