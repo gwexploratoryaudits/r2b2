@@ -468,7 +468,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
                     'p_value_sched': self.audit.pvalue_schedule,
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
-                    'winner_ballots_drawn_sched': self.audit.sample_winner_ballots
+                    'winner_ballots_drawn_sched': self.audit.sample_ballots
                     #'kmin_sched': self.audit.min_winner_ballots
                 }
 
@@ -489,7 +489,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
             'p_value_sched': self.audit.pvalue_schedule,
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
-            'winner_ballots_drawn_sched': self.audit.sample_winner_ballots
+            'winner_ballots_drawn_sched': self.audit.sample_ballots
             #'kmin_sched': self.audit.min_winner_ballots
         }
 
@@ -614,7 +614,7 @@ class MinervaMultiRoundRisk(Simulation):
             min_sample_size = 0
             for pairwise_audit in self.audit.sub_audits.values():
                 min_sample_size = max(pairwise_audit.min_sample_size, min_sample_size)
-            if sample_size < self.audit.min_sample_size:
+            if sample_size < min_sample_size:
                 raise ValueError('Sample size is less than minimum sample size for audit.')
         if max_rounds < 2:
             raise ValueError('Maximum rounds is too small.')
