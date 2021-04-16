@@ -112,7 +112,10 @@ class Minerva(Audit):
 
         # The number of ballots that will be drawn this round.
         if len(self.rounds) > 0:
-            round_draw = n - self.rounds[-1]
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            round_draw = n - previous_round
         else:
             round_draw = n
 
