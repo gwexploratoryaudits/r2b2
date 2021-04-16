@@ -79,7 +79,6 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Risk')
         plt.grid()
         plt.show()
-    """
 
     # Plot the total risk across all rounds
     total_risks = []
@@ -128,6 +127,7 @@ if __name__ == '__main__':
         plt.grid()
         plt.show()
 
+    """
     # Plot ratios vs. margins
     for r in range (1,max_rounds+1):
         ratios_for_this_round = []
