@@ -1,6 +1,7 @@
 """
 Script to run simulations of a Minerva audit over a maximum of 5 rounds,
 where each round size is estimated to achieve a 90% probability of stopping.
+Underlying distribution is as reported.
 """
 
 import json
