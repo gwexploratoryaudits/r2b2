@@ -638,9 +638,7 @@ class MinervaMultiRoundRisk(Simulation):
         # Initialize first round including initial sample size
         round_num = 1
         previous_sample_size = 0
-        if self.sample_sprob is not None:
-            current_sample_size = self.audit.next_sample_size(self.sample_sprob)
-        else:
+        if self.sample_sprob is None:
             current_sample_size = self.sample_size
             next_sample = math.ceil(self.sample_mult * self.sample_size)
         stop = False
@@ -648,6 +646,8 @@ class MinervaMultiRoundRisk(Simulation):
         # For each round
         sample = [0 for i in range(len(self.vote_dist))]
         while round_num <= self.max_rounds:
+            if self.sample_sprob is not None:
+                current_sample_size = self.audit.next_sample_size(self.sample_sprob)
             # Draw a sample of a given size
             for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(1, self.contest_ballots)
@@ -684,9 +684,7 @@ class MinervaMultiRoundRisk(Simulation):
             # Else choose a next round size and continue
             round_num += 1
             previous_sample_size = current_sample_size
-            if self.sample_sprob is not None:
-                current_sample_size = self.audit.next_sample_size(self.sample_sprob)
-            else:
+            if self.sample_sprob is None:
                 current_sample_size += next_sample
                 next_sample = math.ceil(self.sample_mult * self.sample_size)
 
