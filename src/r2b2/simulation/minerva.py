@@ -379,8 +379,9 @@ class MinervaMultiRoundStoppingProb(Simulation):
         if 'sim_args' in kwargs:
             kwargs['sim_args']['max_rounds'] = max_rounds
             kwargs['sim_args']['sample_mult'] = sample_mult
+            kwargs['sim_args']['sample_sprob'] = sample_sprob
         else:
-            kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult}
+            kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob}
         super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_sprob = sample_sprob
         self.sample_size = sample_size
@@ -591,8 +592,9 @@ class MinervaMultiRoundRisk(Simulation):
         if 'sim_args' in kwargs:
             kwargs['sim_args']['max_rounds'] = max_rounds
             kwargs['sim_args']['sample_mult'] = sample_mult
+            kwargs['sim_args']['sample_sprob'] = sample_sprob
         else:
-            kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult}
+            kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob}
         super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.sample_mult = sample_mult
@@ -677,7 +679,7 @@ class MinervaMultiRoundRisk(Simulation):
                     'p_value_sched': self.audit.pvalue_schedule,
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
-                    'winner_ballots_drawn_sched': self.audit.sample_winner_ballots,
+                    'winner_ballots_drawn_sched': self.audit.sample_ballots,
                     #'kmin_sched': self.audit.min_winner_ballots
                 }
 
@@ -696,7 +698,7 @@ class MinervaMultiRoundRisk(Simulation):
             'p_value_sched': self.audit.pvalue_schedule,
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
-            'winner_ballots_drawn_sched': self.audit.sample_winner_ballots,
+            'winner_ballots_drawn_sched': self.audit.sample_ballots,
             #'kmin_sched': self.audit.min_winner_ballots
         }
 
