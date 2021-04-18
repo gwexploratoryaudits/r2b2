@@ -60,7 +60,7 @@ def state_trial(state, alpha):
                })
   
     # Run simulation
-    trials_left = 100 - num_trials
+    trials_left = 1000 - num_trials
     print('running',trials_left,'trials for',state)
     sim.run(trials_left)
     return sim.analyze()
