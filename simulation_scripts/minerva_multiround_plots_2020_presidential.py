@@ -61,7 +61,7 @@ if __name__ == '__main__':
         margins.append(winner_prop - (1.0 - winner_prop))
 
     """
-    # Plot risks vs. margins
+    # Plot absolute risks vs. margins
     for r in range (1,max_rounds+1):
         #risks_for_this_round = [] #conditional risks
         absolute_risks_for_this_round = [] #absolute risks
@@ -107,8 +107,7 @@ if __name__ == '__main__':
     plt.show()
 
 
-    """
-    # Plot sprobs vs. margins
+    # Plot absolute sprobs vs. margins
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = [] #conditional sprobs
         absolute_sprobs_for_this_round = [] #absolute sprobs
@@ -126,6 +125,22 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
+    """
+    # Plot conditional sprobs vs. margins (sprob given that the audit reached the current round)
+    for r in range (1,max_rounds+1):
+        sprobs_for_this_round = [] #conditional sprobs
+        for s in range(len(sprobs)):
+            sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+        # Uncomment the line below to fix the y-axis scale
+        plt.ylim(.65,1)
+        plt.plot(margins, sprobs_for_this_round, 'bo')
+        plt.xlabel('Reported Margin')
+        title = 'Round '+str(r)+' Conditional Stopping Probability (90% then 1.5x Minerva)'
+        plt.title(title)
+        plt.ylabel('Experimental Stopping Probability')
+        plt.grid()
+        plt.show()
+
 
     """
     # Plot ratios vs. margins
@@ -143,5 +158,5 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Minerva Ratio')
         plt.grid()
         plt.show()
-    """
 
+    """
