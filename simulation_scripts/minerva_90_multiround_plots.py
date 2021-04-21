@@ -106,12 +106,11 @@ if __name__ == '__main__':
     plt.show()
 
 
-    # Plot sprobs vs. margins
+    # Plot absolute sprobs vs. margins
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = [] #conditional sprobs
         absolute_sprobs_for_this_round = [] #absolute sprobs
         for s in range(len(sprobs)):
-            #sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
             absolute_sprob = sprob_stops[s][r-1] / total_to_start
             absolute_sprobs_for_this_round.append(absolute_sprob)
         # Uncomment the line below to fix the y-axis scale
@@ -124,6 +123,23 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
+
+    # Plot conditionall sprobs vs. margins
+    for r in range (1,max_rounds+1):
+        sprobs_for_this_round = [] #conditional sprobs
+        absolute_sprobs_for_this_round = [] #absolute sprobs
+        for s in range(len(sprobs)):
+            sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+        # Uncomment the line below to fix the y-axis scale
+        #plt.ylim(.65,1)
+        plt.plot(margins, sprobs_for_this_round, 'bo')
+        plt.xlabel('Reported Margin')
+        title = 'Round '+str(r)+' Conditional Stopping Probability (90% Minerva)'
+        plt.title(title)
+        plt.ylabel('Experimental Conditional Stopping Probability')
+        plt.grid()
+        plt.show()
+
 
     # Plot ratios vs. margins
     for r in range (1,max_rounds+1):
