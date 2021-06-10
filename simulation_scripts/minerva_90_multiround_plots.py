@@ -1,4 +1,4 @@
-"""Generates plots, histograms for the 1-round Minerva risk, stopping probability sims."""
+"""Generates plots for the 90% sprob multiround Minerva risk, stopping probability sims."""
 
 import matplotlib.pyplot as plt
 
@@ -9,7 +9,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27017,user='reader', pwd='icanread')
+    db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks = []
     risk_stops = []
     sprobs = []
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     ratios = []
     margins = []
 
-    total_to_start = 100000
+    total_to_start = 10000
 
     max_rounds = 5
 
@@ -124,15 +124,18 @@ if __name__ == '__main__':
         plt.grid()
         plt.show()
 
-    # Plot conditionall sprobs vs. margins
+    # Plot conditional sprobs vs. margins
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = [] #conditional sprobs
         absolute_sprobs_for_this_round = [] #absolute sprobs
+        plot_margins = []
         for s in range(len(sprobs)):
-            sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+            if sprobs[s][r-1] != -1: # aka as long as we have a meaningful sprob
+                sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+                plot_margins.append(margins[s])
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(margins, sprobs_for_this_round, 'bo')
+        plt.plot(plot_margins, sprobs_for_this_round, 'bo')
         plt.xlabel('Reported Margin')
         title = 'Round '+str(r)+' Conditional Stopping Probability (90% Minerva)'
         plt.title(title)
@@ -140,16 +143,19 @@ if __name__ == '__main__':
         plt.grid()
         plt.show()
 
-
     # Plot ratios vs. margins
     for r in range (1,max_rounds+1):
         ratios_for_this_round = []
+        plot_margins = []
         for s in range(len(sprobs)):
-            ratio = risk_stops[s][r-1] / sprob_stops[s][r-1]
-            ratios_for_this_round.append(ratio)
+            if sprob_stops[s][r-1] != 0:
+                ratio = risk_stops[s][r-1] / sprob_stops[s][r-1]
+                ratios_for_this_round.append(ratio)
+                plot_margins.append(margins[s])
+                
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(0,.12)
-        plt.plot(margins, ratios_for_this_round, 'bo')
+        plt.plot(plot_margins, ratios_for_this_round, 'bo')
         plt.xlabel('Reported Margin')
         title = 'Round '+str(r)+' Experimental Minerva Ratio (90% Minerva)'
         plt.title(title)
