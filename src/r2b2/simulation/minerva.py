@@ -540,7 +540,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
             stopped_this_round = rounds_stopped.count(r)
             stopped_by_round[r-1] = stopped_this_round
             if remaining_by_round[r-1] is not 0:
-                sprob_by_round[r-1] =stopped_this_round/remaining_by_round[r-1]
+                sprob_by_round[r-1] = stopped_this_round/remaining_by_round[r-1]
             else:
                 sprob_by_round[r-1] = -1
             remaining_by_round[r] = remaining_by_round[r-1]-stopped_this_round
