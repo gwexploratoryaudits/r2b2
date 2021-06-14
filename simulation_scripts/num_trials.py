@@ -30,7 +30,7 @@ for contest in election.contests.keys():
         'reported_winners': contest_obj.reported_winners
     }
     contest_id = db.contests.find_one(query)['_id']
-    query = {'reported': contest_id, 'underlying': 'tie', 'audit': audit_id, 'invalid_ballots': True, 'description' : 'Multi round Minerva (90% then 1.5x)'}
+    query = {'reported': contest_id, 'underlying': 'tie', 'audit': audit_id, 'invalid_ballots': True, 'description' : 'Multiround Minerva (90%)'}
     sim = db.simulations.find_one(query)
     query = {'simulation' : sim['_id']}
     num_trials = db.trials.count_documents(query)
