@@ -1,4 +1,8 @@
-"""Finds the equivalent to ASN for Minerva."""
+"""
+Finds the equivalent to ASN for Minerva using the 90% sprob round size
+simulations in the Nimbus simulation database. (1 million trials each
+2020 presidential state)
+"""
 
 import matplotlib.pyplot as plt
 
@@ -58,3 +62,32 @@ if __name__ == '__main__':
     plt.ylabel('Experimental ASN')
     plt.grid()
     plt.show()
+
+"""
+import re
+import json
+
+asnfile = open('asn.txt')
+asnlines = asnfile.readlines()
+
+data = {}
+data['margins'] = []
+data['minerva_asns'] = []
+
+for line in asnlines:
+    if "didn't" in line:
+        continue
+    margin = float(line[8:line.index("asn")-1])
+    asn = float(line[line.index("asn") + 5:])
+
+    data['margins'].append(margin)
+    data['minerva_asns'].append(asn)
+
+    #print(margin)
+    #print(asn)
+
+with open('asn.json', 'w') as outfile:
+    json.dump(data, outfile)
+
+"""
+
