@@ -254,7 +254,7 @@ class Audit(ABC):
                                                                    distribution_round_draw,
                                                                    method='direct')
                 self.sub_audits[pair].distribution_null = [abs(p) for p in self.sub_audits[pair].distribution_null]
- 
+
         else:
             half_contest_ballots = math.floor(sub_audit.sub_contest.contest_ballots / 2)
             if len(self.rounds) == 1:
