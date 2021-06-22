@@ -346,9 +346,9 @@ class MinervaOneRoundAlteredMargin(Simulation):
 class MinervaMultiRoundStoppingProb(Simulation):
     """Simulate a multi-round Minerva audit.
 
-    If sample_sprob is provided, sample sizes to achieve a sample_sprob 
+    If sample_sprob is provided, sample sizes to achieve a sample_sprob
     probability of stopping will be computed and used. Otherwise,
-    the initial sample size, sample_size, is given as input and further sample 
+    the initial sample size, sample_size, is given as input and further sample
     sizes are an additional (sample_mult) * (sample_size)  ballots.
     The audit executes until it stops or reaches the maximum number of rounds.
     """
@@ -364,7 +364,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
                  alpha,
                  reported,
                  max_rounds,
-                 sample_size=None, 
+                 sample_size=None,
                  sample_mult=None,
                  sample_sprob=None,
                  db_mode=True,
@@ -390,8 +390,8 @@ class MinervaMultiRoundStoppingProb(Simulation):
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
-        #self.reported.contest_ballots = self.total_relevant_ballots
-        #self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
+        # self.reported.contest_ballots = self.total_relevant_ballots
+        # self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
         self.audit = Minerva(self.alpha, 1.0, self.reported)
 
         if sample_sprob is None and sample_size is None and sample_mult is None:
@@ -417,7 +417,6 @@ class MinervaMultiRoundStoppingProb(Simulation):
             current += sorted_tally[i][1]
             self.vote_dist.append((sorted_tally[i][0], current))
         self.vote_dist.append(('invalid', self.contest_ballots))
-
 
     def trial(self, seed):
         """Execute a multiround minerva audit (using r2b2.minerva.Minerva)"""
@@ -458,8 +457,6 @@ class MinervaMultiRoundStoppingProb(Simulation):
                 if not self.vote_dist[i][0] == 'invalid':
                     sample_dict[self.vote_dist[i][0]] = sample[i]
 
-            relevant_sample_size = current_sample_size - sample[-1]
-
             # Execute a round of the audit for this sample
             stop = self.audit.execute_round(current_sample_size, sample_dict)
 
@@ -473,7 +470,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
                     'winner_ballots_drawn_sched': self.audit.sample_ballots
-                    #'kmin_sched': self.audit.min_winner_ballots
+                    # 'kmin_sched': self.audit.min_winner_ballots
                 }
 
             # Else choose a next round size and continue
@@ -494,7 +491,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
             'winner_ballots_drawn_sched': self.audit.sample_ballots
-            #'kmin_sched': self.audit.min_winner_ballots
+            # 'kmin_sched': self.audit.min_winner_ballots
         }
 
     def analyze(self, verbose: bool = False, hist: bool = False):
@@ -513,7 +510,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
         stopped = 0
         rounds_stopped = []
         # TODO: Create additinal structures to store trial data
-        
+
         for trial in trials:
             num_trials += 1
             if trial['stop']:
@@ -535,17 +532,19 @@ class MinervaMultiRoundStoppingProb(Simulation):
         sprob_by_round = [0]*self.max_rounds
         stopped_by_round = [0]*self.max_rounds
         remaining_by_round = [0]*(self.max_rounds+1)
-        remaining_by_round[0] = num_trials #first round has all remaining
-        for r in range(1,self.max_rounds+1):
-            stopped_this_round = rounds_stopped.count(r)
-            stopped_by_round[r-1] = stopped_this_round
-            if remaining_by_round[r-1] is not 0:
-                sprob_by_round[r-1] = stopped_this_round/remaining_by_round[r-1]
-            else:
-                sprob_by_round[r-1] = -1
-            remaining_by_round[r] = remaining_by_round[r-1]-stopped_this_round
+        # first round has all remaining
+        remaining_by_round[0] = num_trials
 
-        analysis = { 
+        for rd in range(1, self.max_rounds+1):
+            stopped_this_round = rounds_stopped.count(r)
+            stopped_by_round[rd-1] = stopped_this_round
+            if remaining_by_round[rd-1] != 0:
+                sprob_by_round[rd-1] = stopped_this_round/remaining_by_round[rd-1]
+            else:
+                sprob_by_round[rd-1] = -1
+            remaining_by_round[rd] = remaining_by_round[rd-1]-stopped_this_round
+
+        analysis = {
             'sprob': stopped / num_trials,
             'sprob_by_round': sprob_by_round,
             'remaining_by_round': remaining_by_round,
@@ -606,11 +605,11 @@ class MinervaMultiRoundRisk(Simulation):
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
-        #self.reported.contest_ballots = self.total_relevant_ballots
-        #self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
+        # self.reported.contest_ballots = self.total_relevant_ballots
+        # self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
         self.audit = Minerva(self.alpha, 1.0, self.reported)
 
-        if sample_sprob is None and sample_size is None and sample_mult is None: 
+        if sample_sprob is None and sample_size is None and sample_mult is None:
             raise ValueError('Sample sizes cannot be chosen without sample_sprob or sample_size and sample_mult.')
         if sample_sprob is not None:
             if not sample_sprob > 0 or not sample_sprob < 1:
@@ -668,8 +667,6 @@ class MinervaMultiRoundRisk(Simulation):
                 if not self.vote_dist[i][0] == 'invalid':
                     sample_dict[self.vote_dist[i][0]] = sample[i]
 
-            relevant_sample_size = current_sample_size - sample[-1]
-
             # Execute a round of the audit for this sample
             stop = self.audit.execute_round(current_sample_size, sample_dict)
 
@@ -683,7 +680,7 @@ class MinervaMultiRoundRisk(Simulation):
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
                     'winner_ballots_drawn_sched': self.audit.sample_ballots,
-                    #'kmin_sched': self.audit.min_winner_ballots
+                    # 'kmin_sched': self.audit.min_winner_ballots
                 }
 
             # Else choose a next round size and continue
@@ -702,7 +699,7 @@ class MinervaMultiRoundRisk(Simulation):
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
             'winner_ballots_drawn_sched': self.audit.sample_ballots,
-            #'kmin_sched': self.audit.min_winner_ballots
+            # 'kmin_sched': self.audit.min_winner_ballots
         }
 
     def analyze(self, verbose: bool = False, hist: bool = False):
@@ -743,17 +740,19 @@ class MinervaMultiRoundRisk(Simulation):
         risk_by_round = [0]*self.max_rounds
         stopped_by_round = [0]*self.max_rounds
         remaining_by_round = [0]*(self.max_rounds+1)
-        remaining_by_round[0] = num_trials #first round has all remaining
-        for r in range(1,self.max_rounds+1):
-            stopped_this_round = rounds_stopped.count(r)
-            stopped_by_round[r-1] = stopped_this_round
-            if remaining_by_round[r-1] is not 0:
-                risk_by_round[r-1] =stopped_this_round/remaining_by_round[r-1]
-            else:
-                risk_by_round[r-1] = -1
-            remaining_by_round[r] = remaining_by_round[r-1]-stopped_this_round
+        # first round has all remaining
+        remaining_by_round[0] = num_trials
 
-        analysis = { 
+        for rd in range(1, self.max_rounds + 1):
+            stopped_this_round = rounds_stopped.count(rd)
+            stopped_by_round[rd-1] = stopped_this_round
+            if remaining_by_round[rd-1] != 0:
+                risk_by_round[rd-1] = stopped_this_round/remaining_by_round[rd-1]
+            else:
+                risk_by_round[rd-1] = -1
+            remaining_by_round[rd] = remaining_by_round[rd-1]-stopped_this_round
+
+        analysis = {
             'risk': stopped / num_trials,
             'risk_by_round': risk_by_round,
             'remaining_by_round': remaining_by_round,
@@ -871,7 +870,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
                     'winner_ballots_drawn_sched': self.audit.sample_winner_ballots,
-                    #'kmin_sched': self.audit.min_winner_ballots
+                    # 'kmin_sched': self.audit.min_winner_ballots
                 }
 
             # Else choose a next round size and continue
@@ -890,7 +889,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
             'winner_ballots_drawn_sched': self.audit.sample_winner_ballots,
-            #'kmin_sched': self.audit.min_winner_ballots
+            # 'kmin_sched': self.audit.min_winner_ballots
         }
 
     def analyze(self, verbose: bool = False, hist: bool = False):
