@@ -402,49 +402,6 @@ class Minerva2(Audit):
             self.sub_audits[pair].min_winner_ballots.append(None)
         return None
 
-    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
-        """Compute the minimum number of winner ballots for the complete (that is, ballot-by-ballot)
-        round schedule.
-
-        Args:
-            sub_audit (PairwiseAudit): Compute minimum winner ballots for this pairwise subaudit.
-            max_sample_size (int): Optionally set the maximum sample size to generate stopping sizes
-                (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
-                and the total contest ballots.
-
-        Returns:
-            None, kmins are appended to the min_winner_ballots list.
-        """
-        if len(self.rounds) > 0:
-            raise Exception("This audit already has an (at least partial) round schedule.")
-        if max_sample_size is None:
-            max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
-        if max_sample_size > sub_audit.sub_contest.contest_ballots:
-            max_sample_size = sub_audit.sub_contest.contest_ballots
-        if max_sample_size < sub_audit.min_sample_size:
-            raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
-
-        pair = sub_audit.get_pair_str()
-        for sample_size in range(sub_audit.min_sample_size, max_sample_size + 1):
-            self.rounds.append(sample_size)
-            # First kmin computed directly.
-            if sample_size == sub_audit.min_sample_size:
-                self._current_dist_null_pairwise(sub_audit, True)
-                self._current_dist_reported_pairwise(sub_audit, True)
-                current_kmin = self.find_kmin(sub_audit, sample_size, True)
-            else:
-                self._current_dist_null_pairwise(sub_audit, True)
-                self._current_dist_reported_pairwise(sub_audit, True)
-                tail_null = sum(sub_audit.distribution_null[current_kmin:])
-                tail_reported = sum(sub_audit.distribution_reported_tally[current_kmin:])
-                if self.alpha * tail_reported > tail_null:
-                    sub_audit.min_winner_ballots.append(current_kmin)
-                else:
-                    current_kmin += 1
-                    sub_audit.min_winner_ballots.append(current_kmin)
-            self._truncate_dist_null_pairwise(pair)
-            self._truncate_dist_reported_pairwise(pair)
-
     def compute_risk(self, votes_for_winner: int, pair: str, *args, **kwargs):
         """Return the hypothetical pvalue if votes_for_winner were obtained in the most recent
         round."""
