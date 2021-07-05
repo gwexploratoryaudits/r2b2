@@ -153,12 +153,13 @@ class Minerva2(Audit):
 
         # The number of ballots that will be drawn this round.
         # and the previous (most recent) cumulative tally of winner ballots.
-        if len(self.rounds) > 0:
+        if len(self.rounds) == 0:
             k_prev = 0
-            round_draw = n - self.rounds[-1]
-        else:
-            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
             round_draw = n
+        else:
+            pair = sub_audit.get_pair_str()
+            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+            round_draw = n - self.rounds[-1]
 
         num_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p1)
         denom_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p0)
@@ -348,10 +349,10 @@ class Minerva2(Audit):
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] 
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
+            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2] \
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
             k_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
 
@@ -423,42 +424,6 @@ class Minerva2(Audit):
                 not always be desirable here because, for example, appending happens automatically
                 outside this method during an interactive audit.
         """
-        # Craft null_dist and alt_dist
-        if len(self.rounds) == 1:
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-            k_cur = votes_for_winner
-
-            # Compute all parts of the stopping condition
-            sigma_num = 1
-            sigma_denom = 1
-            tau_num = sum(binom.pmf(range(), k_cur, p_1)[k_cur:])
-            tau_denom = sum(binom.pmf(range(), k_cur, p_0)[k_cur:])
-            tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
-
-        else :
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] 
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
-            k_cur = votes_for_winner
-            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-
-            # Compute all parts of the stopping condition
-            sigma_num = binom.pmf(n_prev, k_prev, p_1)
-            sigma_denom = binom.pmf(n_prev, k_prev, p_0)
-            tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_0))
-
-        dist_null = 
-        dist_reported = 
-
         for possible_kmin in range(sample_size // 2 + 1, len(sub_audit.distribution_null)):
             tail_null = sum(sub_audit.distribution_null[possible_kmin:])
             tail_reported = sum(sub_audit.distribution_reported_tally[possible_kmin:])
@@ -499,9 +464,9 @@ class Minerva2(Audit):
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] 
+            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
                     + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
+            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2] \
                     + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
             k_cur = votes_for_winner
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
@@ -585,7 +550,7 @@ class Minerva2(Audit):
             self.sub_audits[pair].distribution_null = distribution_round_draw
         else:
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
-            self.sub_audits[pair].distribution_null
+            self.sub_audits[pair].distribution_null \
                     = sub_audit.distribution_null[k_prev] * distribution_round_draw
 
     def current_dist_reported(self):
@@ -645,5 +610,14 @@ class Minerva2(Audit):
             self.sub_audits[pair].distribution_reported_tally = distribution_round_draw
         else:
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
-            self.sub_audits[pair].distribution_reported_tally 
+            self.sub_audits[pair].distribution_reported_tally \
                     = sub_audit.distribution_reported_tally[k_prev] * distribution_round_draw
+
+    def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
+        """
+        In Minerva 2.0, the value of kmin for a round j > 1 is dependent
+        on the preceding round's realized value of k. Thus we cannot
+        forecast kmin values like this function is intended to do.
+        """
+
+ 
