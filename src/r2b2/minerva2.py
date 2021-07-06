@@ -588,5 +588,4 @@ class Minerva2(Audit):
         on the preceding round's realized value of k. Thus we cannot
         forecast kmin values like this function is intended to do.
         """
-
- 
+        raise Exception('In Minerva 2.0, a kmin cannot be forecasted for future rounds until their preceding round is complete')
