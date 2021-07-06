@@ -1,3 +1,5 @@
+import pytest
+
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.minerva2 import Minerva2
@@ -83,21 +85,38 @@ def test_minerva2_second_round_estimate():
         and s1 <= 306 + bound_on_binary_search_error
     assert s2 >= 111257 \
         and s2 <= 111257 + bound_on_binary_search_error
-    # NOTE the error here is small enough that it is (in initial development)
-    #     being noted and ignored temporarily
-    # TODO understand and address as appropriate this error
 
 
-# TODO implement: def test_execute_round_minerva():
-# NOTE need to first implement execute_round for Minerva2
+def test_exceptions():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva2(.1, .1, contest)
+    with pytest.raises(ValueError):
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 0)
+    with pytest.raises(ValueError):
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 10001)
 
-"""
-# during development, manually run tests here
-test_minerva2_kmins()
-test_simple_minerva2()
-test_min_sample_size()
-test_kmin_upper_bound()
-test_minerva2_first_round_estimate()
-test_minerva2_second_round_estimate()
-print("All tests passed.")
-"""
+    minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 20)
+    with pytest.raises(ValueError):
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 20)
+    with pytest.raises(ValueError):
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 19)
+    with pytest.raises(ValueError):
+        minerva.compute_min_winner_ballots(minerva.sub_audits['A-B'], 10001)
+
+    contest2 = Contest(100, {'A': 60, 'B': 30}, 1, ['A'], ContestType.MAJORITY)
+    minerva2 = Minerva2(.1, 1.0, contest2)
+    with pytest.raises(ValueError):
+        minerva2.compute_min_winner_ballots(minerva2.sub_audits['A-B'], 91)
+    minerva2.rounds = 10
+    with pytest.raises(Exception):
+        minerva2.compute_all_min_winner_ballots(minerva2.sub_audits['A-B'])
+    minerva2.rounds = []
+    with pytest.raises(Exception):
+        minerva.compute_all_min_winner_ballots(minerva2.sub_audits['A-B'], [200])
+
+    minerva = Minerva2(.1, .1, contest)
+    with pytest.raises(Exception):
+        minerva.stopping_condition_pairwise('A-B')
+    minerva.rounds.append(10)
+    with pytest.raises(ValueError):
+        minerva.stopping_condition_pairwise('x')
