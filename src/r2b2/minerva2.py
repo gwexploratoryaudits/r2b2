@@ -1,11 +1,9 @@
 """Minerva 2.0 audit module."""
 import math
 import numpy as np
-from typing import List
 
 import click
 from scipy.stats import binom
-from scipy.stats import norm
 
 from r2b2.audit import Audit
 from r2b2.audit import PairwiseAudit
@@ -59,7 +57,7 @@ class Minerva2(Audit):
 
         satisfies_risk = self.alpha * sum_num > sum_denom and sum_denom > 0
         satisfies_sprob = sum_num > sprob
- 
+
         if satisfies_risk and satisfies_sprob:
             return True
         elif satisfies_risk and not satisfies_sprob:
@@ -120,8 +118,8 @@ class Minerva2(Audit):
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
             round_draw = n - self.rounds[-1]
 
-        num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev,0), 'constant', constant_values=(0,0))
-        denom_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p0), (k_prev,0), 'constant', constant_values=(0,0))
+        num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev, 0), 'constant', constant_values=(0, 0))
+        denom_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p0), (k_prev, 0), 'constant', constant_values=(0, 0))
         if len(self.rounds) > 0:
             num_dist = sub_audit.distribution_reported_tally[k_prev] * num_dist_round_draw
             denom_dist = sub_audit.distribution_null[k_prev] * denom_dist_round_draw
@@ -306,7 +304,7 @@ class Minerva2(Audit):
             tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
             tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
 
-        else :
+        else:
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
@@ -329,7 +327,7 @@ class Minerva2(Audit):
 
         self.sub_audits[pair].stopped = self.alpha * sigma_num * tau_num > sigma_denom * tau_denom
         return self.sub_audits[pair].stopped
-    
+
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute stopping size for a given subaudit.
 
@@ -366,7 +364,6 @@ class Minerva2(Audit):
         previous_sample = 0
         if len(self.rounds) > 0:
             previous_sample = self.rounds[-1]
-        pair = sub_audit.get_pair_str()
         self.rounds.append(round_size)
         # Update current distributions for pairwise subaudit
         self._current_dist_null_pairwise(sub_audit, True)
@@ -421,14 +418,14 @@ class Minerva2(Audit):
             tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
             tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
 
-        else :
+        else:
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
             n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
             n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2] \
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
             k_cur = votes_for_winner
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
 
@@ -438,19 +435,19 @@ class Minerva2(Audit):
             tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_1))
             tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_0))
 
-
         if tau_num == 0 or sigma_num == 0:
             return 0
 
-        pval = sigma_denom / sigma_num * tau_denom / tau_num # reciprocal of omega
+        # Compute the reciprocal of omega
+        pval = sigma_denom / sigma_num * tau_denom / tau_num
 
         return pval
 
     def get_risk_level(self):
         """Return the risk level of an interactive Minerva audit.
 
-        Non-interactive and bulk Minerva audits are not considered here since the sampled number of
-        reported winner ballots is not available.
+            Non-interactive and bulk Minerva audits are not considered here since the sampled number of
+            reported winner ballots is not available.
         """
 
         if len(self.pvalue_schedule) < 1:
@@ -511,14 +508,15 @@ class Minerva2(Audit):
         k_prev = 0
         if len(self.rounds) > 1:
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
-        distribution_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev,0), 'constant', constant_values=(0,0))
+        distribution_round_draw \
+            = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev, 0), 'constant', constant_values=(0, 0))
 
         if len(self.rounds) == 1:
             self.sub_audits[pair].distribution_null = distribution_round_draw
         else:
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
             self.sub_audits[pair].distribution_null \
-                    = sub_audit.distribution_null[k_prev] * distribution_round_draw
+                = sub_audit.distribution_null[k_prev] * distribution_round_draw
 
     def current_dist_reported(self):
         """Update distribution_reported_tally for each subaudit for current round."""
@@ -575,7 +573,9 @@ class Minerva2(Audit):
         k_prev = 0
         if len(self.rounds) > 1:
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
-        distribution_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, sub_audit.sub_contest.winner_prop), (k_prev,0), 'constant', constant_values=(0,0))
+        p = sub_audit.sub_contest.winner_prop
+        distribution_round_draw \
+            = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p), (k_prev, 0), 'constant', constant_values=(0, 0))
         if len(self.rounds) == 1:
             self.sub_audits[pair].distribution_reported_tally = distribution_round_draw
         else:

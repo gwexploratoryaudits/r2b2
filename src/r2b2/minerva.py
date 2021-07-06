@@ -3,13 +3,11 @@ import math
 from typing import List
 
 import click
-from scipy.signal import convolve
-from scipy.stats import binom
-from scipy.stats import norm
 
-from r2b2.audit import Audit
-from r2b2.audit import PairwiseAudit
+from r2b2.audit import Audit, PairwiseAudit
 from r2b2.contest import Contest
+from scipy.signal import convolve
+from scipy.stats import binom, norm
 
 
 class Minerva(Audit):

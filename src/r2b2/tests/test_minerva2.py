@@ -1,10 +1,3 @@
-import json
-import math
-
-#import pytest
-from click.testing import CliRunner
-
-from r2b2.cli import cli
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.minerva2 import Minerva2
@@ -13,6 +6,7 @@ from r2b2.tests import util as util
 default_contest = util.generate_contest(10000)
 tol = 0.000001
 
+
 def test_minerva2_kmins():
     contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
     minerva2 = Minerva2(.1, .1, contest)
@@ -20,6 +14,7 @@ def test_minerva2_kmins():
 
     # From existing software
     assert minerva2.sub_audits['A-B'].min_winner_ballots == [58]
+
 
 def test_simple_minerva2():
     simple_minerva2 = Minerva2(.1, .1, default_contest)
@@ -33,6 +28,7 @@ def test_simple_minerva2():
     simple_minerva2.stopped = True
     assert simple_minerva2.next_sample_size() == 10
     assert simple_minerva2.next_sample_size(verbose=True) == (10, 0, 1)
+
 
 def test_min_sample_size():
     contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
@@ -81,15 +77,15 @@ def test_minerva2_second_round_estimate():
     minerva2.sample_ballots['Clinton'].append(45081 - 22634)
 
     arbitrary_fixed_bound_on_binary_search_error = 15
-    s1 = minerva1.next_sample_size() 
-    s2 = minerva2.next_sample_size() 
+    s1 = minerva1.next_sample_size()
+    s2 = minerva2.next_sample_size()
     assert s1 >= 306 \
-            and s1 <= 306 + arbitrary_fixed_bound_on_binary_search_error
+        and s1 <= 306 + arbitrary_fixed_bound_on_binary_search_error
     assert s2 >= 111257 \
-            and s2 <= 111257 + arbitrary_fixed_bound_on_binary_search_error
-    #NOTE the error here is small enough that it is (in initial development)
+        and s2 <= 111257 + arbitrary_fixed_bound_on_binary_search_error
+    # NOTE the error here is small enough that it is (in initial development)
     #     being noted and ignored temporarily
-    #TODO understand and address as appropriate this error
+    # TODO understand and address as appropriate this error
 
 
 # TODO implement: def test_execute_round_minerva():
