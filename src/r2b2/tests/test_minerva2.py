@@ -76,13 +76,13 @@ def test_minerva2_second_round_estimate():
     minerva2.sample_ballots['Trump'].append(22634)
     minerva2.sample_ballots['Clinton'].append(45081 - 22634)
 
-    arbitrary_fixed_bound_on_binary_search_error = 15
+    bound_on_binary_search_error = 15
     s1 = minerva1.next_sample_size()
     s2 = minerva2.next_sample_size()
     assert s1 >= 306 \
-        and s1 <= 306 + arbitrary_fixed_bound_on_binary_search_error
+        and s1 <= 306 + bound_on_binary_search_error
     assert s2 >= 111257 \
-        and s2 <= 111257 + arbitrary_fixed_bound_on_binary_search_error
+        and s2 <= 111257 + bound_on_binary_search_error
     # NOTE the error here is small enough that it is (in initial development)
     #     being noted and ignored temporarily
     # TODO understand and address as appropriate this error
