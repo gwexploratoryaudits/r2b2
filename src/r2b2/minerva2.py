@@ -1,5 +1,6 @@
 """Minerva 2.0 audit module."""
 import math
+import numpy as np
 from typing import List
 
 import click
@@ -56,50 +57,8 @@ class Minerva2(Audit):
         sum_num = sum(num_dist[mid:])
         sum_denom = sum(denom_dist[mid:])
 
-        """
-        sum_num = sum(num_dist[mid:])# NOTE: this simple code using the num_dist and denom_dist would be great except
-        sum_denom = sum(denom_dist[mid:])#   the functions that update these distributions are in the audit superclass
-                                         #   and perform a Minerva 1.0-style convolution distribution update... not right for Minerva 2.0
- 
-        # TODO Check where/when this is used... if num_dist and denom_dist are correctly passed then I do not
-        # need to be doing all of this computation here... can just use them instead.
-        if len(self.rounds) == 1:
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-            k_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-
-            # Compute all parts of the stopping condition
-            sigma_num = 1
-            sigma_denom = 1
-            tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
-
-        else :
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] 
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-                    + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
-            k_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-
-            # Compute all parts of the stopping condition
-            sigma_num = binom.pmf(n_prev, k_prev, p_1)
-            sigma_denom = binom.pmf(n_prev, k_prev, p_0)
-            tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_0))
-
-
-        satisfies_risk = self.alpha * sigma_num * tau_num > sigma_denom * tau_denom and sum_denom > 0
-        satisfies_sprob = sigma_num * tau_num > sprob
-        """
-
-        satisfies_risk = self.alpha * sum_num * tau_num > sigma_denom * tau_denom and sum_denom > 0
-        satisfies_sprob = sigma_num * tau_num > sprob
+        satisfies_risk = self.alpha * sum_num > sum_denom and sum_denom > 0
+        satisfies_sprob = sum_num > sprob
  
         if satisfies_risk and satisfies_sprob:
             return True
@@ -123,7 +82,7 @@ class Minerva2(Audit):
         return math.ceil((-n * math.log(x) - math.log(self.alpha)) / y)
 
     def sample_size_kmin(self, left, right, num_dist, denom_dist, sum_num_right, sum_denom_right, orig_right):
-        """Finds a kmin with a binary search given the twin distributions.""" #TODO again works if the dists are right
+        """Finds a kmin with a binary search given the twin distributions."""
         if left > right:
             return 0
 
@@ -161,8 +120,8 @@ class Minerva2(Audit):
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
             round_draw = n - self.rounds[-1]
 
-        num_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p1)
-        denom_dist_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, p0)
+        num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev,0), 'constant', constant_values=(0,0))
+        denom_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p0), (k_prev,0), 'constant', constant_values=(0,0))
         if len(self.rounds) > 0:
             num_dist = sub_audit.distribution_reported_tally[k_prev] * num_dist_round_draw
             denom_dist = sub_audit.distribution_null[k_prev] * denom_dist_round_draw
@@ -178,15 +137,17 @@ class Minerva2(Audit):
         if kmin == 0:
             return 0, 0.0
 
+        """
         # For the audit to stop, we need to get kmin winner ballots minus the winner ballots we already have.
         if len(self.rounds) > 0:
             needed = kmin - self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
         else:
             needed = kmin
+        """
 
         # What are the odds that we get as many winner ballots in the round draw
         # as are needed? That is the stopping probability.
-        sprob_round = sum(num_dist_round_draw[needed:])
+        sprob_round = sum(num_dist_round_draw[kmin:])
 
         return kmin, sprob_round
 
@@ -516,6 +477,8 @@ class Minerva2(Audit):
                 uses the round schedule as the round draw (instead of the pairwise round draw)
                 for updating the distribution. Default is False.
         """
+        # TODO the issue here is that i am doing a distributino over the marginal increases in winner ballots
+        # Bsically just have to shift it to the right so that distributin is over cumulative values of k :)
         pair = sub_audit.get_pair_str()
         # If not first round get marginal sample
         if bulk_use_round_size:
@@ -545,7 +508,11 @@ class Minerva2(Audit):
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] -
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-2])
 
-        distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, 0.5)
+        k_prev = 0
+        if len(self.rounds) > 1:
+            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+        distribution_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev,0), 'constant', constant_values=(0,0))
+
         if len(self.rounds) == 1:
             self.sub_audits[pair].distribution_null = distribution_round_draw
         else:
@@ -605,11 +572,13 @@ class Minerva2(Audit):
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] -
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-2])
 
-        distribution_round_draw = binom.pmf(range(0, round_draw + 1), round_draw, sub_audit.sub_contest.winner_prop)
+        k_prev = 0
+        if len(self.rounds) > 1:
+            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+        distribution_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, sub_audit.sub_contest.winner_prop), (k_prev,0), 'constant', constant_values=(0,0))
         if len(self.rounds) == 1:
             self.sub_audits[pair].distribution_reported_tally = distribution_round_draw
         else:
-            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
             self.sub_audits[pair].distribution_reported_tally \
                     = sub_audit.distribution_reported_tally[k_prev] * distribution_round_draw
 
