@@ -1,13 +1,11 @@
 """R2B2 Simulation Module."""
 import json
 import os
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import List
 
 from matplotlib import pyplot as plt
 from pymongo import MongoClient
-
 from r2b2.contest import Contest
 
 

@@ -1,13 +1,12 @@
 """Minerva 2.0 audit module."""
 import math
-import numpy as np
 
 import click
-from scipy.stats import binom
 
-from r2b2.audit import Audit
-from r2b2.audit import PairwiseAudit
+import numpy as np
+from r2b2.audit import Audit, PairwiseAudit
 from r2b2.contest import Contest
+from scipy.stats import binom
 
 
 class Minerva2(Audit):

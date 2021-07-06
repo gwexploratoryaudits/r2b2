@@ -2,8 +2,7 @@ import json
 import math
 from random import randint
 
-from r2b2.contest import Contest
-from r2b2.contest import ContestType
+from r2b2.contest import Contest, ContestType
 from r2b2.election import Election
 
 

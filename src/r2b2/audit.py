@@ -1,18 +1,14 @@
 """Abstract module defining an Audit framework."""
 import math
-from abc import ABC
-from abc import abstractmethod
-from typing import Dict
-from typing import List
+from abc import ABC, abstractmethod
+from typing import Dict, List
 
 import click
-import numpy as np
-from scipy.signal import convolve
-from scipy.stats import binom
-from scipy.stats import hypergeom
 
-from r2b2.contest import Contest
-from r2b2.contest import PairwiseContest
+import numpy as np
+from r2b2.contest import Contest, PairwiseContest
+from scipy.signal import convolve
+from scipy.stats import binom, hypergeom
 
 
 class PairwiseAudit():

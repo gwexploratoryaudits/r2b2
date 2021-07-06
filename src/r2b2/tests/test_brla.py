@@ -1,5 +1,4 @@
 import pytest
-
 from r2b2.brla import BayesianRLA as BRLA
 from r2b2.tests import util as util
 

@@ -1,5 +1,4 @@
 import pytest
-
 from r2b2.election import Election
 from r2b2.tests import util as util
 
