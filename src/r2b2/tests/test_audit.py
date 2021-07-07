@@ -1,8 +1,11 @@
 import json
 
 import pytest
-from r2b2.audit import Audit, PairwiseAudit
-from r2b2.contest import Contest, ContestType
+
+from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
+from r2b2.contest import Contest
+from r2b2.contest import ContestType
 from r2b2.tests import util as util
 
 default_contest = util.generate_contest(100)

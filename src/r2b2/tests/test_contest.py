@@ -1,5 +1,7 @@
 import pytest
-from r2b2.contest import Contest, ContestType
+
+from r2b2.contest import Contest
+from r2b2.contest import ContestType
 
 
 def test_simple_contest():

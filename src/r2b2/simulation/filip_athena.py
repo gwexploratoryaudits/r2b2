@@ -1,10 +1,13 @@
 """Athena/Minerva Simulations using Filip Zagorski's athena library."""
 
 import random as r
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 from athena.audit import Audit
-from r2b2.simulator import Simulation, histogram
+
+from r2b2.simulator import Simulation
+from r2b2.simulator import histogram
 
 
 class FZMinervaOneRoundRisk(Simulation):

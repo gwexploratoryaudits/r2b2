@@ -3,11 +3,12 @@ import math
 from typing import List
 
 import click
-
 import numpy as np
-from r2b2.audit import Audit, PairwiseAudit
-from r2b2.contest import Contest
 from scipy.stats import hypergeom as hg
+
+from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
+from r2b2.contest import Contest
 
 
 class BayesianRLA(Audit):

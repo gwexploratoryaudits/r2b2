@@ -25,7 +25,8 @@ import pkg_resources
 from r2b2.athena import Athena
 from r2b2.audit import Audit
 from r2b2.brla import BayesianRLA as BRLA
-from r2b2.contest import Contest, ContestType
+from r2b2.contest import Contest
+from r2b2.contest import ContestType
 from r2b2.election import Election
 from r2b2.minerva import Minerva
 from r2b2.tests import util

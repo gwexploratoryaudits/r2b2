@@ -1,8 +1,10 @@
 import random as r
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 from r2b2.athena import Athena
-from r2b2.simulator import Simulation, histogram
+from r2b2.simulator import Simulation
+from r2b2.simulator import histogram
 
 
 class AthenaOneRoundRisk(Simulation):

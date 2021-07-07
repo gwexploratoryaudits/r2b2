@@ -2,11 +2,12 @@
 import math
 
 import click
-
 import numpy as np
-from r2b2.audit import Audit, PairwiseAudit
-from r2b2.contest import Contest
 from scipy.stats import binom
+
+from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
+from r2b2.contest import Contest
 
 
 class Minerva2(Audit):

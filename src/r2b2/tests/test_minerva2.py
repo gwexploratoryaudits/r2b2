@@ -1,5 +1,7 @@
 import pytest
-from r2b2.contest import Contest, ContestType
+
+from r2b2.contest import Contest
+from r2b2.contest import ContestType
 from r2b2.minerva2 import Minerva2
 from r2b2.tests import util as util
 

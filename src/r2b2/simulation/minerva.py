@@ -1,9 +1,11 @@
 import math
 import random as r
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 from r2b2.minerva import Minerva
-from r2b2.simulator import Simulation, histogram
+from r2b2.simulator import Simulation
+from r2b2.simulator import histogram
 
 
 class MinervaOneRoundRisk(Simulation):

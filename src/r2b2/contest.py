@@ -1,6 +1,7 @@
 """Contest module for handling individual contest data."""
 from enum import Enum
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 
 class ContestType(Enum):

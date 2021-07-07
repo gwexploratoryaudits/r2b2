@@ -1,11 +1,12 @@
 import json
 import math
 
+import pytest
 from click.testing import CliRunner
 
-import pytest
 from r2b2.cli import cli
-from r2b2.contest import Contest, ContestType
+from r2b2.contest import Contest
+from r2b2.contest import ContestType
 from r2b2.minerva import Minerva
 from r2b2.tests import util as util
 

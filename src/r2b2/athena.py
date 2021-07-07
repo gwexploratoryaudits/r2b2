@@ -3,10 +3,11 @@ import math
 from typing import List
 
 import click
-
-from r2b2.audit import Audit, PairwiseAudit
-from r2b2.contest import Contest
 from scipy.stats import binom
+
+from r2b2.audit import Audit
+from r2b2.audit import PairwiseAudit
+from r2b2.contest import Contest
 
 
 class Athena(Audit):
