@@ -484,7 +484,7 @@ class Audit(ABC):
             return True
 
         if len(self.rounds) > 0 and sample_size <= self.rounds[-1]:
-            raise ValueError('Invlaid sample size, must be larger than previous round.')
+            raise ValueError('Invalid sample size, must be larger than previous round.')
         if len(self.rounds) > 0:
             for candidate, tally in sample.items():
                 if tally < self.sample_ballots[candidate][-1]:

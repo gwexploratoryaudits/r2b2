@@ -135,14 +135,6 @@ class Minerva2(Audit):
         if kmin == 0:
             return 0, 0.0
 
-        """
-        # For the audit to stop, we need to get kmin winner ballots minus the winner ballots we already have.
-        if len(self.rounds) > 0:
-            needed = kmin - self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
-        else:
-            needed = kmin
-        """
-
         # What are the odds that we get as many winner ballots in the round draw
         # as are needed? That is the stopping probability.
         sprob_round = sum(num_dist_round_draw[kmin:])
@@ -178,21 +170,6 @@ class Minerva2(Audit):
             return self.binary_search_estimate(left, mid, sprob, sub_audit)
         else:
             return self.binary_search_estimate(mid, right, sprob, sub_audit)
-
-    # TODO learn about this
-    """
-    def next_sample_size_gaussian(self, sprob=.9):
-        #This is a rougher but quicker round size estimate for very narrow margins.
-        z_a = norm.isf(sprob)
-        z_b = norm.isf(self.alpha * sprob)
-        possible_sample_sizes = []
-
-        for sub_audit in self.sub_audits.values():
-            p = sub_audit.sub_contest.winner_prop
-            possible_sample_sizes.append(math.ceil(((z_a * math.sqrt(p * (1 - p)) - .5 * z_b) / (p - .5))**2))
-
-        return max(possible_sample_sizes)
-    """
 
     def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
         """
@@ -291,41 +268,14 @@ class Minerva2(Audit):
         if pair not in self.sub_audits.keys():
             raise ValueError('Candidate pait must be a valid subaudit.')
 
-        if len(self.rounds) == 1:
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-            k_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-
-            # Compute all parts of the stopping condition
-            sigma_num = 1
-            sigma_denom = 1
-            tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
-
-        else:
-            # Get relevant information
-            p_0 = .5
-            p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
-                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2] \
-                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
-            k_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-
-            # Compute all parts of the stopping condition
-            sigma_num = binom.pmf(n_prev, k_prev, p_1)
-            sigma_denom = binom.pmf(n_prev, k_prev, p_0)
-            tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_0))
-
-        self.sub_audits[pair].pvalue_schedule.append(sigma_num / sigma_denom * tau_num / tau_denom)
+        votes_for_winner = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        tail_null = sum(self.sub_audits[pair].distribution_null[votes_for_winner:])
+        tail_reported = sum(self.sub_audits[pair].distribution_reported_tally[votes_for_winner:])
+        self.sub_audits[pair].pvalue_schedule.append(tail_null / tail_reported)
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[pair].stopped = self.alpha * sigma_num * tau_num > sigma_denom * tau_denom
+        self.sub_audits[pair].stopped = (self.alpha * tail_reported) > tail_null
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
@@ -474,8 +424,6 @@ class Minerva2(Audit):
                 uses the round schedule as the round draw (instead of the pairwise round draw)
                 for updating the distribution. Default is False.
         """
-        # TODO the issue here is that i am doing a distributino over the marginal increases in winner ballots
-        # Bsically just have to shift it to the right so that distributin is over cumulative values of k :)
         pair = sub_audit.get_pair_str()
         # If not first round get marginal sample
         if bulk_use_round_size:
@@ -507,14 +455,19 @@ class Minerva2(Audit):
 
         k_prev = 0
         if len(self.rounds) > 1:
-            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+            idx = -2
+            if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
+                # In this case a new round size has been recorded, but
+                # not yet the corresponding sample, so the most recent
+                # sample is the last reported sample (index -1 not -2)
+                idx = -1
+            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
         distribution_round_draw \
             = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev, 0), 'constant', constant_values=(0, 0))
 
         if len(self.rounds) == 1:
             self.sub_audits[pair].distribution_null = distribution_round_draw
         else:
-            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
             self.sub_audits[pair].distribution_null \
                 = sub_audit.distribution_null[k_prev] * distribution_round_draw
 
@@ -572,7 +525,14 @@ class Minerva2(Audit):
 
         k_prev = 0
         if len(self.rounds) > 1:
-            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+            idx = -2
+            if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
+                # In this case a new round size has been recorded, but
+                # not yet the corresponding sample, so the most recent
+                # sample is the last reported sample (index -1 not -2)
+                idx = -1
+            k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
+
         p = sub_audit.sub_contest.winner_prop
         distribution_round_draw \
             = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p), (k_prev, 0), 'constant', constant_values=(0, 0))

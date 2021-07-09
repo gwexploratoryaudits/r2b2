@@ -120,3 +120,27 @@ def test_exceptions():
     minerva.rounds.append(10)
     with pytest.raises(ValueError):
         minerva.stopping_condition_pairwise('x')
+
+
+def test_execute_round_minerva():
+    contest = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva = Minerva2(.1, .1, contest)
+    assert not minerva.execute_round(100, {'A': 57, 'B': 43})
+    assert not minerva.stopped
+    assert minerva.sample_ballots['A'] == [57]
+    assert minerva.sample_ballots['B'] == [43]
+    assert not minerva.sub_audits['A-B'].stopped
+    assert minerva.rounds == [100]
+    assert not minerva.execute_round(200, {'A': 111, 'B': 89})
+    assert not minerva.stopped
+    assert minerva.sample_ballots['A'] == [57, 111]
+    assert minerva.sample_ballots['B'] == [43, 89]
+    assert not minerva.sub_audits['A-B'].stopped
+    assert minerva.rounds == [100, 200]
+    assert minerva.execute_round(400, {'A': 221, 'B': 179})
+    assert minerva.stopped
+    assert minerva.sample_ballots['A'] == [57, 111, 221]
+    assert minerva.sample_ballots['B'] == [43, 89, 179]
+    assert minerva.sub_audits['A-B'].stopped
+    assert minerva.rounds == [100, 200, 400]
+    assert minerva.get_risk_level() < 0.1
