@@ -112,17 +112,20 @@ class Minerva2(Audit):
         # and the previous (most recent) cumulative tally of winner ballots.
         if len(self.rounds) == 0:
             k_prev = 0
+            n_prev = 0
             round_draw = n
         else:
             pair = sub_audit.get_pair_str()
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
             round_draw = n - self.rounds[-1]
 
         num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev, 0), 'constant', constant_values=(0, 0))
         denom_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p0), (k_prev, 0), 'constant', constant_values=(0, 0))
         if len(self.rounds) > 0:
-            num_dist = sub_audit.distribution_reported_tally[k_prev] * num_dist_round_draw
-            denom_dist = sub_audit.distribution_null[k_prev] * denom_dist_round_draw
+            num_dist = binom.pmf(k_prev, n_prev, p1) * num_dist_round_draw
+            denom_dist = binom.pmf(k_prev, n_prev, p0) * denom_dist_round_draw
         else:
             num_dist = num_dist_round_draw
             denom_dist = denom_dist_round_draw
@@ -380,10 +383,11 @@ class Minerva2(Audit):
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
 
             # Compute all parts of the stopping condition
-            sigma_num = binom.pmf(n_prev, k_prev, p_1)
-            sigma_denom = binom.pmf(n_prev, k_prev, p_0)
-            tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), k_cur - k_prev, p_0))
+            sigma_num = binom.pmf(k_prev, n_prev, p_1)
+            sigma_denom = binom.pmf(k_prev, n_prev, p_0)
+            tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), n_cur - n_prev, p_1))
+            # TODO check
+            tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), n_cur - n_prev, p_0))
 
         if tau_num == 0 or sigma_num == 0:
             return 0
@@ -454,14 +458,18 @@ class Minerva2(Audit):
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-2])
 
         k_prev = 0
+        n_prev = 0
         if len(self.rounds) > 1:
             idx = -2
+            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] \
+                + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
             if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
                 # In this case a new round size has been recorded, but
                 # not yet the corresponding sample, so the most recent
                 # sample is the last reported sample (index -1 not -2)
                 idx = -1
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
+
         distribution_round_draw \
             = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev, 0), 'constant', constant_values=(0, 0))
 
@@ -469,7 +477,7 @@ class Minerva2(Audit):
             self.sub_audits[pair].distribution_null = distribution_round_draw
         else:
             self.sub_audits[pair].distribution_null \
-                = sub_audit.distribution_null[k_prev] * distribution_round_draw
+                = binom.pmf(k_prev, n_prev, .5) * distribution_round_draw
 
     def current_dist_reported(self):
         """Update distribution_reported_tally for each subaudit for current round."""
@@ -524,14 +532,18 @@ class Minerva2(Audit):
                               self.sample_ballots[sub_audit.sub_contest.reported_winner][-2])
 
         k_prev = 0
+        n_prev = 0
         if len(self.rounds) > 1:
             idx = -2
+            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] \
+                + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
             if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
                 # In this case a new round size has been recorded, but
                 # not yet the corresponding sample, so the most recent
                 # sample is the last reported sample (index -1 not -2)
                 idx = -1
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
+            # NOTE same note as in null dist version of this function
 
         p = sub_audit.sub_contest.winner_prop
         distribution_round_draw \
@@ -540,7 +552,7 @@ class Minerva2(Audit):
             self.sub_audits[pair].distribution_reported_tally = distribution_round_draw
         else:
             self.sub_audits[pair].distribution_reported_tally \
-                    = sub_audit.distribution_reported_tally[k_prev] * distribution_round_draw
+                    = binom.pmf(k_prev, n_prev, p) * distribution_round_draw
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """
