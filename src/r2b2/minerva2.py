@@ -269,7 +269,7 @@ class Minerva2(Audit):
         if len(self.rounds) < 1:
             raise Exception('Attempted to call stopping condition without any rounds.')
         if pair not in self.sub_audits.keys():
-            raise ValueError('Candidate pait must be a valid subaudit.')
+            raise ValueError('Candidate pair must be a valid subaudit.')
 
         votes_for_winner = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
         tail_null = sum(self.sub_audits[pair].distribution_null[votes_for_winner:])
@@ -278,7 +278,7 @@ class Minerva2(Audit):
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[pair].stopped = (self.alpha * tail_reported) > tail_null
+        self.sub_audits[pair].stopped = self.alpha * tail_reported > tail_null
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
@@ -461,14 +461,14 @@ class Minerva2(Audit):
         n_prev = 0
         if len(self.rounds) > 1:
             idx = -2
-            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] \
-                + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
             if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
                 # In this case a new round size has been recorded, but
                 # not yet the corresponding sample, so the most recent
-                # sample is the last reported sample (index -1 not -2)
+                # sample is the previous round sample (index -1 not -2)
                 idx = -1
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
+            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx] \
+                + self.sample_ballots[sub_audit.sub_contest.reported_loser][idx]
 
         distribution_round_draw \
             = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, .5), (k_prev, 0), 'constant', constant_values=(0, 0))
@@ -535,14 +535,14 @@ class Minerva2(Audit):
         n_prev = 0
         if len(self.rounds) > 1:
             idx = -2
-            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] \
-                + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
             if len(self.rounds) > len(self.sample_ballots[sub_audit.sub_contest.reported_winner]):
                 # In this case a new round size has been recorded, but
                 # not yet the corresponding sample, so the most recent
                 # sample is the last reported sample (index -1 not -2)
                 idx = -1
             k_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx]
+            n_prev = self.sample_ballots[sub_audit.sub_contest.reported_winner][idx] \
+                + self.sample_ballots[sub_audit.sub_contest.reported_loser][idx]
             # NOTE same note as in null dist version of this function
 
         p = sub_audit.sub_contest.winner_prop

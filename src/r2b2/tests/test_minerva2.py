@@ -144,3 +144,35 @@ def test_execute_round_minerva():
     assert minerva.sub_audits['A-B'].stopped
     assert minerva.rounds == [100, 200, 400]
     assert minerva.get_risk_level() < 0.1
+
+
+def test_minerva2_third_round_estimate():
+    contest1 = Contest(100000, {'A': 60000, 'B': 40000}, 1, ['A'], ContestType.MAJORITY)
+    minerva1 = Minerva2(.1, .1, contest1)
+    minerva1.compute_min_winner_ballots(minerva1.sub_audits['A-B'], 100)
+    minerva1.sample_ballots['A'].append(54)
+    minerva1.sample_ballots['B'].append(100 - 54)
+    minerva1.compute_min_winner_ballots(minerva1.sub_audits['A-B'], 200)
+    minerva1.sample_ballots['A'].append(113)
+    minerva1.sample_ballots['B'].append(200 - 113)
+    contest2 = Contest(4504975 + 4617886, {'Trump': 4617886, 'Clinton': 4504975}, 1, ['Trump'], ContestType.PLURALITY)
+    minerva2 = Minerva2(.1, 1.0, contest2)
+    minerva2.compute_min_winner_ballots(minerva2.sub_audits['Trump-Clinton'], 45081)
+    minerva2.sample_ballots['Trump'].append(22634)
+    minerva2.sample_ballots['Clinton'].append(45081 - 22634)
+    minerva2.compute_min_winner_ballots(minerva2.sub_audits['Trump-Clinton'], 50000)
+    minerva2.sample_ballots['Trump'].append(25200)
+    minerva2.sample_ballots['Clinton'].append(50000-25200)
+
+    bound_on_binary_search_error = 15
+    s1 = minerva1.next_sample_size()
+    s2 = minerva2.next_sample_size()
+
+    # From other code we have known approximate round sizes
+    known_s1 = 284
+    known_s2 = 73084
+    assert s1 >= known_s1 - bound_on_binary_search_error \
+        and s1 <= known_s1 + bound_on_binary_search_error
+    bound_on_binary_search_error = 100
+    assert s2 >= known_s2 - bound_on_binary_search_error \
+        and s2 <= known_s2 + bound_on_binary_search_error
