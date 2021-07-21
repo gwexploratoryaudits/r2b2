@@ -101,6 +101,12 @@ class Minerva2(Audit):
         elif not satisfies_risk and not satisfies_risk_prev:
             return self.sample_size_kmin(mid + 1, right, num_dist, denom_dist, sum_num_right, sum_denom_right, orig_right)
         else:
+            # To accompany Exception TODO fix method of communication
+            print("satisfies_risk_prev",satisfies_risk_prev)
+            print("satisfies_risk",satisfies_risk)
+            print("mid",mid)
+            print("left",left)
+            print("right",right)
             raise Exception("sample_size_sprob: k not monotonic.")
 
     def find_sprob(self, n, sub_audit: PairwiseAudit):
