@@ -20,7 +20,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
+    db = MongoClient(host='localhost', port=27017, username='', password='')['r2b2']
     query = {'audit_type': 'minerva2', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = election.contests[state]
@@ -53,12 +53,17 @@ def state_trial(state, alpha):
 
     # Create simulation
     sim_obj = MMRR(alpha,
+        query = {'simulation' : sim['_id']}
+        num_trials = db.trials.count_documents(query)
+
+    # Create simulation
+    sim = MMRR(alpha,
                election.contests[state],
                max_rounds=5,
                sample_sprob=.9,
                sim_args={'description': 'Multiround Minerva2 (90%)'},
-               user='sarah',
-               pwd='haras',
+               user='',
+               pwd='',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'
