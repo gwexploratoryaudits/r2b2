@@ -13,6 +13,8 @@ from r2b2.simulator import DBInterface
 
 from pymongo import MongoClient
 
+from txtme import txtme
+
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 
@@ -60,8 +62,9 @@ def state_trial(state, alpha):
                })
   
     # Run simulation
-    trials_left = 1000 - num_trials
-    print('running',trials_left,'trials for',state)
+    trials_left = 10000 - num_trials
+    #print('running',trials_left,'trials for',state)
+    txtme('running {} risk trials for {}'.format(trials_left, state))
     sim.run(trials_left)
     return sim.analyze()
 
