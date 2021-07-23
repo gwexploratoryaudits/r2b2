@@ -509,6 +509,8 @@ class Minerva2MultiRoundStoppingProb(Simulation):
         num_trials = 0
         stopped = 0
         rounds_stopped = []
+        totals_sampled = []
+        all_stopped = True
         # TODO: Create additinal structures to store trial data
 
         for trial in trials:
@@ -516,6 +518,9 @@ class Minerva2MultiRoundStoppingProb(Simulation):
             if trial['stop']:
                 stopped += 1
                 rounds_stopped.append(trial['round'])
+                totals_sampled.append(sum(trial['relevant_sample_size_sched']))
+            else:
+                all_stopped = False
             # TODO: Extract more data from trial
 
         if verbose:
@@ -527,6 +532,14 @@ class Minerva2MultiRoundStoppingProb(Simulation):
 
         if hist:
             histogram(rounds_stopped, 'Rounds reached in stopped trials.')
+
+        # Compute ASN
+        if not all_stopped:
+            asn = 'Not all audits stopped.'
+        else:
+            assert num_trials == len(totals_sampled)
+            asn = sum(totals_sampled) / num_trials
+        print(asn)
 
         # Find stopping probability for each round
         sprob_by_round = [0]*self.max_rounds
@@ -548,7 +561,8 @@ class Minerva2MultiRoundStoppingProb(Simulation):
             'sprob': stopped / num_trials,
             'sprob_by_round': sprob_by_round,
             'remaining_by_round': remaining_by_round,
-            'stopped_by_round': stopped_by_round
+            'stopped_by_round': stopped_by_round,
+            'asn': asn
         }
 
         # Update simulation entry to include analysis
