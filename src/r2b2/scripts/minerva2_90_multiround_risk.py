@@ -20,7 +20,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='', password='')['r2b2']
+    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
     query = {'audit_type': 'minerva2', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = election.contests[state]
@@ -45,17 +45,20 @@ def state_trial(state, alpha):
     if sim is None:
         num_trials = 0
     else:
-        query = {'simulation' : sim['_id']}
-        num_trials = db.trials.count_documents(query)
+        if 'analysis' in sim.keys() and 'remaining_by_round' in sim['analysis'].keys():
+            num_trials = sim['analysis']['remaining_by_round'][0]
+        else:
+            query = {'simulation' : sim['_id']}
+            num_trials = db.trials.count_documents(query)
 
     # Create simulation
-    sim = MMRR(alpha,
+    sim_obj = MMRR(alpha,
                election.contests[state],
                max_rounds=5,
                sample_sprob=.9,
                sim_args={'description': 'Multiround Minerva2 (90%)'},
-               user='',
-               pwd='',
+               user='sarah',
+               pwd='haras',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'
@@ -63,10 +66,14 @@ def state_trial(state, alpha):
   
     # Run simulation
     trials_left = 10000 - num_trials
+    txtme('Running {} more risk trials for {}'.format(trials_left, state))
     #print('running',trials_left,'trials for',state)
-    txtme('running {} risk trials for {}'.format(trials_left, state))
-    sim.run(trials_left)
-    return sim.analyze()
+    sim_obj.run(trials_left)
+    txtme('Ran {} more risk trials for {}'.format(trials_left, state))
+    if trials_left > 0:
+        return sim_obj.analyze()
+    else:
+        return sim['analysis']['risk']
 
 if __name__ == '__main__':
     for contest in election.contests.keys():
@@ -79,3 +86,4 @@ if __name__ == '__main__':
             continue
         computed_risk = state_trial(contest, 0.1)
         logging.info('{}: {}'.format(contest, computed_risk))
+    txtme('Done with current risk simulations')
