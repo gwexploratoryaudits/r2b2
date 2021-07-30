@@ -67,7 +67,6 @@ def state_trial(state, alpha):
     # Run simulation
     trials_left = 10000 - num_trials
     txtme('Running {} more risk trials for {}'.format(trials_left, state))
-    #print('running',trials_left,'trials for',state)
     sim_obj.run(trials_left)
     txtme('Ran {} more risk trials for {}'.format(trials_left, state))
     if trials_left > 0:

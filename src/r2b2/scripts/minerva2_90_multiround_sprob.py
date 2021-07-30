@@ -44,11 +44,14 @@ def state_trial(state, alpha):
     if sim is None:
         num_trials = 0
     else:
-        query = {'simulation' : sim['_id']}
-        num_trials = db.trials.count_documents(query)
+        if 'analysis' in sim.keys() and 'remaining_by_round' in sim['analysis'].keys():
+            num_trials = sim['analysis']['remaining_by_round'][0]
+        else:
+            query = {'simulation' : sim['_id']}
+            num_trials = db.trials.count_documents(query)
 
     # Create simulation
-    sim = MMRSP(alpha,
+    sim_obj = MMRSP(alpha,
                election.contests[state],
                max_rounds=100,
                sample_sprob=.9,
@@ -62,11 +65,14 @@ def state_trial(state, alpha):
   
     # Run simulation
     trials_left = 10000 - num_trials
-    #print('running',trials_left,'trials for',state)
-    txtme('running {} sprob trials for {}'.format(trials_left, state))
-    sim.run(trials_left)
-    return sim.analyze()
-
+    txtme('Running {} sprob trials for {}'.format(trials_left, state))
+    sim_obj.run(trials_left)
+    txtme('Ran {} more risk trials for {}'.format(trials_left, state))
+    if trials_left > 0:
+        return sim_obj.analyze()
+    else:
+        return sim['analysis']['sprob']
+ 
 if __name__ == '__main__':
     for contest in election.contests.keys():
         winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
