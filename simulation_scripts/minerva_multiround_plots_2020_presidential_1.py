@@ -17,7 +17,8 @@ if __name__ == '__main__':
     ratios = []
     margins = []
 
-    total_to_start = 1000
+    # How many trial audits are started at the beginning of each simulation
+    total_to_start = 10000
 
     max_rounds = 5
 
