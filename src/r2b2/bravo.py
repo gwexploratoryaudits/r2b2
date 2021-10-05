@@ -69,7 +69,6 @@ class BRAVO(Audit):
         return kmin, sprob
 
     def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
-        #TODO
         """
         Attempt to find a next sample size estimate no greater than 10000.
         Failing that, try to find an estimate no greater than 20000, and so on.
@@ -109,7 +108,6 @@ class BRAVO(Audit):
         return max_estimate[0]
 
     def _next_sample_size_pairwise(self, sub_audit: PairwiseAudit, sprob=0.9):
-        #TODO
         """Compute next sample size for a single pairwise subaudit.
 
         Args:
@@ -149,10 +147,39 @@ class BRAVO(Audit):
         return 0
 
     def get_upper_bound(self, n, start):
-        #TODO
         while start <= n:
             start *= 2
         return start
+
+    def binary_search_estimate(self, left, right, sprob, sub_audit: PairwiseAudit):
+        """Method to use binary search approximation to find a round size estimate."""
+
+        # An additional check to ensure proper input.
+        if left > right:
+            return 0, 0, 0.0
+
+        mid = (left + right) // 2
+
+        sprob_kmin_pair = self.find_sprob(mid, sub_audit)
+
+        # This round size is returned if it has satisfactory stopping probability and a round size one less
+        # does not, or if it has satisfactory stopping probability and exceeds the desired stopping probability
+        # only nominally.
+        if right - left <= 1:
+            if (sprob_kmin_pair[1] >= sprob):
+                assert sprob_kmin_pair[0] > 0
+                return mid, sprob_kmin_pair[0], sprob_kmin_pair[1]
+            else:
+                right_sprob_kmin_pair = self.find_sprob(mid + 1, sub_audit)
+                if right_sprob_kmin_pair[1] >= sprob:
+                    return mid + 1, self.find_sprob(mid + 1, sub_audit)[0], self.find_sprob(mid + 1, sub_audit)[1]
+
+            return 0, 0, 0.0
+
+        if sprob_kmin_pair[1] >= sprob:
+            return self.binary_search_estimate(left, mid, sprob, sub_audit)
+        else:
+            return self.binary_search_estimate(mid, right, sprob, sub_audit)
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check, without finding the kmin, whether the subaudit is complete.
@@ -180,7 +207,6 @@ class BRAVO(Audit):
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
-        #TODO
         """Compute stopping size for a given subaudit.
 
         Args:
