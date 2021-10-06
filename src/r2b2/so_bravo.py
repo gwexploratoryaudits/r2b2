@@ -10,15 +10,19 @@ from r2b2.audit import PairwiseAudit
 from r2b2.contest import Contest
 
 
-class BRAVO(Audit):
-    """BRAVO Audit implementation.
+class SO_BRAVO(Audit):
+    #TODO implement SO BRAVO
+    """SO BRAVO Audit implementation.
 
     The BRAVO Audit (Ballot-polling Risk-limiting Audit to Verify Outcomes)
     as defined by Lindeman, Stark, and Yates, is used for auditing 2-candidate
-    plurality elections. For a given sample size, the audit software calculates 
-    a minimum number of votes for the reported winner that must be found in the 
-    sample to stop the audit and confirm the reported outcome.
-
+    plurality elections. With audit samples drawn in rounds of size greater
+    than one ballot (R2 audits), the BRAVO stopping rule can be applied
+    once at the end of the round (EOR BRAVO), or, if the order of ballots in 
+    the sample is maintained, the BRAVO stopping rule can be applied to every
+    single ballot in the sample. The latter, application of the stopping rule
+    to each ballot in the sample, is called Selection Ordered BRAVO (SO BRAVO).
+    
     Attributes:
         alpha (float): Risk limit. Alpha represents the chance, that given an incorrectly called
             election, the audit will fail to force a full recount.
