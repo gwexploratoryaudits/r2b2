@@ -51,12 +51,21 @@ class BRAVO(Audit):
         """Helper method to find the stopping probability of a given prospective round size."""
         p = sub_audit.sub_contest.winner_prop
 
+        # Find number of ballots for just this round
+        winner_ballots = 0
+        round_draw = n
+        if len(self.rounds) > 0:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            round_draw = n - previous_round
+
         # In the log domain, the BRAVO stopping condition is linear as a
         # function of k, which makes finding kmin simple. 
 
         # Compute useful constants.
-        log1overalpha = math.log(1/alpha)
-        nlog1minuspoverhalf = n * math.log(2(1-p))
+        log1overalpha = math.log(1/self.alpha)
+        nlog1minuspoverhalf = n * math.log(2*(1-p))
         logpover1minusp = math.log(p/(1-p))
 
         # Compute kmin.
@@ -64,7 +73,8 @@ class BRAVO(Audit):
 
         # The corresponding stopping probability for this round size is 
         # probability that the drawn k is at least kmin.
-        sprob = binom.sf(kmin, n, p)
+        #sprob = binom.sf(kmin, n, p)
+        sprob = sum(binom.pmf(range(kmin - winner_ballots, round_draw + 1), round_draw, p))
 
         return kmin, sprob
 
@@ -196,14 +206,19 @@ class BRAVO(Audit):
             raise ValueError('Candidate pair must be a valid subaudit.')
 
         winner_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-        null = self.sub_audits[pair].distribution_null[winner_votes]
-        reported = self.sub_audits[pair].distribution_reported_tally[winner_votes]
+        loser_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+        n_cur = winner_votes + loser_votes
+        p1 = self.sub_audits[pair].sub_contest.winner_prop
+
+        null = binom.pmf(winner_votes, n_cur, .5) 
+        reported = binom.pmf(winner_votes, n_cur, p1)
+
         self.sub_audits[pair].pvalue_schedule.append(null / reported)
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[pair].stopped = self.alpha * reported > null
+        self.sub_audits[pair].stopped = self.alpha * reported >= null
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
@@ -219,7 +234,7 @@ class BRAVO(Audit):
             sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
 
-    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, round_size: int, *args, **kwargs):
+    def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: int, *args, **kwargs):
         """Compute the minimum number of winner ballots for a round schedule of a pairwise audit.
 
         Extend the audit's round schedule with the passed next round size, and then extend
@@ -228,27 +243,29 @@ class BRAVO(Audit):
 
         Args:
             sub_audit (PairwiseAudit): Compute minimum winner ballots for this Pairwise subaudit.
-            rounds (int): A next round size for the audit.
+            rounds (List[int]): A (partial) round schedule of the audit.
         """
-        if len(self.rounds) > 0 and round_size <= self.rounds[-1]:
-            raise ValueError('Sample size must exceed past sample sizes.')
-        if round_size < sub_audit.min_sample_size:
-            raise ValueError('Sample size must be >= minimum sample size.')
-        if round_size > self.contest.contest_ballots * self.max_fraction_to_draw:
-            raise ValueError('Sample size cannot exceed the maximum fraction of contest ballots to draw.')
-        if round_size > sub_audit.sub_contest.contest_ballots:
-            raise ValueError('Sample size cannot exceed the total number of ballots in sub contest.')
+        for i in range(len(rounds)):
+            if len(self.rounds) > 0 and rounds[i] <= self.rounds[-1]:
+                raise ValueError('Sample size must exceed past sample sizes.')
+            if rounds[i] < sub_audit.min_sample_size:
+                raise ValueError('Sample size must be >= minimum sample size.')
+            if rounds[i] > self.contest.contest_ballots * self.max_fraction_to_draw:
+                raise ValueError('Sample size cannot exceed the maximum fraction of contest ballots to draw.')
+            if rounds[i] > sub_audit.sub_contest.contest_ballots:
+                raise ValueError('Sample size cannot exceed the total number of ballots in sub contest.')
+            if i>=1 and rounds[i] <= rounds[i-1]:
+                raise ValueError('Round schedule is cumulative and so must strictly increase.')
 
         previous_sample = 0
-        if len(self.rounds) > 0:
-            previous_sample = self.rounds[-1]
-        self.rounds.append(round_size)
-        # Update current distributions for pairwise subaudit
-        self._current_dist_null_pairwise(sub_audit, True)
-        self._current_dist_reported_pairwise(sub_audit, True)
-        # Find kmin for pairwise subaudit and append kmin
-        sample_size = round_size - previous_sample
-        self.find_kmin(sub_audit, sample_size, True)
+        pair = sub_audit.get_pair_str()
+        for round_size in rounds:
+            # Find kmin for pairwise subaudit and append kmin
+            sample_size = round_size - previous_sample
+            self.find_kmin(sub_audit, sample_size, True)
+            self.rounds.append(round_size)
+            # Update previous round size for next sample computation
+            previous_sample = round_size
 
     def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
@@ -261,14 +278,16 @@ class BRAVO(Audit):
                 outside this method during an interactive audit.
         """
         p = sub_audit.sub_contest.winner_prop
-        n = self.rounds[-1] + sample_size
+        n = sample_size
+        if len(self.rounds) >= 1:
+            n = self.rounds[-1] + sample_size
 
         # In the log domain, the BRAVO stopping condition is linear as a
         # function of k, which makes finding kmin simple. 
 
         # Compute useful constants.
         log1overalpha = math.log(1/self.alpha)
-        nlog1minuspoverhalf = n * math.log(2(1-p))
+        nlog1minuspoverhalf = n * math.log(2*(1-p))
         logpover1minusp = math.log(p/(1-p))
 
         # Compute kmin.
@@ -301,9 +320,9 @@ class BRAVO(Audit):
         return risk
 
     def get_risk_level(self):
-        """Return the risk level of an interactive Minerva audit.
+        """Return the risk level of an interactive BRAVO audit.
 
-            Non-interactive and bulk Minerva audits are not considered here since the sampled number of
+            Non-interactive and bulk BRAVO audits are not considered here since the sampled number of
             reported winner ballots is not available.
         """
 
@@ -312,6 +331,7 @@ class BRAVO(Audit):
         return min(self.pvalue_schedule)
 
     def current_dist_null(self):
+        return #NOTE none needed
         """Update distribution_null for each sub audit for current round."""
         if len(self.rounds) == 0:
             raise Exception('No rounds exist.')
@@ -358,6 +378,7 @@ class BRAVO(Audit):
         self.sub_audits[pair].distribution_null = binom.pmf(range(0,n+1), n, .5)
 
     def current_dist_reported(self):
+        return #NOTE none needed
         """Update distribution_reported_tally for each subaudit for current round."""
 
         if len(self.rounds) == 0:
@@ -407,6 +428,8 @@ class BRAVO(Audit):
         self.sub_audits[pair].distribution_null = binom.pmf(range(0,n+1), n, p)
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
-        """
+        """Compute the minimum number of winner ballots for the complete 
+        (that is, ballot-by-ballot) round schedule.
         """
         #TODO
+
