@@ -30,7 +30,6 @@ class SO_BRAVO(Audit):
         rounds (List[int]): The round sizes used during the audit.
         contest (Contest): Contest to be audited.
     """
-    #TODO implement SO BRAVO
     def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize a BRAVO audit."""
         super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
@@ -145,7 +144,7 @@ class SO_BRAVO(Audit):
             # Scale estimates by pairwise invalid proportion
             proportion = float(sub_audit.sub_contest.contest_ballots) / float(self.contest.contest_ballots)
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
-            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
+            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2], estimate[3])
             estimates.append(scaled_estimate)
 
         # Return the maximum scaled next round size estimate
@@ -168,72 +167,76 @@ class SO_BRAVO(Audit):
         Return:
             Estimate in the format [sample size, kmin, stopping probability].
         """
-        # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
-        start = 10000
-        subsequent_round = len(self.rounds) > 0
-        previous_round = 0
-        if subsequent_round:
-            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+        desired_sprob = sprob # Readable renaming
+        # Get current audit state and prospective marginal draw.
+        p = sub_audit.sub_contest.winner_prop
+        kprev = 0
+        nprev = 0
+        if len(self.rounds) > 0:
+            kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
             loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
-            previous_round = winner_ballots + loser_ballots
-            init_upper_bound = self.get_upper_bound(previous_round + 1, start)
-        else:
-            init_upper_bound = start
-        upper_bound = init_upper_bound
-        while upper_bound < 10**7:
-            if len(self.rounds) > 0:
-                # Ensure upper bound is sufficiently large.
-                if upper_bound == init_upper_bound:
-                    estimate = self.binary_search_estimate(previous_round + 1, upper_bound, sprob, sub_audit)
-                else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
+            nprev = kprev + loser_ballots
+
+        # In BRAVO, kmin is an affine function of n.
+        # We can compute the constants for this affine function to make
+        # computing kmin easy.
+
+        # Useful constant.
+        logpoveroneminusp = math.log(p/(1-p))
+
+        # Affine constants.
+        intercept = math.log(1 / self.alpha) / logpoveroneminusp
+        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
+
+        # Distribution over drawn winner ballots for m = 1. 
+        num_dist = np.array([1 - p, p])
+        
+        # Maintain cumulative probability of stopping.
+        kmins = []
+        sprobs = []
+        sprob = 0
+
+        # For each new ballot drawn, compute the probability of meeting the 
+        # BRAVO stopping rule following that particular ballot draw.
+        m = 1
+        while nprev + m < 10**7:
+            assert len(num_dist) == m + 1
+            n = nprev + m
+
+            # Compute kmin for n.
+            kmin = math.ceil(intercept + n * slope)
+
+            # The corresponding stopping probability for this round size is 
+            # probability that the drawn k is at least kmin.
+            draw_min = kmin - kprev
+            if draw_min >= len(num_dist):
+                sprob_m = 0
             else:
-                if upper_bound == init_upper_bound:
-                    estimate = self.binary_search_estimate(1, upper_bound, sprob, sub_audit)
-                else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
-            if estimate[0] > 0:
-                return estimate
-            upper_bound *= 2
-        return 0
+                sprob_m = sum(num_dist[draw_min:])
+                num_dist = np.append(num_dist[0 : draw_min], np.zeros(m + 1 - draw_min))
 
-    def get_upper_bound(self, n, start):
-        while start <= n:
-            start *= 2
-        return start
+            # Record kmin, sprob_m, and updated cumulative sprob.
+            kmins.append(kmin)
+            sprobs.append(sprob_m)
+            sprob += sprob_m
 
-    def binary_search_estimate(self, left, right, sprob, sub_audit: PairwiseAudit):
-        """Method to use binary search approximation to find a round size estimate."""
+            if sprob >= desired_sprob:
+                return n, sprob, kmins, sprobs
 
-        # An additional check to ensure proper input.
-        if left > right:
-            return 0, 0, 0.0
+            # Update distribution for next value of m.
+            num_dist_winner_next = np.append([0], num_dist) * (p)
+            num_dist_loser_next = np.append(num_dist * (1 - p), [0])
+            num_dist = num_dist_winner_next + num_dist_loser_next
 
-        mid = (left + right) // 2
+            # Increment m.
+            m += 1
 
-        sprob_kmin_pair = self.find_sprob(mid, sub_audit)
-
-        # This round size is returned if it has satisfactory stopping probability and a round size one less
-        # does not, or if it has satisfactory stopping probability and exceeds the desired stopping probability
-        # only nominally.
-        if right - left <= 1:
-            if (sprob_kmin_pair[1] >= sprob):
-                assert sprob_kmin_pair[0] > 0
-                return mid, sprob_kmin_pair[0], sprob_kmin_pair[1]
-            else:
-                right_sprob_kmin_pair = self.find_sprob(mid + 1, sub_audit)
-                if right_sprob_kmin_pair[1] >= sprob:
-                    return mid + 1, self.find_sprob(mid + 1, sub_audit)[0], self.find_sprob(mid + 1, sub_audit)[1]
-
-            return 0, 0, 0.0
-
-        if sprob_kmin_pair[1] >= sprob:
-            return self.binary_search_estimate(left, mid, sprob, sub_audit)
-        else:
-            return self.binary_search_estimate(mid, right, sprob, sub_audit)
+        # 10^7 is unreasonably large, return -1
+        raise Exception('Required next round size greater than 10^7.')
+        return -1
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
-        """Check, without finding the kmin, whether the subaudit is complete.
+        """Check whether the subaudit is complete.
 
         Args:
             pair (str): Dictionary key referencing pairwise subaudit to evaluate.
@@ -246,20 +249,29 @@ class SO_BRAVO(Audit):
         if pair not in self.sub_audits.keys():
             raise ValueError('Candidate pair must be a valid subaudit.')
 
-        winner_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-        loser_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-        n_cur = winner_votes + loser_votes
-        p1 = self.sub_audits[pair].sub_contest.winner_prop
+        winner_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner + '_so'][-1]
+        loser_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
+        n = len(winner_votes) + len(loser_votes)
+        p = self.sub_audits[pair].sub_contest.winner_prop
 
-        null = binom.pmf(winner_votes, n_cur, .5) 
-        reported = binom.pmf(winner_votes, n_cur, p1)
+        winner_tally = 0
+        loser_tally = 0
+        passes = False
+        for n_cur in range(0, n + 1):
+            null = binom.pmf(winner_votes, n_cur, .5) 
+            reported = binom.pmf(winner_votes, n_cur, p)
+            passes = self.alpha * reported >= null
+            if passes:
+                break
 
+        null = binom.pmf(winner_votes, n, .5) 
+        reported = binom.pmf(winner_votes, n, p)
         self.sub_audits[pair].pvalue_schedule.append(null / reported)
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[pair].stopped = self.alpha * reported >= null
+        self.sub_audits[pair].stopped = passes
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:

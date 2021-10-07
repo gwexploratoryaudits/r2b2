@@ -99,7 +99,7 @@ def test_execute_round_so_bravo():
     assert so_bravo.rounds == [100, 200, 400]
     assert so_bravo.get_risk_level() < 0.1
 
-def test_find_sprob():
+def test_find_sprob_first_round():
     # Test data from github at:
     # gwexploratoryaudits/brla_explore/blob/master/B2Audits/Tables/BRAVO%20Table%20I.pdf
     ps = [.7, .65, .6, .58, .55]
@@ -112,6 +112,19 @@ def test_find_sprob():
         so_bravo = SO_BRAVO(.1, .1, contest)
         assert abs(so_bravo.find_sprob(n_90perc[i], so_bravo.sub_audits['A-B'])[1] - .9) <= .005
 
+def test_next_sample_size_first_round():
+    # Test data from github at:
+    # gwexploratoryaudits/brla_explore/blob/master/B2Audits/Tables/BRAVO%20Table%20I.pdf
+    ps = [.7, .65, .6, .58, .55]
+    desired_sprob = .9
+    n_90perc = [60, 108, 244, 381, 974]
+    for i in range(len(ps)):
+        N = 1000
+        A_tally = int(N*ps[i])
+        B_tally = N - A_tally
+        contest = Contest(N, {'A': A_tally, 'B': B_tally}, 1, ['A'], ContestType.MAJORITY)
+        so_bravo = SO_BRAVO(.1, .1, contest)
+        assert abs(so_bravo.next_sample_size(sprob=desired_sprob) - n_90perc[i]) <= 0
 
 """
 test_simple_so_bravo()
@@ -121,4 +134,5 @@ test_so_bravo_first_round_estimate()
 test_so_bravo_second_round_estimate()
 test_execute_round_so_bravo()
 """
-test_find_sprob()
+test_find_sprob_first_round()
+test_next_sample_size_first_round()

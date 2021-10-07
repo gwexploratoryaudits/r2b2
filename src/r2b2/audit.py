@@ -473,6 +473,8 @@ class Audit(ABC):
         Args:
             sample_size (int): Total ballots sampled by the end of this round (cumulative).
             sample (dict): Sample counts for each candidate by the end of this round (cumulative).
+                           Optionally also has selection order for each candidate's sample. (Needed
+                           for Selection Ordered BRAVO stopping decision.)
 
         Returns:
             bool: True if the audit met its stopping condition by this round.
@@ -487,13 +489,15 @@ class Audit(ABC):
             raise ValueError('Invalid sample size, must be larger than previous round.')
         if len(self.rounds) > 0:
             for candidate, tally in sample.items():
-                if tally < self.sample_ballots[candidate][-1]:
-                    raise ValueError('Invalid sample count. Candidate {}\'s sample tally cannot decrease.'.format(candidate))
-                if len(self.sample_ballots[candidate]) != len(self.rounds):
-                    raise Exception('There are currently {} rounds, but only {} sample tallys for candidate {}.'.format(
-                        len(self.rounds), len(self.sample_ballots[candidate]), candidate))
+                if is_instance(tally, int):
+                    if tally < self.sample_ballots[candidate][-1]:
+                        raise ValueError('Invalid sample count. Candidate {}\'s sample tally cannot decrease.'.format(candidate))
+                    if len(self.sample_ballots[candidate]) != len(self.rounds):
+                        raise Exception('There are currently {} rounds, but only {} sample tallys for candidate {}.'.format(
+                            len(self.rounds), len(self.sample_ballots[candidate]), candidate))
         if len(sample) != self.contest.num_candidates:
-            raise Exception('Sample must include tally for all candidates.')
+            if len(sample) != self.contest.num_candidates * 2:
+                raise Exception('Sample must include tally for all candidates.')
 
         self.rounds.append(sample_size)
         for candidate, tally in sample.items():
