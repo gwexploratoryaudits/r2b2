@@ -11,7 +11,6 @@ from r2b2.contest import Contest
 
 
 class SO_BRAVO(Audit):
-    #TODO implement SO BRAVO
     """SO BRAVO Audit implementation.
 
     The BRAVO Audit (Ballot-polling Risk-limiting Audit to Verify Outcomes)
@@ -31,6 +30,7 @@ class SO_BRAVO(Audit):
         rounds (List[int]): The round sizes used during the audit.
         contest (Contest): Contest to be audited.
     """
+    #TODO implement SO BRAVO
     def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize a BRAVO audit."""
         super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
@@ -53,34 +53,71 @@ class SO_BRAVO(Audit):
 
     def find_sprob(self, n, sub_audit: PairwiseAudit):
         """Helper method to find the stopping probability of a given prospective round size."""
+        # Get current audit state and prospective marginal draw.
         p = sub_audit.sub_contest.winner_prop
-
-        # Find number of ballots for just this round
-        winner_ballots = 0
-        round_draw = n
+        kprev = 0
+        nprev = 0
+        marginal_draw = n
         if len(self.rounds) > 0:
-            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
             loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
-            previous_round = winner_ballots + loser_ballots
-            round_draw = n - previous_round
+            nprev = kprev + loser_ballots
+            marginal_draw = n - nprev
 
-        # In the log domain, the BRAVO stopping condition is linear as a
-        # function of k, which makes finding kmin simple. 
+        # In the log domain, kmin is affine as a function of n.
+        # We can compute the constants for this affine function to make
+        # computing kmin easy.
 
-        # Compute useful constants.
-        log1overalpha = math.log(1/self.alpha)
-        nlog1minuspoverhalf = n * math.log(2*(1-p))
-        logpover1minusp = math.log(p/(1-p))
+        # Useful constant.
+        logpoveroneminusp = math.log(p/(1-p))
 
-        # Compute kmin.
-        kmin = math.ceil((log1overalpha-nlog1minuspoverhalf)/logpover1minusp)
+        # Affine constants.
+        intercept = math.log(1 / self.alpha) / logpoveroneminusp
+        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
 
-        # The corresponding stopping probability for this round size is 
-        # probability that the drawn k is at least kmin.
-        #sprob = binom.sf(kmin, n, p)
-        sprob = sum(binom.pmf(range(kmin - winner_ballots, round_draw + 1), round_draw, p))
+        # Distribution over drawn winner ballots for m = 1. 
+        num_dist = np.array([1 - p, p])
+        
+        """
+        # NOTE Alternatively, we could maintain a distribution over the whole
+        # cumulative k. This would avoid testing against draw_min (instead of
+        # directly against k_min), but would use unneeded space.
+        """
 
-        return kmin, sprob
+        # Maintain cumulative probability of stopping.
+        kmins = []
+        sprobs = []
+        sprob = 0
+
+        # For each new ballot drawn, compute the probability of meeting the 
+        # BRAVO stopping rule following that particular ballot draw.
+        for m in range(1, marginal_draw + 1):
+            assert len(num_dist) == m + 1
+            n = nprev + m
+
+            # Compute kmin for n.
+            kmin = math.ceil(intercept + n * slope)
+
+            # The corresponding stopping probability for this round size is 
+            # probability that the drawn k is at least kmin.
+            draw_min = kmin - kprev
+            if draw_min >= len(num_dist):
+                sprob_m = 0
+            else:
+                sprob_m = sum(num_dist[draw_min:])
+                num_dist = np.append(num_dist[0 : draw_min], np.zeros(m + 1 - draw_min))
+
+            # Record kmin, sprob_m, and updated cumulative sprob.
+            kmins.append(kmin)
+            sprobs.append(sprob_m)
+            sprob += sprob_m
+
+            # Update distribution for next value of m.
+            num_dist_winner_next = np.append([0], num_dist) * (p)
+            num_dist_loser_next = np.append(num_dist * (1 - p), [0])
+            num_dist = num_dist_winner_next + num_dist_loser_next
+ 
+        return kmins, sprob, sprobs
 
     def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
         """

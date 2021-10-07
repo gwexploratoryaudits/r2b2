@@ -98,3 +98,4 @@ def test_execute_round_eor_bravo():
     assert eor_bravo.sub_audits['A-B'].stopped
     assert eor_bravo.rounds == [100, 200, 400]
     assert eor_bravo.get_risk_level() < 0.1
+
