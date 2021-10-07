@@ -29,6 +29,7 @@ from r2b2.contest import Contest
 from r2b2.contest import ContestType
 from r2b2.election import Election
 from r2b2.minerva import Minerva
+from r2b2.minerva2 import Minerva2
 from r2b2.eor_bravo import EOR_BRAVO
 from r2b2.so_bravo import SO_BRAVO
 from r2b2.tests import util
