@@ -283,18 +283,47 @@ class SO_BRAVO(Audit):
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
-        """Compute stopping sizes for a given subaudit.
+        """Compute stopping sizes for a given subaudit. 
 
         Args:
             sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
 
         Return:
-            int: Stopping size for most recent round.
+            []: Stopping sizes for most recent round as an array where the
+                ith item is the kmin for the first i ballots in the SO sample.
         """
-        #TODO compute stopping sizes (not just stopping size)
-        sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
+        marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
             sub_audit.sub_contest.reported_loser][-1]
-        return self.find_kmin(sub_audit, sample_size, False)
+        kprev = 0
+        nprev = 0
+        if len(self.rounds) > 1:
+            kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+            nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-2]
+
+        # In BRAVO, kmin is an affine function of n.
+        # We can compute the constants for this affine function to make
+        # computing kmin easy.
+
+        # Useful constant.
+        logpoveroneminusp = math.log(p/(1-p))
+
+        # Affine constants.
+        intercept = math.log(1 / self.alpha) / logpoveroneminusp
+        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
+
+        # Construct a list of kmins.
+        kmins = []
+
+        # For each marginal draw in [1, marginal_draw], compute the
+        # corresponding kmin.
+        for m in range(1, marginal_draw + 1):
+            n = nprev + m
+
+            # Compute kmin for n.
+            kmin = math.ceil(intercept + n * slope)
+            kmins.append(kmin)
+
+        return kmins
 
     def compute_min_winner_ballots(self, sub_audit: PairwiseAudit, rounds: int, *args, **kwargs):
         """Compute the minimum number of winner ballots for a round schedule of a pairwise audit.
