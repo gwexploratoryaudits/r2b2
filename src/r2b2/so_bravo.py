@@ -11,7 +11,7 @@ from r2b2.contest import Contest
 
 
 class SO_BRAVO(Audit):
-    """SO BRAVO Audit implementation.
+    """Selection Ordered BRAVO Audit implementation.
 
     The BRAVO Audit (Ballot-polling Risk-limiting Audit to Verify Outcomes)
     as defined by Lindeman, Stark, and Yates, is used for auditing 2-candidate
@@ -64,7 +64,7 @@ class SO_BRAVO(Audit):
             nprev = kprev + loser_ballots
             marginal_draw = n - nprev
 
-        # In the log domain, kmin is affine as a function of n.
+        # In BRAVO, kmin is an affine function of n.
         # We can compute the constants for this affine function to make
         # computing kmin easy.
 
@@ -323,16 +323,19 @@ class SO_BRAVO(Audit):
         if len(self.rounds) >= 1:
             n = self.rounds[-1] + sample_size
 
-        # In the log domain, the BRAVO stopping condition is linear as a
-        # function of k, which makes finding kmin simple. 
+        # In BRAVO, kmin is an affine function of n.
+        # We can compute the constants for this affine function to make
+        # computing kmin easy.
 
-        # Compute useful constants.
-        log1overalpha = math.log(1/self.alpha)
-        nlog1minuspoverhalf = n * math.log(2*(1-p))
-        logpover1minusp = math.log(p/(1-p))
+        # Useful constant.
+        logpoveroneminusp = math.log(p/(1-p))
+
+        # Affine constants.
+        intercept = math.log(1 / self.alpha) / logpoveroneminusp
+        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
 
         # Compute kmin.
-        kmin = math.ceil((log1overalpha-nlog1minuspoverhalf)/logpover1minusp)
+        kmin = math.ceil(intercept + n * slope)
 
         if append:
             pair = sub_audit.get_pair_str()
