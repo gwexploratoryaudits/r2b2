@@ -51,7 +51,7 @@ INT_LIST = IntList()
 
 # Audit type choices
 # TODO: add new audit types when they become available
-audit_types = click.Choice(['brla', 'minerva', 'athena', 'minerva2', 'eor_bravo', 'so_bravo'], case_sensitive=False)
+audit_types = click.Choice(['brla', 'minerva', 'athena', 'minerva2', 'eor_bravo'], case_sensitive=False)
 # Contest type choice
 contest_types = click.Choice(['PLURALITY', 'MAJORITY'])
 
