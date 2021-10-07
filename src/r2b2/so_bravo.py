@@ -249,23 +249,31 @@ class SO_BRAVO(Audit):
         if pair not in self.sub_audits.keys():
             raise ValueError('Candidate pair must be a valid subaudit.')
 
+        kprev = 0
+        nprev = 0
+        if len(self.rounds) > 1:
+            kprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
+            loserprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
+            nprev = kprev + loserprev
         winner_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner + '_so'][-1]
-        loser_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
-        n = len(winner_votes) + len(loser_votes)
+        loser_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
+        n = nprev + len(winner_votes) + len(loser_votes)
         p = self.sub_audits[pair].sub_contest.winner_prop
 
         winner_tally = 0
         loser_tally = 0
         passes = False
-        for n_cur in range(0, n + 1):
-            null = binom.pmf(winner_votes, n_cur, .5) 
-            reported = binom.pmf(winner_votes, n_cur, p)
+        for n_cur in range(1, n + 1):
+            winner_tally += winner_sample[n_cur]
+            loser_tally += winner_sample[n_cur]
+            null = binom.pmf(winner_tally, n_cur, .5) 
+            reported = binom.pmf(winner_tally, n_cur, p)
             passes = self.alpha * reported >= null
             if passes:
                 break
 
-        null = binom.pmf(winner_votes, n, .5) 
-        reported = binom.pmf(winner_votes, n, p)
+        null = binom.pmf(winner_tally, n, .5) 
+        reported = binom.pmf(winner_tally, n, p)
         self.sub_audits[pair].pvalue_schedule.append(null / reported)
 
         if verbose:
@@ -275,7 +283,7 @@ class SO_BRAVO(Audit):
         return self.sub_audits[pair].stopped
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
-        """Compute stopping size for a given subaudit.
+        """Compute stopping sizes for a given subaudit.
 
         Args:
             sub_audit (PairwiseAudit): Compute next stopping size for this subaudit.
@@ -283,6 +291,7 @@ class SO_BRAVO(Audit):
         Return:
             int: Stopping size for most recent round.
         """
+        #TODO compute stopping sizes (not just stopping size)
         sample_size = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
             sub_audit.sub_contest.reported_loser][-1]
         return self.find_kmin(sub_audit, sample_size, False)
@@ -312,11 +321,10 @@ class SO_BRAVO(Audit):
 
         previous_sample = 0
         pair = sub_audit.get_pair_str()
-        for round_size in rounds:
+        max_round_size = max(rounds)
+        for round_size in range(1, max_round_size):
             # Find kmin for pairwise subaudit and append kmin
-            sample_size = round_size - previous_sample
-            self.find_kmin(sub_audit, sample_size, True)
-            self.rounds.append(round_size)
+            self.find_kmin(sub_audit, round_size, True)
             # Update previous round size for next sample computation
             previous_sample = round_size
 

@@ -498,6 +498,7 @@ class Audit(ABC):
         if len(sample) != self.contest.num_candidates:
             if len(sample) != self.contest.num_candidates * 2:
                 raise Exception('Sample must include tally for all candidates.')
+        #TODO add checks for correct format selection ordered samples (ie, +'_so' and 0s/1s)
 
         self.rounds.append(sample_size)
         for candidate, tally in sample.items():
