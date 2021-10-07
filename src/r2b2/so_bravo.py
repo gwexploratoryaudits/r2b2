@@ -33,6 +33,7 @@ class SO_BRAVO(Audit):
     def __init__(self, alpha: float, max_fraction_to_draw: float, contest: Contest):
         """Initialize a BRAVO audit."""
         super().__init__(alpha, 0.0, max_fraction_to_draw, True, contest)
+        self.selection_ordered = True
         for pair, sub_audit in self.sub_audits.items():
             self.sub_audits[pair].min_sample_size = self.get_min_sample_size(sub_audit)
 
@@ -255,26 +256,25 @@ class SO_BRAVO(Audit):
             kprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
             loserprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
             nprev = kprev + loserprev
+        if self.sub_audits[pair].sub_contest.reported_winner + '_so' not in self.sample_ballots.keys() or self.sub_audits[pair].sub_contest.reported_loser + '_so' not in self.sample_ballots.keys():
+            raise ValueError('Samples for SO BRAVO must also contain an ordered list of ballot samples (1 for this candidate, 0 else).')
         winner_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner + '_so'][-1]
         loser_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
-        n = nprev + len(winner_votes) + len(loser_votes)
+        n = nprev + len(winner_sample)
         p = self.sub_audits[pair].sub_contest.winner_prop
 
         winner_tally = 0
         loser_tally = 0
         passes = False
-        for n_cur in range(1, n + 1):
-            winner_tally += winner_sample[n_cur]
-            loser_tally += winner_sample[n_cur]
-            null = binom.pmf(winner_tally, n_cur, .5) 
-            reported = binom.pmf(winner_tally, n_cur, p)
+        for mnew in range(1, len(winner_sample)+1):
+            winner_tally += winner_sample[mnew-1]
+            loser_tally += winner_sample[mnew-1]
+            null = binom.pmf(kprev+winner_tally, mnew+nprev, .5) 
+            reported = binom.pmf(kprev+winner_tally, mnew+nprev, p)
             passes = self.alpha * reported >= null
+            self.sub_audits[pair].pvalue_schedule.append(null / reported)
             if passes:
                 break
-
-        null = binom.pmf(winner_tally, n, .5) 
-        reported = binom.pmf(winner_tally, n, p)
-        self.sub_audits[pair].pvalue_schedule.append(null / reported)
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
@@ -303,6 +303,7 @@ class SO_BRAVO(Audit):
         # In BRAVO, kmin is an affine function of n.
         # We can compute the constants for this affine function to make
         # computing kmin easy.
+        p = sub_audit.sub_contest.winner_prop
 
         # Useful constant.
         logpoveroneminusp = math.log(p/(1-p))
@@ -348,7 +349,7 @@ class SO_BRAVO(Audit):
             if i>=1 and rounds[i] <= rounds[i-1]:
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
         # Maintain a list of in which, for each round, there is a list of 
-        # kmins for each value 0<=i<=rounds[i].
+        # kmins for each n s.t. 1<=n<=rounds[i].
         kmin_lists = [] 
         p = sub_audit.sub_contest.winner_prop
         for i in range(len(rounds)):
@@ -381,9 +382,19 @@ class SO_BRAVO(Audit):
 
                 # Compute kmin for n.
                 kmin = math.ceil(intercept + n * slope)
-                kmins_i.append(kmin)
+                if kmin > n:
+                    kmins_i.append(-1)
+                else:
+                    kmins_i.append(kmin)
 
             kmin_lists.append(kmins_i)
+
+        # For each of these rounds, extend the round sizes and 
+        # extend the min_winner_ballots member.
+        for i in range(len(rounds)):
+            self.rounds.append(rounds[i])
+            sub_audit.min_winner_ballots.append(kmin_lists[i])
+
         return kmin_lists
 
     def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
@@ -601,4 +612,4 @@ class SO_BRAVO(Audit):
             kmin = math.ceil(intercept + n * slope)
             kmins.append(kmin)
 
-        self.min_winner_ballots.append(kmins)
+        self.sub_audit.min_winner_ballots.append(kmins)

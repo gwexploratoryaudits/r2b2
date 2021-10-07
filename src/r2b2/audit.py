@@ -123,6 +123,7 @@ class Audit(ABC):
     beta: float
     max_fraction_to_draw: float
     replacement: bool
+    selection_ordered: bool
     rounds: List[int]
     sample_winner_ballots: List[int]
     pvalue_schedule: List[float]
@@ -160,6 +161,7 @@ class Audit(ABC):
         self.beta = beta
         self.max_fraction_to_draw = max_fraction_to_draw
         self.replacement = replacement
+        self.selection_ordered = False
         self.contest = contest
         self.rounds = []
         self.sample_winner_ballots = []
@@ -168,6 +170,8 @@ class Audit(ABC):
         self.sample_ballots = {}
         for candidate in self.contest.candidates:
             self.sample_ballots[candidate] = []
+            # Also add an entry for selection-ordered samples
+            self.sample_ballots[candidate+'_so'] = []
         # Get pairwise subcontests for reported winners and create pairwise audits
         self.sub_audits = {}
         for sub_contest in self.contest.sub_contests:
@@ -489,7 +493,7 @@ class Audit(ABC):
             raise ValueError('Invalid sample size, must be larger than previous round.')
         if len(self.rounds) > 0:
             for candidate, tally in sample.items():
-                if is_instance(tally, int):
+                if isinstance(tally, int):
                     if tally < self.sample_ballots[candidate][-1]:
                         raise ValueError('Invalid sample count. Candidate {}\'s sample tally cannot decrease.'.format(candidate))
                     if len(self.sample_ballots[candidate]) != len(self.rounds):
@@ -511,9 +515,10 @@ class Audit(ABC):
                 click.echo('Audit had met stopping condition')
             return True
 
-        self.next_min_winner_ballots(verbose)
-        self.truncate_dist_null()
-        self.truncate_dist_reported()
+        if not self.selection_ordered:
+            self.next_min_winner_ballots(verbose)
+            self.truncate_dist_null()
+            self.truncate_dist_reported()
         return False
 
     def run(self, verbose: bool = False):
@@ -605,9 +610,10 @@ class Audit(ABC):
                 return
 
             # Compute kmin if audit has not stopped and truncate distributions
-            self.next_min_winner_ballots(verbose)
-            self.truncate_dist_null()
-            self.truncate_dist_reported()
+            if not selection_ordered:
+                self.next_min_winner_ballots(verbose)
+                self.truncate_dist_null()
+                self.truncate_dist_reported()
 
         click.echo('\n\nAudit Complete: Reached max sample size.')
 
