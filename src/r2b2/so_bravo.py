@@ -350,7 +350,8 @@ class SO_BRAVO(Audit):
         # Maintain a list of in which, for each round, there is a list of 
         # kmins for each value 0<=i<=rounds[i].
         kmins = [] 
-        for i in range
+        for i in range:
+            kmins_i = []
             marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
                 sub_audit.sub_contest.reported_loser][-1]
             kprev = 0
@@ -380,9 +381,9 @@ class SO_BRAVO(Audit):
 
                 # Compute kmin for n.
                 kmin = math.ceil(intercept + n * slope)
-                kmins.append(kmin)
+                kmins_i.append(kmin)
 
-        return kmins.append[kmins]
+        return kmins.append[kmins_i]
 
 
         def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
