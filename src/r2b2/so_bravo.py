@@ -347,17 +347,45 @@ class SO_BRAVO(Audit):
                 raise ValueError('Sample size cannot exceed the total number of ballots in sub contest.')
             if i>=1 and rounds[i] <= rounds[i-1]:
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
+        # Maintain a list of in which, for each round, there is a list of 
+        # kmins for each value 0<=i<=rounds[i].
+        kmins = [] 
+        for i in range
+            marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
+                sub_audit.sub_contest.reported_loser][-1]
+            kprev = 0
+            nprev = 0
+            if len(self.rounds) > 1:
+                kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+                nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-2]
 
-        previous_sample = 0
-        pair = sub_audit.get_pair_str()
-        max_round_size = max(rounds)
-        for round_size in range(1, max_round_size):
-            # Find kmin for pairwise subaudit and append kmin
-            self.find_kmin(sub_audit, round_size, True)
-            # Update previous round size for next sample computation
-            previous_sample = round_size
+            # In BRAVO, kmin is an affine function of n.
+            # We can compute the constants for this affine function to make
+            # computing kmin easy.
 
-    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
+            # Useful constant.
+            logpoveroneminusp = math.log(p/(1-p))
+
+            # Affine constants.
+            intercept = math.log(1 / self.alpha) / logpoveroneminusp
+            slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
+
+            # Construct a list of kmins.
+            kmins_i = []
+
+            # For each marginal draw in [1, marginal_draw], compute the
+            # corresponding kmin.
+            for m in range(1, marginal_draw + 1):
+                n = nprev + m
+
+                # Compute kmin for n.
+                kmin = math.ceil(intercept + n * slope)
+                kmins.append(kmin)
+
+        return kmins.append[kmins]
+
+
+        def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
