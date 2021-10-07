@@ -31,8 +31,8 @@ def state_trial(state, alpha, sample_size):
         'underlying': 'tie', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Multi round Minerva (90% then 1.5x)',
-        'sample_mult':1.5,
+        'description' : 'Multi round Minerva (90% then 1.0x)',
+        'sample_mult':1.0,
         'max_rounds': 5
     }
     sim = db.simulations.find_one(query)
@@ -47,8 +47,8 @@ def state_trial(state, alpha, sample_size):
                election.contests[state],
                max_rounds=5,
                sample_size=sample_size,
-               sample_mult=1.5,
-               sim_args={'description': 'Multi round Minerva (90% then 1.5x)'},
+               sample_mult=1.0,
+               sim_args={'description': 'Multi round Minerva (90% then 1.0x)'},
                user='',
                pwd='',
                reported_args={
@@ -57,7 +57,7 @@ def state_trial(state, alpha, sample_size):
                })
   
     # Run simulation
-    trials_left = 200 - num_trials
+    trials_left = 10000 - num_trials
     print('running',trials_left,'trials for',state)
     sim.run(trials_left)
     return sim.analyze()
