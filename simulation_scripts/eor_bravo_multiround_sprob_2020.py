@@ -19,7 +19,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
+    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
     query = {'audit_type': 'eor_bravo', 'alpha': .1}
     audit = db.audits.find_one(query)
     if audit is None:
@@ -57,8 +57,8 @@ def state_trial(state, alpha):
                max_rounds=100,
                sample_sprob=.9,
                sim_args={'description': 'Multiround EOR_BRAVO (90%)'},
-               user='writer',
-               pwd='icanwrite',
+               user='sarah',
+               pwd='haras',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'
