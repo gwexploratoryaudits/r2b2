@@ -349,16 +349,16 @@ class SO_BRAVO(Audit):
                 raise ValueError('Round schedule is cumulative and so must strictly increase.')
         # Maintain a list of in which, for each round, there is a list of 
         # kmins for each value 0<=i<=rounds[i].
-        kmins = [] 
-        for i in range:
+        kmin_lists = [] 
+        p = sub_audit.sub_contest.winner_prop
+        for i in range(len(rounds)):
             kmins_i = []
-            marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
-                sub_audit.sub_contest.reported_loser][-1]
             kprev = 0
             nprev = 0
             if len(self.rounds) > 1:
                 kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
                 nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-2]
+            marginal_draw = rounds[i] - nprev
 
             # In BRAVO, kmin is an affine function of n.
             # We can compute the constants for this affine function to make
@@ -383,10 +383,10 @@ class SO_BRAVO(Audit):
                 kmin = math.ceil(intercept + n * slope)
                 kmins_i.append(kmin)
 
-        return kmins.append[kmins_i]
+            kmin_lists.append(kmins_i)
+        return kmin_lists
 
-
-        def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
+    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
         """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
 
         Args:
