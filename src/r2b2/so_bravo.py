@@ -571,13 +571,12 @@ class SO_BRAVO(Audit):
         if max_sample_size < sub_audit.min_sample_size:
             raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
 
-        marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
-            sub_audit.sub_contest.reported_loser][-1]
         kprev = 0
         nprev = 0
         if len(self.rounds) > 1:
             kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
             nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-2]
+        marginal_draw = max_sample_size - nprev
 
         # In BRAVO, kmin is an affine function of n.
         # We can compute the constants for this affine function to make
