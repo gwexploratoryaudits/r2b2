@@ -506,7 +506,11 @@ class Audit(ABC):
 
         self.rounds.append(sample_size)
         for candidate, tally in sample.items():
-            self.sample_ballots[candidate].append(tally)
+            if not candidate[len(candidate)-3:] == '_so':
+                self.sample_ballots[candidate].append(tally)
+            else:
+                self.sample_ballots[candidate] = []
+                self.sample_ballots[candidate].append(tally)
         self.current_dist_null()
         self.current_dist_reported()
         self.stopped = self.stopping_condition(verbose)
