@@ -105,7 +105,7 @@ class EOR_BRAVO(Audit):
         estimates = []
         for sub_audit in self.sub_audits.values():
             # Scale estimates by pairwise invalid proportion
-            proportion = float(sub_audit.sub_contest.contest_ballots) / float(self.contest.contest_ballots)
+            proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
             scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
             estimates.append(scaled_estimate)
@@ -433,6 +433,53 @@ class EOR_BRAVO(Audit):
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum number of winner ballots for the complete 
         (that is, ballot-by-ballot) round schedule.
-        """
-        #TODO
 
+        Args:
+            sub_audit (PairwiseAudit): Compute minimum winner ballots for this pairwise subaudit.
+            max_sample_size (int): Optionally set the maximum sample size to generate stopping sizes
+                (kmins) up to. If not provided the maximum sample size is determined by max_frac_to_draw
+                and the total contest ballots.
+
+        Returns:
+            None, kmins are appended to the min_winner_ballots list.
+        """
+        if len(self.rounds) > 0:
+            raise Exception("This audit already has an (at least partial) round schedule.")
+        if max_sample_size is None:
+            max_sample_size = math.ceil(self.contest.contest_ballots * self.max_fraction_to_draw)
+        if max_sample_size > sub_audit.sub_contest.contest_ballots:
+            max_sample_size = sub_audit.sub_contest.contest_ballots
+        if max_sample_size < sub_audit.min_sample_size:
+            raise ValueError("Maximum sample size must be greater than or equal to minimum size.")
+
+        kprev = 0
+        nprev = 0
+        if len(self.rounds) > 1:
+            kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-2]
+            nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-2]
+        marginal_draw = max_sample_size - nprev
+
+        # In BRAVO, kmin is an affine function of n.
+        # We can compute the constants for this affine function to make
+        # computing kmin easy.
+
+        # Useful constant.
+        logpoveroneminusp = math.log(p/(1-p))
+
+        # Affine constants.
+        intercept = math.log(1 / self.alpha) / logpoveroneminusp
+        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
+
+        # Construct a list of kmins.
+        kmins = []
+
+        # For each marginal draw in [1, marginal_draw], compute the
+        # corresponding kmin.
+        for m in range(1, marginal_draw + 1):
+            n = nprev + m
+
+            # Compute kmin for n.
+            kmin = math.ceil(intercept + n * slope)
+            kmins.append(kmin)
+
+        self.min_winner_ballots.append(kmins)
