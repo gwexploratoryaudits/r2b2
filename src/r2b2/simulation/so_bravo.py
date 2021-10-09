@@ -103,20 +103,33 @@ class SO_BRAVOMultiRoundStoppingProb(Simulation):
         # For each round
         sample = [0 for i in range(len(self.vote_dist))]
         while round_num <= self.max_rounds:
-            # Draw a sample of a given size
+            # Reset empty lists for the selection-order tracking this round
+            so_samples = [[] for i in range(len(self.vote_dist))]
+            # Draw a sample of a given size for this round
             for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(1, self.contest_ballots)
+                # Find candidate j for whom this ballot was cast.
                 for j in range(len(sample)):
                     if ballot <= self.vote_dist[j][1]:
+                        # Increment the tally for candidate j.
                         sample[j] += 1
+                        # Update the Selection-Ordered samples for all candidates.
+                        for k in range(len(sample)):
+                            if k == j:
+                                # This ballot is for candidate k.
+                                so_samples[k].append(1)
+                            else:
+                                # This ballot is not for candidate k.
+                                so_samples[k].append(0)
                         break
 
             # Convert this sample to a dict
             sample_dict = {}
             for i in range(len(self.vote_dist)):
-                # For now, we will ignore the irrelevant votes for this simulation
+                # For now, we will ignore the irrelevant ballots
                 if not self.vote_dist[i][0] == 'invalid':
                     sample_dict[self.vote_dist[i][0]] = sample[i]
+                    sample_dict[self.vote_dist[i][0]+'_so'] = so_samples[i]
 
             # Execute a round of the audit for this sample
             stop = self.audit.execute_round(current_sample_size, sample_dict)
@@ -178,7 +191,6 @@ class SO_BRAVOMultiRoundStoppingProb(Simulation):
                 stopped += 1
                 rounds_stopped.append(trial['round'])
             # TODO: Extract more data from trial
-        print("stopped",stopped)
 
         if verbose:
             print('Analysis\n========\n')
@@ -311,10 +323,9 @@ class SO_BRAVOMultiRoundRisk(Simulation):
 
         # For each round
         sample = [0 for i in range(len(self.vote_dist))]
-        so_sample = []
-        for i in range(len(sample)):
-            so_samples.append([])
         while round_num <= self.max_rounds:
+            # Reset empty lists for the selection-order tracking this round
+            so_samples = [[] for i in range(len(self.vote_dist))]
             if self.sample_sprob is not None:
                 current_sample_size = self.audit.next_sample_size(self.sample_sprob)
             # Draw a sample of a given size
@@ -326,10 +337,10 @@ class SO_BRAVOMultiRoundRisk(Simulation):
                         # Update the Selection-Ordered samples for all candidates.
                         for k in range(len(sample)):
                             if k == j:
-                                # This ballot is for this candidate.
+                                # This ballot is for candidate k=j.
                                 so_samples[k].append(1)
                             else:
-                                # This ballot is not for this candidate.
+                                # This ballot is not for candidate k.
                                 so_samples[k].append(0)
                         break
 
@@ -339,6 +350,7 @@ class SO_BRAVOMultiRoundRisk(Simulation):
                 # For now, we will ignore the irrelevant ballots
                 if not self.vote_dist[i][0] == 'invalid':
                     sample_dict[self.vote_dist[i][0]] = sample[i]
+                    sample_dict[self.vote_dist[i][0]+'_so'] = so_samples[i]
 
             # Execute a round of the audit for this sample
             stop = self.audit.execute_round(current_sample_size, sample_dict)
