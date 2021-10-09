@@ -78,12 +78,6 @@ class SO_BRAVO(Audit):
         # Distribution over drawn winner ballots for m = 1. 
         num_dist = np.array([1 - p, p])
         
-        """
-        # NOTE Alternatively, we could maintain a distribution over the whole
-        # cumulative k. This would avoid testing against draw_min (instead of
-        # directly against k_min), but would use unneeded space.
-        """
-
         # Maintain cumulative probability of stopping.
         kmins = []
         sprobs = []
@@ -92,7 +86,6 @@ class SO_BRAVO(Audit):
         # For each new ballot drawn, compute the probability of meeting the 
         # BRAVO stopping rule following that particular ballot draw.
         for m in range(1, marginal_draw + 1):
-            assert len(num_dist) == m + 1
             n = nprev + m
 
             # Compute kmin for n.
@@ -143,9 +136,9 @@ class SO_BRAVO(Audit):
         estimates = []
         for sub_audit in self.sub_audits.values():
             # Scale estimates by pairwise invalid proportion
-            proportion = float(sub_audit.sub_contest.contest_ballots) / float(self.contest.contest_ballots)
+            proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots) 
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
-            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2], estimate[3])
+            scaled_estimate = (math.ceil(estimate[0] * proportion), estimate[1], estimate[2], estimate[3])
             estimates.append(scaled_estimate)
 
         # Return the maximum scaled next round size estimate
@@ -175,8 +168,8 @@ class SO_BRAVO(Audit):
         nprev = 0
         if len(self.rounds) > 0:
             kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
-            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
-            nprev = kprev + loser_ballots
+            nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+
 
         # In BRAVO, kmin is an affine function of n.
         # We can compute the constants for this affine function to make
@@ -201,7 +194,6 @@ class SO_BRAVO(Audit):
         # BRAVO stopping rule following that particular ballot draw.
         m = 1
         while nprev + m < 10**7:
-            assert len(num_dist) == m + 1
             n = nprev + m
 
             # Compute kmin for n.
@@ -215,6 +207,7 @@ class SO_BRAVO(Audit):
             else:
                 sprob_m = sum(num_dist[draw_min:])
                 num_dist = np.append(num_dist[0 : draw_min], np.zeros(m + 1 - draw_min))
+
 
             # Record kmin, sprob_m, and updated cumulative sprob.
             kmins.append(kmin)
@@ -249,32 +242,36 @@ class SO_BRAVO(Audit):
             raise Exception('Attempted to call stopping condition without any rounds.')
         if pair not in self.sub_audits.keys():
             raise ValueError('Candidate pair must be a valid subaudit.')
+        if self.sub_audits[pair].sub_contest.reported_winner + '_so' not in self.sample_ballots.keys() or self.sub_audits[pair].sub_contest.reported_loser + '_so' not in self.sample_ballots.keys():
+            raise ValueError('Samples for SO BRAVO must also contain an ordered list of ballot samples (1 for this candidate, 0 else).')
 
         kprev = 0
         nprev = 0
         if len(self.rounds) > 1:
             kprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
-            loserprev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
-            nprev = kprev + loserprev
-        if self.sub_audits[pair].sub_contest.reported_winner + '_so' not in self.sample_ballots.keys() or self.sub_audits[pair].sub_contest.reported_loser + '_so' not in self.sample_ballots.keys():
-            raise ValueError('Samples for SO BRAVO must also contain an ordered list of ballot samples (1 for this candidate, 0 else).')
+            nprev = kprev + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
+
         winner_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner + '_so'][-1]
         loser_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
-        n = nprev + len(winner_sample)
-        p = self.sub_audits[pair].sub_contest.winner_prop
 
-        winner_tally = 0
-        loser_tally = 0
+        p = self.sub_audits[pair].sub_contest.winner_prop
+        k = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        n = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+
         passes = False
-        for mnew in range(1, len(winner_sample)+1):
-            winner_tally += winner_sample[mnew-1]
-            loser_tally += winner_sample[mnew-1]
-            null = binom.pmf(kprev+winner_tally, mnew+nprev, .5) 
-            reported = binom.pmf(kprev+winner_tally, mnew+nprev, p)
-            passes = self.alpha * reported >= null
-            self.sub_audits[pair].pvalue_schedule.append(null / reported)
-            if passes:
-                break
+        kcur = kprev
+        ncur = nprev
+        for i in range(len(winner_sample)):
+            # Only consider relevant ballots (ie for winner or loser)
+            if winner_sample[i] == 1 or loser_sample[i] == 1:
+                kcur += winner_sample[i]
+                ncur += 1
+                null = binom.pmf(kcur, ncur, .5) 
+                reported = binom.pmf(kcur, ncur, p)
+                passes = self.alpha * reported >= null
+                self.sub_audits[pair].pvalue_schedule.append(null / reported)
+                if passes:
+                    break
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
