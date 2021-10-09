@@ -1,5 +1,5 @@
 """
-Script to run simulations of a EOR_BRAVO audit over a maximum of 5 rounds,
+Script to run simulations of a SO_BRAVO audit over a maximum of 5 rounds,
 where each round size is estimated to achieve a 90% probability of stopping.
 Underlying distribution is as reported.
 """
@@ -7,7 +7,7 @@ Underlying distribution is as reported.
 import json
 import logging
 
-from r2b2.simulation.eor_bravo import EOR_BRAVOMultiRoundStoppingProb as EBMRSP
+from r2b2.simulation.so_bravo import SO_BRAVOMultiRoundStoppingProb as SBMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 
@@ -19,8 +19,8 @@ election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
-    query = {'audit_type': 'eor_bravo', 'alpha': .1}
+    db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
+    query = {'audit_type': 'so_bravo', 'alpha': .1}
     audit = db.audits.find_one(query)
     if audit is None:
         db.audits.insert(query)
@@ -41,7 +41,7 @@ def state_trial(state, alpha):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Multiround EOR_BRAVO (90%)',
+        'description' : 'Multiround SO_BRAVO (90%)',
         'max_rounds': 100
     }
     sim = db.simulations.find_one(query)
@@ -52,13 +52,13 @@ def state_trial(state, alpha):
         num_trials = db.trials.count_documents(query)
 
     # Create simulation
-    sim = EBMRSP(alpha,
+    sim = SBMRSP(alpha,
                election.contests[state],
                max_rounds=100,
                sample_sprob=.9,
-               sim_args={'description': 'Multiround EOR_BRAVO (90%)'},
-               user='sarah',
-               pwd='haras',
+               sim_args={'description': 'Multiround SO_BRAVO (90%)'},
+               user='writer',
+               pwd='icanwrite',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'

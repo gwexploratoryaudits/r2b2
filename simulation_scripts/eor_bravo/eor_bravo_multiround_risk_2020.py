@@ -15,7 +15,7 @@ from pymongo import MongoClient
 
 #from txtme import txtme
 
-election = parse_election('data/2020_presidential/2020_presidential.json')
+election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 
 def state_trial(state, alpha):

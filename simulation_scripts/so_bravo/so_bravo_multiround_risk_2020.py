@@ -1,13 +1,13 @@
 """
-Script to run simulations of a EOR_BRAVO audit over a maximum of 5 rounds,
+Script to run simulations of a SO_BRAVO audit over a maximum of 5 rounds,
 where each round size is estimated to achieve a 90% probability of stopping.
-Underlying distribution is as reported.
+Underlying distribution is a tie.
 """
 
 import json
 import logging
 
-from r2b2.simulation.eor_bravo import EOR_BRAVOMultiRoundStoppingProb as EBMRSP
+from r2b2.simulation.so_bravo import SO_BRAVOMultiRoundRisk as EBMRR
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 
@@ -17,10 +17,11 @@ from pymongo import MongoClient
 
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
+
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
-    query = {'audit_type': 'eor_bravo', 'alpha': .1}
+    db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
+    query = {'audit_type': 'so_bravo', 'alpha': .1}
     audit = db.audits.find_one(query)
     if audit is None:
         db.audits.insert(query)
@@ -38,27 +39,30 @@ def state_trial(state, alpha):
     contest_id = db.contests.find_one(query)['_id']
     query = {
         'reported': contest_id, 
-        'underlying': 'reported', 
+        'underlying': 'tie', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Multiround EOR_BRAVO (90%)',
-        'max_rounds': 100
+        'description' : 'Multiround SO_BRAVO (90%)',
+        'max_rounds': 5
     }
     sim = db.simulations.find_one(query)
     if sim is None:
         num_trials = 0
     else:
-        query = {'simulation' : sim['_id']}
-        num_trials = db.trials.count_documents(query)
+        if 'analysis' in sim.keys() and 'remaining_by_round' in sim['analysis'].keys():
+            num_trials = sim['analysis']['remaining_by_round'][0]
+        else:
+            query = {'simulation' : sim['_id']}
+            num_trials = db.trials.count_documents(query)
 
     # Create simulation
-    sim = EBMRSP(alpha,
+    sim_obj = EBMRR(alpha,
                election.contests[state],
-               max_rounds=100,
+               max_rounds=5,
                sample_sprob=.9,
-               sim_args={'description': 'Multiround EOR_BRAVO (90%)'},
-               user='sarah',
-               pwd='haras',
+               sim_args={'description': 'Multiround SO_BRAVO (90%)'},
+               user='writer',
+               pwd='icanwrite',
                reported_args={
                    'name': state,
                    'description': '2020 Presidential'
@@ -66,10 +70,14 @@ def state_trial(state, alpha):
   
     # Run simulation
     trials_left = 10000 - num_trials
+    #txtme('Running {} more risk trials for {}'.format(trials_left, state))
     #print('running',trials_left,'trials for',state)
-    #txtme('running {} sprob trials for {}'.format(trials_left, state))
-    sim.run(trials_left)
-    return sim.analyze()
+    sim_obj.run(trials_left)
+    #txtme('Ran {} more risk trials for {}'.format(trials_left, state))
+    if trials_left > 0:
+        return sim_obj.analyze()
+    else:
+        return sim['analysis']['risk']
 
 if __name__ == '__main__':
     for contest in election.contests.keys():
@@ -82,3 +90,4 @@ if __name__ == '__main__':
             continue
         computed_risk = state_trial(contest, 0.1)
         logging.info('{}: {}'.format(contest, computed_risk))
+    #txtme('Done with current risk simulations')
