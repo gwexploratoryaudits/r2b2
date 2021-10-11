@@ -147,6 +147,11 @@ class SO_BRAVO(Audit):
             if estimate[0] > max_estimate[0]:
                 max_estimate = estimate
 
+        if len(self.rounds) > 0:
+            if max_estimate[0] <= self.rounds[-1]:
+                print("Whoops... next_sample_size() selected {} when previous round size was {}.".format(max_estimate[0], self.rounds[-1]))
+                return self.rounds[-1] + 1
+
         if verbose:
             return max_estimate
         return max_estimate[0]
