@@ -150,7 +150,11 @@ class SO_BRAVO(Audit):
         if len(self.rounds) > 0:
             if max_estimate[0] <= self.rounds[-1]:
                 print("Whoops... next_sample_size() selected {} when previous round size was {}.".format(max_estimate[0], self.rounds[-1]))
-                return self.rounds[-1] + 1
+                max_estimate[0] = self.rounds[-1] + 1
+
+        # Set self.minimum_winner_ballots so they are not recomputed
+        # max_estimate of the form [n, sprob, kmins, sprobs]
+        self.minimum_winner_ballots.append(max_estimate[2])
 
         if verbose:
             return max_estimate
@@ -174,7 +178,6 @@ class SO_BRAVO(Audit):
         if len(self.rounds) > 0:
             kprev = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
             nprev = kprev + self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
-
 
         # In BRAVO, kmin is an affine function of n.
         # We can compute the constants for this affine function to make
@@ -213,7 +216,6 @@ class SO_BRAVO(Audit):
                 sprob_m = sum(num_dist[draw_min:])
                 num_dist = np.append(num_dist[0 : draw_min], np.zeros(m + 1 - draw_min))
 
-
             # Record kmin, sprob_m, and updated cumulative sprob.
             kmins.append(kmin)
             sprobs.append(sprob_m)
@@ -235,7 +237,9 @@ class SO_BRAVO(Audit):
         return -1
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
-        """Check whether the subaudit is complete.
+        """Check whether the subaudit is complete. 
+        If kmins for this round have been computed, simply check them.
+        Otherwise, manually check the stopping condition for each cumulative "subsample" here.
 
         Args:
             pair (str): Dictionary key referencing pairwise subaudit to evaluate.
@@ -264,19 +268,38 @@ class SO_BRAVO(Audit):
         n = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
 
         passes = False
-        kcur = kprev
-        ncur = nprev
-        for i in range(len(winner_sample)):
-            # Only consider relevant ballots (ie for winner or loser)
-            if winner_sample[i] == 1 or loser_sample[i] == 1:
-                kcur += winner_sample[i]
-                ncur += 1
-                null = binom.pmf(kcur, ncur, .5) 
-                reported = binom.pmf(kcur, ncur, p)
-                passes = self.alpha * reported >= null
-                self.sub_audits[pair].pvalue_schedule.append(null / reported)
-                if passes:
-                    break
+
+        if len(self.rounds) == len(self.min_winner_ballots):
+            # We can just compare the each cumulative "subsample" to the kmins
+            kcur = kprev
+            ncur = nprev
+            for i in range(len(winner_sample)):
+                # Only consider relevant ballots (ie for winner or loser)
+                if winner_sample[i] == 1 or loser_sample[i] == 1:
+                    kcur += winner_sample[i]
+                    ncur += 1
+                    if kcur >= self.min_winner_ballots[len(self.rounds) - 1][ncur - nprev]:
+                        passes = True
+                        null = binom.pmf(kcur, ncur, .5) 
+                        reported = binom.pmf(kcur, ncur, p)
+                        self.sub_audits[pair].pvalue_schedule.append(null / reported)
+                        if passes:
+                            break
+        else:
+            # We need to manually check the stopping condition for each "subsample"
+            kcur = kprev
+            ncur = nprev
+            for i in range(len(winner_sample)):
+                # Only consider relevant ballots (ie for winner or loser)
+                if winner_sample[i] == 1 or loser_sample[i] == 1:
+                    kcur += winner_sample[i]
+                    ncur += 1
+                    null = binom.pmf(kcur, ncur, .5) 
+                    reported = binom.pmf(kcur, ncur, p)
+                    passes = self.alpha * reported >= null
+                    self.sub_audits[pair].pvalue_schedule.append(null / reported)
+                    if passes:
+                        break
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
@@ -294,6 +317,11 @@ class SO_BRAVO(Audit):
             []: Stopping sizes for most recent round as an array where the
                 ith item is the kmin for the first i ballots in the SO sample.
         """
+        if len(self.rounds) == len(self.min_winner_ballots):
+            # This function has been called when the most recent 
+            # round's min_winner_ballots has already been computed.
+            return self.min_winner_ballots[-1]
+
         marginal_draw = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1] + self.sample_ballots[
             sub_audit.sub_contest.reported_loser][-1]
         kprev = 0
@@ -398,41 +426,6 @@ class SO_BRAVO(Audit):
             sub_audit.min_winner_ballots.append(kmin_lists[i])
 
         return kmin_lists
-
-    def find_kmin(self, sub_audit: PairwiseAudit, sample_size: int, append: bool):
-        """Search for a kmin (minimum number of winner ballots) satisfying all stopping criteria.
-
-        Args:
-            sub_audit (PairwiseAudit): Find kmin for this subaudit.
-            sample_size (int): Sample size to find kmin for.
-            append (bool): Optionally append the kmins to the min_winner_ballots list. This may
-                not always be desirable here because, for example, appending happens automatically
-                outside this method during an interactive audit.
-        """
-        p = sub_audit.sub_contest.winner_prop
-        n = sample_size
-        if len(self.rounds) >= 1:
-            n = self.rounds[-1] + sample_size
-
-        # In BRAVO, kmin is an affine function of n.
-        # We can compute the constants for this affine function to make
-        # computing kmin easy.
-
-        # Useful constant.
-        logpoveroneminusp = math.log(p/(1-p))
-
-        # Affine constants.
-        intercept = math.log(1 / self.alpha) / logpoveroneminusp
-        slope = math.log(1 / (2 - 2*p)) / logpoveroneminusp
-
-        # Compute kmin.
-        kmin = math.ceil(intercept + n * slope)
-
-        if append:
-            pair = sub_audit.get_pair_str()
-            self.sub_audits[pair].min_winner_ballots.append(kmin)
-
-        return kmin
 
     def compute_risk(self, votes_for_winner: int, pair: str, *args, **kwargs):
         """

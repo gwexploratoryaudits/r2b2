@@ -511,8 +511,9 @@ class Audit(ABC):
             else:
                 self.sample_ballots[candidate] = []
                 self.sample_ballots[candidate].append(tally)
-        self.current_dist_null()
-        self.current_dist_reported()
+        if not self.selection_ordered:
+            self.current_dist_null()
+            self.current_dist_reported()
         self.stopped = self.stopping_condition(verbose)
         if self.stopped:
             if verbose:
