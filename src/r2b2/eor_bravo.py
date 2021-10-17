@@ -107,7 +107,7 @@ class EOR_BRAVO(Audit):
             # Scale estimates by pairwise invalid proportion
             proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
-            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
+            scaled_estimate = (math.ceil(estimate[0] * proportion), estimate[1], estimate[2])
             estimates.append(scaled_estimate)
 
         # Return the maximum scaled next round size estimate

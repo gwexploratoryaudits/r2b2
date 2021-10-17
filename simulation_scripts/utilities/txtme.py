@@ -1,5 +1,5 @@
 """
-Simple function for texting from an insecure gmail account...
+Simple function for texting from an unsecure gmail account...
 I made this to send myself updates on the progress of programs
 with long runtimes (simulations in my audit research).
 

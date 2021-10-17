@@ -39,7 +39,7 @@ def state_trial(state, alpha):
         'underlying': 'tie', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Multiround EOR_BRAVO (90%)',
+        'description' : 'Multiround EOR_BRAVO (90%) Corrected',
         'max_rounds': 5
     }
     sim = db.simulations.find_one(query)
@@ -57,7 +57,7 @@ def state_trial(state, alpha):
                election.contests[state],
                max_rounds=5,
                sample_sprob=.9,
-               sim_args={'description': 'Multiround EOR_BRAVO (90%)'},
+               sim_args={'description': 'Multiround EOR_BRAVO (90%) Corrected'},
                user='writer',
                pwd='icanwrite',
                reported_args={
