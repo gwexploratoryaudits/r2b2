@@ -76,7 +76,6 @@ class EOR_BRAVO(Audit):
 
         # The corresponding stopping probability for this round size is 
         # probability that the drawn k is at least kmin.
-        #sprob = binom.sf(kmin, n, p)
         sprob = sum(binom.pmf(range(kmin - winner_ballots, round_draw + 1), round_draw, p))
 
         return kmin, sprob
@@ -208,21 +207,24 @@ class EOR_BRAVO(Audit):
         if pair not in self.sub_audits.keys():
             raise ValueError('Candidate pair must be a valid subaudit.')
 
-        winner_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-        loser_votes = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-        n_cur = winner_votes + loser_votes
-        p1 = self.sub_audits[pair].sub_contest.winner_prop
+        k = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        n = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+        p = self.sub_audits[pair].sub_contest.winner_prop
 
-        null = binom.pmf(winner_votes, n_cur, .5) 
-        reported = binom.pmf(winner_votes, n_cur, p1)
-
-        self.sub_audits[pair].pvalue_schedule.append(null / reported)
+        # Compute the stopping condition in the log domain
+        loghalf = math.log(.5)
+        logp = math.log(p)
+        logoneminusp = math.log(1 - p)
+        logoneoveralpha = math.log(1 / self.alpha)
+        logratio = k * logp + (n - k) * logoneminusp - n * loghalf
+        passes = logratio >= logoneoveralpha
+        self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 
-        self.sub_audits[pair].stopped = self.alpha * reported >= null
-        return self.sub_audits[pair].stopped
+        self.sub_audits[pair].stopped = passes
+        return passes
 
     def next_min_winner_ballots_pairwise(self, sub_audit: PairwiseAudit) -> int:
         """Compute stopping size for a given subaudit.
@@ -313,13 +315,17 @@ class EOR_BRAVO(Audit):
         p_0 = .5
         p_1 = self.sub_audits[pair].sub_contest.winner_prop
 
-        n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        n = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        k = votes_for_winner
 
-        null = binom.pmf(votes_for_winner, n_cur, p_0) 
-        alt = binom.pmf(votes_for_winner, n_cur, p_1)
-
-        risk = null / alt
-
+        # Compute the risk in the log domain
+        loghalf = math.log(.5)
+        logp = math.log(p)
+        logoneminusp = math.log(1 - p)
+        logoneoveralpha = math.log(1 / self.alpha)
+        logratio = k * logp + (n - k) * logoneminusp - n * loghalf
+        risk = 1 / math.exp(logratio)
+ 
         return risk
 
     def get_risk_level(self):
@@ -332,103 +338,6 @@ class EOR_BRAVO(Audit):
         if len(self.pvalue_schedule) < 1:
             return None
         return min(self.pvalue_schedule)
-
-    def current_dist_null(self):
-        return #NOTE none needed
-        """Update distribution_null for each sub audit for current round."""
-        if len(self.rounds) == 0:
-            raise Exception('No rounds exist.')
-
-        # For each pairwise sub audit, update null distribution
-        for sub_audit in self.sub_audits.values():
-            # Update pairwise distribution using pairwise sample total as round size
-            self._current_dist_null_pairwise(sub_audit)
-
-    def _current_dist_null_pairwise(self, sub_audit: PairwiseAudit, bulk_use_round_size=False):
-        """Update distribution_null for a single PairwiseAudit
-
-        Args:
-            sub_audit (PairwiseAudit): Pairwise subaudit for which to update distribution.
-            bulk_use_round_size (bool): Optional argument used by bulk methods. Since the bulk
-                methods do not sample ballots for candidates during the rounds, this flag simply
-                uses the round schedule as the round draw (instead of the pairwise round draw)
-                for updating the distribution. Default is False.
-        """
-        pair = sub_audit.get_pair_str()
-        if bulk_use_round_size:
-            if len(self.rounds) == 1:
-                round_draw = self.rounds[0]
-            else:
-                round_draw = self.rounds[-1] - self.rounds[-2]
-        elif len(self.rounds) == 1:
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
-        else:
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
-
-        n = sum(self.sample_ballots[sub_audit.sub_contest.reported_loser]) + sum(self.sample_ballots[
-            sub_audit.sub_contest.reported_winner])
- 
-        self.sub_audits[pair].distribution_null = binom.pmf(range(0,n+1), n, .5)
-
-    def current_dist_reported(self):
-        return #NOTE none needed
-        """Update distribution_reported_tally for each subaudit for current round."""
-
-        if len(self.rounds) == 0:
-            raise Exception('No rounds exist')
-
-        # For each pairwise sub audit, update dist_reported
-        for sub_audit in self.sub_audits.values():
-            # Update distr_reported using pairwise round size
-            self._current_dist_reported_pairwise(sub_audit)
-
-    def _current_dist_reported_pairwise(self, sub_audit: PairwiseAudit, bulk_use_round_size=False):
-        """Update dist_reported for a single PairwiseAudit.
-
-        Args:
-            sub_audit (PairwiseAudit): Pairwise subaudit for which to update distribution.
-            bulk_use_round_size (bool): Optional argument used by bulk methods. Since the bulk
-                methods do not sample ballots for candidates during the rounds, this flag simply
-                uses the round schedule as the round draw (instead of the pairwise round draw)
-                for updating the distribution. Default is False.
-        """
-
-        pair = sub_audit.get_pair_str()
-        if bulk_use_round_size:
-            if len(self.rounds) == 1:
-                round_draw = self.rounds[0]
-            else:
-                round_draw = self.rounds[-1] - self.rounds[-2]
-        elif len(self.rounds) == 1:
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
-        else:
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_loser]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_loser]), sub_audit.sub_contest.reported_loser))
-            if len(self.sample_ballots[sub_audit.sub_contest.reported_winner]) != len(self.rounds):
-                raise Exception('Currently {} rounds, but only {} samples for {}.'.format(
-                    len(self.rounds), len(self.sample_ballots[sub_audit.sub_contest.reported_winner]), sub_audit.stopped.reported_winner))
-
-        n = sum(self.sample_ballots[sub_audit.sub_contest.reported_loser]) + sum(self.sample_ballots[
-            sub_audit.sub_contest.reported_winner])
-        p = sub_audit.sub_contest.winner_prop
- 
-        self.sub_audits[pair].distribution_null = binom.pmf(range(0,n+1), n, p)
 
     def compute_all_min_winner_ballots(self, sub_audit: PairwiseAudit, max_sample_size: int = None, *args, **kwargs):
         """Compute the minimum number of winner ballots for the complete 

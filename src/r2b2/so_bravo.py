@@ -423,7 +423,8 @@ class SO_BRAVO(Audit):
         """
         p = self.sub_audits[pair].sub_contest.winner_prop
 
-        n = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        krealized = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        n = krealized + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
         k = votes_for_winner
 
         # Compute the stopping condition in the log domain
