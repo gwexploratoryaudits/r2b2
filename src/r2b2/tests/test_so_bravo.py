@@ -115,10 +115,3 @@ def test_next_sample_size_first_round():
         contest = Contest(N, {'A': A_tally, 'B': B_tally}, 1, ['A'], ContestType.MAJORITY)
         so_bravo = SO_BRAVO(.1, .1, contest)
         assert abs(so_bravo.next_sample_size(sprob=desired_sprob) - n_90perc[i]) <= 0
-
-test_simple_so_bravo()
-test_so_bravo_kmins()
-test_min_sample_size()
-test_execute_round_so_bravo()
-test_find_sprob_first_round()
-test_next_sample_size_first_round()
