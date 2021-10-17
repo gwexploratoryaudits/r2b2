@@ -149,12 +149,8 @@ class SO_BRAVO(Audit):
 
         if len(self.rounds) > 0:
             if max_estimate[0] <= self.rounds[-1]:
-                print("Whoops... next_sample_size() selected {} when previous round size was {}.".format(max_estimate[0], self.rounds[-1]))
+                print("Take note... next_sample_size() erroneously selected {} when previous round size was {}.".format(max_estimate[0], self.rounds[-1]))
                 max_estimate[0] = self.rounds[-1] + 1
-
-        # Set self.minimum_winner_ballots so they are not recomputed
-        # max_estimate of the form [n, sprob, kmins, sprobs]
-        self.minimum_winner_ballots.append(max_estimate[2])
 
         if verbose:
             return max_estimate
@@ -238,8 +234,7 @@ class SO_BRAVO(Audit):
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
         """Check whether the subaudit is complete. 
-        If kmins for this round have been computed, simply check them.
-        Otherwise, manually check the stopping condition for each cumulative "subsample" here.
+        Check the stopping condition for each cumulative "subsample" here.
 
         Args:
             pair (str): Dictionary key referencing pairwise subaudit to evaluate.
@@ -264,42 +259,31 @@ class SO_BRAVO(Audit):
         loser_sample = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser + '_so'][-1]
 
         p = self.sub_audits[pair].sub_contest.winner_prop
-        k = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-        n = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+        ktot = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+        ntot = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
 
         passes = False
 
-        if len(self.rounds) == len(self.min_winner_ballots):
-            # We can just compare the each cumulative "subsample" to the kmins
-            kcur = kprev
-            ncur = nprev
-            for i in range(len(winner_sample)):
-                # Only consider relevant ballots (ie for winner or loser)
-                if winner_sample[i] == 1 or loser_sample[i] == 1:
-                    kcur += winner_sample[i]
-                    ncur += 1
-                    if kcur >= self.min_winner_ballots[len(self.rounds) - 1][ncur - nprev]:
-                        passes = True
-                        null = binom.pmf(kcur, ncur, .5) 
-                        reported = binom.pmf(kcur, ncur, p)
-                        self.sub_audits[pair].pvalue_schedule.append(null / reported)
-                        if passes:
-                            break
-        else:
-            # We need to manually check the stopping condition for each "subsample"
-            kcur = kprev
-            ncur = nprev
-            for i in range(len(winner_sample)):
-                # Only consider relevant ballots (ie for winner or loser)
-                if winner_sample[i] == 1 or loser_sample[i] == 1:
-                    kcur += winner_sample[i]
-                    ncur += 1
-                    null = binom.pmf(kcur, ncur, .5) 
-                    reported = binom.pmf(kcur, ncur, p)
-                    passes = self.alpha * reported >= null
-                    self.sub_audits[pair].pvalue_schedule.append(null / reported)
-                    if passes:
-                        break
+        kcur = kprev
+        ncur = nprev
+        # Check the stopping condition at each individual ballot draw
+        for i in range(len(winner_sample)):
+            # Only consider relevant ballots (ie for winner or loser)
+            if winner_sample[i] == 1 or loser_sample[i] == 1:
+                # Compute the stopping condition in the log domain
+                kcur += winner_sample[i]
+                ncur += 1
+                loghalf = math.log(.5)
+                logp = math.log(p)
+                logoneminusp = math.log(1 - p)
+                logoneoveralpha = math.log(1 / alpha)
+                k = kcur
+                n = ncur
+                logratio = k * logp + (n - k) * logoneminusp - n * loghalf
+                passes = logratio >= logoneoveralpha
+                if passes:
+                    self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+                    break
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
