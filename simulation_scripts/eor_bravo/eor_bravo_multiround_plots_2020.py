@@ -9,7 +9,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27020,user='reader', pwd='icanread')
+    db = DBInterface(port=27022,user='reader', pwd='icanread')
     risks = []
     risk_stops = []
     sprobs = []
@@ -28,7 +28,7 @@ if __name__ == '__main__':
             'reported': reported_id,
             'underlying': 'tie',
             'audit': audit_id,
-            'description': 'Multiround EOR_BRAVO (90%)',
+            'description': 'Multiround EOR_BRAVO (90%) Corrected',
             'invalid_ballots': True,
             'sample_sprob':.9,
             'max_rounds': max_rounds
@@ -40,7 +40,7 @@ if __name__ == '__main__':
             'reported': reported_id,
             'underlying': 'reported',
             'audit': audit_id,
-            'description': 'Multiround EOR_BRAVO (90%)',
+            'description': 'Multiround EOR_BRAVO (90%) Corrected',
             'invalid_ballots': True,
             'sample_sprob':.9,
             'max_rounds': max_rounds+95
