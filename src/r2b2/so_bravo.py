@@ -260,7 +260,7 @@ class SO_BRAVO(Audit):
 
         p = self.sub_audits[pair].sub_contest.winner_prop
         ktot = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
-        ntot = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+        ntot = ktot + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
 
         passes = False
 
@@ -276,7 +276,7 @@ class SO_BRAVO(Audit):
                 loghalf = math.log(.5)
                 logp = math.log(p)
                 logoneminusp = math.log(1 - p)
-                logoneoveralpha = math.log(1 / alpha)
+                logoneoveralpha = math.log(1 / self.alpha)
                 k = kcur
                 n = ncur
                 logratio = k * logp + (n - k) * logoneminusp - n * loghalf
@@ -284,6 +284,9 @@ class SO_BRAVO(Audit):
                 if passes:
                     self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
                     break
+
+        if not passes:
+            self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
