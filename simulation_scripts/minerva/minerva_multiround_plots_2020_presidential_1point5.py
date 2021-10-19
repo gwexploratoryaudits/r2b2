@@ -6,7 +6,7 @@ from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
 from r2b2.tests.util import parse_election
 
-election = parse_election('data/2020_presidential/2020_presidential.json')
+election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
     db = DBInterface(port=27020,user='reader', pwd='icanread')
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Risk')
         plt.grid()
         plt.show()
-
+"""
     # Plot the total risk across all rounds
     total_risks = []
     for s in range(len(risks)):
@@ -89,10 +89,12 @@ if __name__ == '__main__':
     plt.xlabel('Reported Margin')
     title = 'Experimental Total Risk (across 5 rounds) (90% then 1.5x Minerva)'
     plt.title(title)
+    plt.ylim(.04,.1)
     plt.ylabel('Experimental Risk')
     plt.grid()
     plt.show()
 
+"""
     # Plot the total sprob across all rounds
     total_sprobs = []
     for s in range(len(sprobs)):
@@ -125,7 +127,7 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
-    """
+
     # Plot conditional sprobs vs. margins (sprob given that the audit reached the current round)
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = [] #conditional sprobs
@@ -142,7 +144,6 @@ if __name__ == '__main__':
         plt.show()
 
 
-    """
     # Plot ratios vs. margins
     for r in range (1,max_rounds+1):
         ratios_for_this_round = []
