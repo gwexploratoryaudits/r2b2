@@ -72,10 +72,14 @@ if __name__ == '__main__':
         total_risks.append(total_risk)
     plt.plot(margins, total_risks, 'bo')
     plt.xlabel('Reported Margin')
-    title = 'Experimental Total Risk (across 5 rounds) (90% EOR_BRAVO)'
+    title = 'Proportion of Audits that Stopped (across 5 rounds) (EoR BRAVO, Tie)'
     plt.title(title)
-    plt.ylabel('Experimental Risk')
+    plt.ylabel('Proportion that Stopped')
     plt.grid()
     plt.ylim(0,.11)
     plt.axhline(y=risk_limit, color='b', linestyle='--', label='Risk Limit')
     plt.show()
+
+
+
+

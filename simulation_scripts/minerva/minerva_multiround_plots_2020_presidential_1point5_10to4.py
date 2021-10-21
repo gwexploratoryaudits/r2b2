@@ -60,6 +60,7 @@ if __name__ == '__main__':
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
 
+    """
     # Plot absolute risks vs. margins
     for r in range (1,max_rounds+1):
         #risks_for_this_round = [] #conditional risks
@@ -81,6 +82,7 @@ if __name__ == '__main__':
         plt.grid()
         plt.legend(loc='upper right')
         plt.show()
+    """
     # Plot the total risk across all rounds
     total_risks = []
     for s in range(len(risks)):
@@ -88,13 +90,14 @@ if __name__ == '__main__':
         total_risks.append(total_risk)
     plt.plot(margins, total_risks, 'bo')
     plt.xlabel('Reported Margin')
-    title = 'Experimental Total Risk (across 5 rounds) (90% then 1.5x Minerva)'
+    title = 'Proportion of Audits that Stopped (Minerva (1.5x), Tie)'
     plt.title(title)
     plt.ylim(.04,.1)
-    plt.ylabel('Experimental Risk')
+    plt.ylabel('Proportion that Stopped')
     plt.grid()
     plt.show()
 
+    """
     # Plot the total sprob across all rounds
     total_sprobs = []
     for s in range(len(sprobs)):
@@ -109,7 +112,6 @@ if __name__ == '__main__':
     plt.show()
 
 
-    """ who cares about absolute sprobs anyways?
     # Plot absolute sprobs vs. margins
     for r in range (1,max_rounds+1):
         sprobs_for_this_round = [] #conditional sprobs
@@ -128,7 +130,6 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
-    """
 
     # Plot conditional sprobs vs. margins (sprob given that the audit reached the current round)
     for r in range (1,max_rounds+1):
@@ -190,10 +191,11 @@ if __name__ == '__main__':
     plt.legend(loc='lower right')
     plt.show()
 
-    # Plot first 4 rounds conditional sprobs vs. margins
+    """
+    # Plot first 3 rounds conditional sprobs vs. margins
     colors= ['b','r','g','c','m']
     markers = ['o','x','s','d','*']
-    for r in range (1,max_rounds+1-1):
+    for r in range (1,max_rounds+1-2):
         sprobs_for_this_round = [] #conditional sprobs
         absolute_sprobs_for_this_round = [] #absolute sprobs
         plot_margins = []
@@ -204,13 +206,13 @@ if __name__ == '__main__':
         avg_for_this_round = sum(sprobs_for_this_round) / len(sprobs_for_this_round)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round'+str(r), linestyle='None')
+        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
         plt.xlabel('Reported Margin')
-        title = 'Conditional Stopping Probability by Round (90% EOR_BRAVO)'
+        title = 'Proportion of Audits that Stopped by Round (Minerva (1.5x), Reported)'
         plt.title(title)
-        plt.ylabel('Proportion of Audits that Stopped')
+        plt.ylabel('Proportion that Stopped')
         plt.grid()
-        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round'+str(r))
+        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
     plt.legend(loc='lower right')
     plt.show()

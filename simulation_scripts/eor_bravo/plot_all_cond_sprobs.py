@@ -78,13 +78,13 @@ if __name__ == '__main__':
         avg_for_this_round = sum(sprobs_for_this_round) / len(sprobs_for_this_round)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round'+str(r), linestyle='None')
+        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
         plt.xlabel('Reported Margin')
-        title = 'Conditional Stopping Probability by Round (90% EOR_BRAVO)'
+        title = 'Proportion of Audits that Stopped by Round (EoR BRAVO, Reported)'
         plt.title(title)
-        plt.ylabel('Experimental Conditional Stopping Probability')
+        plt.ylabel('Proportion that Stopped')
         plt.grid()
-        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round'+str(r))
+        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
     plt.legend(loc='lower right')
     plt.show()
