@@ -148,8 +148,11 @@ class SO_BRAVO(Audit):
 
         if len(self.rounds) > 0:
             if max_estimate[0] <= self.rounds[-1]:
-                print("Take note... next_sample_size() erroneously selected {} when previous round size was {}.".format(max_estimate[0], self.rounds[-1]))
-                max_estimate[0] = self.rounds[-1] + 1
+                # Sometimes this happens when very little new evidence is needed to stop
+                # We will simply force at least one new ballot to be drawn in the new round
+                lst = list(max_estimate)
+                lst[0] = self.rounds[-1] + 1
+                max_estimate = tuple(lst)
 
         if verbose:
             return max_estimate
@@ -265,11 +268,13 @@ class SO_BRAVO(Audit):
 
         kcur = kprev
         ncur = nprev
+        num_relevant = 0
         # Check the stopping condition at each individual ballot draw
         for i in range(len(winner_sample)):
             # Only consider relevant ballots (ie for winner or loser)
             if winner_sample[i] == 1 or loser_sample[i] == 1:
                 # Compute the stopping condition in the log domain
+                num_relevant += 1
                 kcur += winner_sample[i]
                 ncur += 1
                 loghalf = math.log(.5)
@@ -284,8 +289,19 @@ class SO_BRAVO(Audit):
                     self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
                     break
 
-        if not passes:
-            self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+        POS_INF = 10**10
+
+        # In rare cases, none of the ballots in the sample are relevant to this contest
+        if num_relevant == 0: 
+            passes = False
+            self.sub_audits[pair].pvalue_schedule.append(POS_INF)
+            self.sub_audits[pair].stopped = passes
+
+        elif not passes:
+            if math.exp(logratio) == 0:
+                self.sub_audits[pair].pvalue_schedule.append(POS_INF)
+            else:
+                self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
