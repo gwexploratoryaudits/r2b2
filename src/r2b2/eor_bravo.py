@@ -114,6 +114,14 @@ class EOR_BRAVO(Audit):
         for estimate in estimates:
             if estimate[0] > max_estimate[0]:
                 max_estimate = estimate
+        
+        if len(self.rounds) > 0:
+            if int(max_estimate[0]) <= self.rounds[-1]:
+                # Sometimes this happens when very little additional evidence is needed to stop
+                # We will simply sample one new ballot in the new round
+                lst = list(max_estimate)
+                lst[0] = self.rounds[-1] + 1
+                max_estimate = tuple(lst)
 
         if verbose:
             return max_estimate
@@ -211,6 +219,8 @@ class EOR_BRAVO(Audit):
         n = k + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
         p = self.sub_audits[pair].sub_contest.winner_prop
 
+        POS_INF = 10**10
+
         # Compute the stopping condition in the log domain
         loghalf = math.log(.5)
         logp = math.log(p)
@@ -218,7 +228,10 @@ class EOR_BRAVO(Audit):
         logoneoveralpha = math.log(1 / self.alpha)
         logratio = k * logp + (n - k) * logoneminusp - n * loghalf
         passes = logratio >= logoneoveralpha
-        self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+        if math.exp(logratio) == 0:
+            self.sub_audits[pair].pvalue_schedule.append(POS_INF)
+        else:
+            self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))

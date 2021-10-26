@@ -99,7 +99,7 @@ class SO_BRAVOMultiRoundStoppingProb(Simulation):
             start = time.time()
             current_sample_size = self.audit.next_sample_size(self.sample_sprob)
             elapsed = time.time() - start
-            print(elapsed, "elapsed during next_sample_size")
+            #print(elapsed, "elapsed during next_sample_size")
         else:
             current_sample_size = self.sample_size
             next_sample = math.ceil(self.sample_mult * self.sample_size)
@@ -140,7 +140,7 @@ class SO_BRAVOMultiRoundStoppingProb(Simulation):
             start = time.time()
             stop = self.audit.execute_round(current_sample_size, sample_dict)
             elapsed = time.time() - start
-            print(elapsed, "elapsed during execute_round")
+            #print(elapsed, "elapsed during execute_round")
 
             # If audit is done, return trial output
             # FIXME: Improve output format
@@ -337,7 +337,7 @@ class SO_BRAVOMultiRoundRisk(Simulation):
             if self.sample_sprob is not None:
                 start = time.time()
                 current_sample_size = self.audit.next_sample_size(self.sample_sprob)
-                print(time.time() - start, "elapsed in next_sample_size")
+                #print(time.time() - start, "elapsed in next_sample_size")
             # Draw a sample of a given size
             for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(1, self.contest_ballots)
@@ -365,7 +365,7 @@ class SO_BRAVOMultiRoundRisk(Simulation):
             # Execute a round of the audit for this sample
             start = time.time()
             stop = self.audit.execute_round(current_sample_size, sample_dict)
-            print(time.time() - start, "elapsed in execute_round")
+            #print(time.time() - start, "elapsed in execute_round")
 
             # If audit is done, return trial output
             # FIXME: Improve output format
