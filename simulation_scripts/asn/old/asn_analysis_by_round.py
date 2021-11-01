@@ -16,7 +16,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27018,user='reader', pwd='icanread')
+    db = DBInterface(port=27017,user='reader', pwd='icanread')
     margins = []
     asns3 = [] #asns assuming we did 3 rounds
     asns4 = [] #asns assuming we did 3 rounds
@@ -42,16 +42,39 @@ if __name__ == '__main__':
             'invalid_ballots': True,
             'sample_mult':1.0,
         })
-        anal = sprob_sim['analysis']
+        sim_id = sprob_sim['_id']
         if sprob_sim is None:
             # For several low margin states, we didn't run simulations
             continue
+        anal = sprob_sim['analysis']
         trials = db.trial_lookup(sprob_sim['_id'])
 
+        """
         sample_nums3 = []
         sample_nums4 = []
         sample_nums5 = []
+        """
+        avg_sampled = [ [] ] * 5 #an empty list for each round
         for trial in trials:
+            # Now instead of using just ASN, we are looking at the average number
+            # of ballots sampled cumulatively through each round...
+
+            # The first round is always drawn
+            sampled[0] = trial['relevant_sample_size_sched'][0]
+
+            # Then subsequent rounds may require more ballots for some audits
+            for i in range(1,len(avg_sampled)):
+                if len(trial['relevant_sample_size_sched']) > i: 
+                    # If this audit went this far, we add the new ballots to the total
+                    avg_sampled[i] = trial['relevant_sample_size_sched']
+                else:
+                    # Otherwise, the same number has been sampled so far
+                    avg_sampled[i] = avg_sampled[i - 1]
+                    
+
+
+            """
+            # While we're here, let's compute the ASN info too since we can
             if not trial['stop']:
                 # This audit did not stop at all, so we had to sample all ballots in all cases
                 tot_rel_bals = sum(election.contests[contest].tally.values())
@@ -89,16 +112,19 @@ if __name__ == '__main__':
                 sample_nums3.append(sample_num)
                 sample_nums4.append(sample_num)
                 sample_nums5.append(sample_num)
+            """
 
+        """
         asn3 = sum(sample_nums3) / len(sample_nums3)
         asn4 = sum(sample_nums4) / len(sample_nums4)
         asn5 = sum(sample_nums5) / len(sample_nums5)
         print("margin:",margin,"  asn3:",asn3, "  asn4:",asn4,"  asn5:",asn5)
 
         # TODO Add this asn value to the analysis entry of this simulation in the database
-        anal['asn_3rounds':asn3]
-        anal['asn_4rounds':asn4]
-        anal['asn_5rounds':asn5]
+        anal['asn_3rounds'] = asn3
+        anal['asn_4rounds'] = asn4
+        anal['asn_5rounds'] = asn5
+        """
 
         # Update simulation entry to include analysis
         db.update_analysis(sim_id, anal)
