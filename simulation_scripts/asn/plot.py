@@ -11,7 +11,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27017,user='reader', pwd='icanread')
+    db = DBInterface(port=27018,user='reader', pwd='icanread')
     margins = []
     avg_sampled_minerva_1p0 = [ [] for _ in range(5) ] 
     abs_sprob_minerva_1p0 = [ [] for _ in range(5) ] 
@@ -51,12 +51,64 @@ if __name__ == '__main__':
             stopped_so_far += analysis['stopped_by_round'][i]
             abs_sprob_minerva_1p0[i].append(stopped_so_far / total_to_start)
 
+# index by margin rather than round
+points_by_margin = []
+for m in range(len(avg_sampled_minerva_1p0[0])):
+    sprobs_for_m = []
+    samnums_for_m = []
+    for i in range(5):
+        sprobs_for_m.append(avg_sampled_minerva_1p0[i][m])
+        samnums_for_m.append(abs_sprob_minerva_1p0[i][m])
+    points_by_margin.append((sprobs_for_m, samnums_for_m))
+
+"""
 for i in range(5):
     plt.plot(avg_sampled_minerva_1p0[i], abs_sprob_minerva_1p0[i], 'bo', label='Round '+str(i+1))
-title = 'Experimental ASN for Various Margins (Minerva, 90% then 1.5x)'
+"""
+colors= ['b','r','g','c','m']
+markers = ['o','x','s','d','*']
+for m in range(len(points_by_margin)):
+    if m >= len(colors):
+        break
+    plt.plot(points_by_margin[m][0], points_by_margin[m][1], colors[m]+markers[m], label='Margin '+str(margins[m]))
+title = 'Proportion of Audits that Stopped vs. Average Number of Ballots Sampled (only Minerva, 90% then 1.0x)'
 plt.title(title)
 plt.xlabel('Average Number of Ballots Sampled')
 plt.ylabel('Proportion of Audits that Stopped')
 plt.grid()
 plt.legend()
 plt.show()
+
+
+
+
+"""
+
+
+    # Plot conditional sprobs vs. margins
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    for r in range (1,max_rounds+1-2):
+        sprobs_for_this_round = [] #conditional sprobs
+        absolute_sprobs_for_this_round = [] #absolute sprobs
+        plot_margins = []
+        for s in range(len(sprobs)):
+            if sprobs[s][r-1] != -1: # aka as long as we have a meaningful sprob
+                sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+                plot_margins.append(margins[s])
+        avg_for_this_round = sum(sprobs_for_this_round) / len(sprobs_for_this_round)
+        # Uncomment the line below to fix the y-axis scale
+        #plt.ylim(.65,1)
+        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
+        plt.xlabel('Reported Margin')
+        title = 'Proportion of Audits that Stopped by Round (EoR BRAVO, Reported)'
+        plt.title(title)
+        plt.ylabel('Proportion that Stopped')
+        plt.grid()
+        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
+    #plt.axhline(y=.9, color='black', linestyle='--')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
+"""
