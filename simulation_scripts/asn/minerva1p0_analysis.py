@@ -35,11 +35,10 @@ if __name__ == '__main__':
             'invalid_ballots': True,
             'sample_mult':1.0,
         })
-        sim_id = sprob_sim['_id']
         if sprob_sim is None:
             # For several low margin states, we didn't run simulations
             continue
-
+        sim_id = sprob_sim['_id']
         analysis = sprob_sim['analysis']
         trials = db.trial_lookup(sprob_sim['_id']) #this function is slowwwww
         # Five empty lists, a list for each round to be filled with the number of ballots sampled for each audit
