@@ -1,7 +1,10 @@
 """
-Finds the equivalent to ASN for Minerva using the 90% sprob round size
-simulations in the Nimbus simulation database. (1 million trials each
-2020 presidential state)
+Adds the ASN of an audit to its analysis in the simulation database.
+
+Computes ASN using the audits with the underlying distribution same as reported.
+
+Assumes that audits after 'considered_rounds' proceed to a full hand count 
+(thus sampling all relevant contest ballots).
 """
 
 import matplotlib.pyplot as plt
@@ -10,10 +13,10 @@ from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
 from r2b2.tests.util import parse_election
 
-election = parse_election('data/2020_presidential/2020_presidential.json')
+election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27020,user='reader', pwd='icanread')
+    db = DBInterface(port=27018,user='reader', pwd='icanread')
     margins = []
     asns = []
 
@@ -21,7 +24,7 @@ if __name__ == '__main__':
     # that after considered_rounds rounds, election officials proceed to a 
     # full hand count. For audits the proceed to a full hand count, we assign
     # the total number of relevant ballots in the contest when computing ASN.
-    considered_rounds = 5
+    considered_rounds = 3
 
     for contest in election.contests:
         audit_id = db.audit_lookup('minerva', 0.1)
@@ -33,9 +36,9 @@ if __name__ == '__main__':
             'reported': reported_id,
             'underlying': 'reported',
             'audit': audit_id,
-            'description': 'Multiround Minerva (90%)',
+            'description': 'Multi round Minerva (90% then 1.0x)',
             'invalid_ballots': True,
-            'sample_sprob':.9,
+            'sample_mult':1.0,
         })
         if sprob_sim is None:
             # For several low margin states, we didn't run simulations
@@ -44,14 +47,19 @@ if __name__ == '__main__':
 
         sample_nums = []
         for trial in trials:
-            if not trial['stop']: # (Make sure it actually did stop)
-                print("one didn't stop")
-                continue
-            sample_num = sum(trial['relevant_sample_size_sched'])
+            if not trial['stop'] or len(trial['relevant_sample_size_sched']) > 3: # (Make sure it actually did stop)
+                tot_rel_bals = sum(election.contests[contest].tally.values())
+                sample_num = tot_rel_bals
+            else:
+                # NOTE that the 'relevant_sample_size_sched' is in fact the cumulative round schedule of relevant ballots
+                sample_num = trial['relevant_sample_size_sched'][-1]
             sample_nums.append(sample_num)
 
         asn = sum(sample_nums) / len(sample_nums)
         print("margin:",margin," asn:",asn)
+
+        # TODO Add this asn value to the analysis entry of this simulation in the database
+        # TODO later
 
         # Append to lists
         margins.append(margin)
@@ -60,11 +68,15 @@ if __name__ == '__main__':
     # Plot the ASNs for the various margins
     plt.plot(margins, asns, 'bo')
     plt.xlabel('Margin')
-    title = 'Experimental ASN for Various Margins (90% Minerva)'
+    title = 'Experimental ASN for Various Margins (Minerva, 90% then 1.5x)'
     plt.title(title)
     plt.ylabel('Experimental ASN')
     plt.grid()
     plt.show()
+
+
+    print(asns)
+    print(margins)
 
 """
 import re
