@@ -72,13 +72,13 @@ def state_trial(state, alpha):
     return sim.analyze()
 
 if __name__ == '__main__':
-    for contest in election.contests.keys():
-        winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
-        tally = sum(election.contests[contest].tally.values())
-        loser_tally = tally - winner_tally
-        margin = (winner_tally - loser_tally) / tally
-        if margin < 0.1: # we begin with only margins above 10%
-            print('Skipping',contest,'with margin',round(margin,5))
-            continue
-        computed_risk = state_trial(contest, 0.1)
-        logging.info('{}: {}'.format(contest, computed_risk))
+    contest = 'Texas'
+    winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
+    tally = sum(election.contests[contest].tally.values())
+    loser_tally = tally - winner_tally
+    margin = (winner_tally - loser_tally) / tally
+    if margin < 0.05: # we begin with only margins above 10%
+        print('Skipping',contest,'with margin',round(margin,5))
+        exit()
+    computed_risk = state_trial(contest, 0.1)
+    logging.info('{}: {}'.format(contest, computed_risk))
