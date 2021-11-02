@@ -94,7 +94,7 @@ if __name__ == '__main__':
     plt.grid()
     plt.show()
 
-"""
+    """
     # Plot the total sprob across all rounds
     total_sprobs = []
     for s in range(len(sprobs)):
@@ -135,13 +135,13 @@ if __name__ == '__main__':
             sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
         # Uncomment the line below to fix the y-axis scale
         plt.ylim(.65,1)
-        plt.plot(margins, sprobs_for_this_round, 'bo')
+        plt.plot(margins, sprobs_for_this_round, 'bo', label='Round '+str(r))
         plt.xlabel('Reported Margin')
-        title = 'Round '+str(r)+' Conditional Stopping Probability (25% then 1.5x Minerva)'
-        plt.title(title)
-        plt.ylabel('Experimental Stopping Probability')
-        plt.grid()
-        plt.show()
+    title = 'Experimental Conditional Stopping Probability (25% then 1.5x Minerva)'
+    plt.title(title)
+    plt.ylabel('Proportion of Audits that Stopped')
+    plt.grid()
+    plt.show()
 
 
     # Plot ratios vs. margins
@@ -161,3 +161,29 @@ if __name__ == '__main__':
         plt.show()
 
     """
+    # Plot first 5 rounds conditional sprobs vs. margins
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    for r in range (1,max_rounds+1):
+        sprobs_for_this_round = [] #conditional sprobs
+        absolute_sprobs_for_this_round = [] #absolute sprobs
+        plot_margins = []
+        for s in range(len(sprobs)):
+            if sprobs[s][r-1] != -1: # aka as long as we have a meaningful sprob
+                sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
+                plot_margins.append(margins[s])
+        avg_for_this_round = sum(sprobs_for_this_round) / len(sprobs_for_this_round)
+        # Uncomment the line below to fix the y-axis scale
+        #plt.ylim(.65,1)
+        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
+        plt.xlabel('Reported Margin')
+        title = 'Stopping Proportion by Round (Minerva (25% then 1.5x), Reported)'
+        plt.title(title)
+        plt.ylabel('Proportion that Stopped')
+        plt.grid()
+        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
+    #plt.axhline(y=.9, color='black', linestyle='--')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
