@@ -13,7 +13,7 @@ import sys
 election = parse_election('../../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27017,user='sarah', pwd='haras')
+    db = DBInterface(port=27018,user='sarah', pwd='haras')
     #counter = 0
     #if counter == 1:
     #    break
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     contest = sys.argv[1]
     print('Doing the analysis for', contest)
     #contest = 'Texas'
-    audit_id = db.audit_lookup('eor_bravo', 0.1)
+    audit_id = db.audit_lookup('minerva', 0.1)
     reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
     winner_prop = election.contests[contest].tally[election.contests[contest].reported_winners[0]] / sum(
         election.contests[contest].tally.values())
@@ -33,9 +33,9 @@ if __name__ == '__main__':
         'reported': reported_id,
         'underlying': 'reported',
         'audit': audit_id,
-        'description': 'Multiround EOR_BRAVO (90%) Corrected',
+        'description': 'Multi round Minerva (90% then 1.0x)',
         'invalid_ballots': True,
-        'sample_sprob':.9,
+        'sample_mult':1.0,
     })
 
     if sprob_sim is None:
@@ -43,17 +43,15 @@ if __name__ == '__main__':
         print('No sim for this state:',contest)
         exit()
 
+    print('Got the sim entry')
+
     sim_id = sprob_sim['_id']
     analysis = sprob_sim['analysis']
-    trials = db.trial_lookup(sprob_sim['_id']) #this function is slowwwww
     # Five empty lists, a list for each round to be filled with the number of ballots sampled for each audit
+    trials = db.db.trials.find({'simulation': sprob_sim['_id']})
+    print('Got the trials, now analyzing')
     sampled = [ [] for _ in range(5) ] 
-    #countertwo = 0
     for trial in trials:
-        #print(trial)
-        #countertwo += 1
-        #if countertwo == 15:
-        #    break
         # Now instead of using just ASN, we are looking at the average number
         # of ballots sampled cumulatively through each round...
 
@@ -69,14 +67,15 @@ if __name__ == '__main__':
                 # Otherwise, the number of ballots sampled stays the same (no change)
                 sampled[i].append(sampled[i - 1][-1])
 
-        # Compute averages from these lists
-        avg_sampled = [0]*5
-        for i in range(len(avg_sampled)):
-            avg_sampled[i] = sum(sampled[i]) / len(sampled[i])
+    # Compute averages from these lists
+    avg_sampled = [0]*5
+    for i in range(len(avg_sampled)):
+        avg_sampled[i] = sum(sampled[i]) / len(sampled[i])
 
-        # Add avg_sampled to the analysis dict
-        #print(avg_sampled)
-        analysis['avg_sampled_by_round'] = avg_sampled
+    # Add avg_sampled to the analysis dict
+    #print(avg_sampled)
+    analysis['avg_sampled_by_round'] = avg_sampled
+    print('Done with analysis, now updating entry in database')
 
-        # Update simulation entry to include analysis
-        db.update_analysis(sim_id, analysis)
+    # Update simulation entry to include analysis
+    db.update_analysis(sim_id, analysis)
