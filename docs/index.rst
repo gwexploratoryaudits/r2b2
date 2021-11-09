@@ -4,21 +4,21 @@
     :target: https://readthedocs.org/projects/r2b2
     :alt: Documentation Status
 
-.. image:: https://api.travis-ci.org/gwexploratoryaudits/r2b2.svg?branch=master
+.. image:: https://api.travis-ci.org/gwexploratoryaudits/r2b2.svg?branch=main
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/gwexploratoryaudits/r2b2
 
-.. image:: https://requires.io/github/gwexploratoryaudits/r2b2/requirements.svg?branch=master
+.. image:: https://requires.io/github/gwexploratoryaudits/r2b2/requirements.svg?branch=main
     :alt: Requirements Status
-    :target: https://requires.io/github/gwexploratoryaudits/r2b2/requirements/?branch=master
+    :target: https://requires.io/github/gwexploratoryaudits/r2b2/requirements/?branch=main
 
-.. image:: https://codecov.io/github/gwexploratoryaudits/r2b2/coverage.svg?branch=master
+.. image:: https://codecov.io/github/gwexploratoryaudits/r2b2/coverage.svg?branch=main
     :alt: Coverage Status
     :target: https://codecov.io/github/gwexploratoryaudits/r2b2
 
 .. image:: https://img.shields.io/github/commits-since/gwexploratoryaudits/r2b2/v0.1.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/gwexploratoryaudits/r2b2/compare/v0.1.0...master
+    :target: https://github.com/gwexploratoryaudits/r2b2/compare/v0.1.0...main
 
 .. image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :alt: MIT License

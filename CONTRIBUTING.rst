@@ -36,9 +36,9 @@ Development
 ===========
 
 For more specific development guidelines and standards see the 
-`Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/master/docs/audit_design_guide.md>`_.
+`Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/main/docs/audit_design_guide.md>`_.
 For guidelines specific to developing a new audit see the
-`Audit Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/master/docs/audit_design_guide.md>`_.
+`Audit Design Guide <https://github.com/gwexploratoryaudits/r2b2/blob/main/docs/audit_design_guide.md>`_.
 
 
 To set up `r2b2` for local development:

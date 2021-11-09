@@ -9,5 +9,5 @@ At the command line::
 
 You can also install the in-development version with::
     
-    pip install https://github.com/gwexploratoryaudits/r2b2/archive/master.zip
+    pip install https://github.com/gwexploratoryaudits/r2b2/archive/main.zip
 

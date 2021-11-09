@@ -10,24 +10,24 @@ Building an audit into the R2B2 library includes:
 ## Setting up Development Environment
 
 1. Create a base branch for working on the new audit.
-  - Example: If your audit was named Sarah, first create a branch named `sarah` off of master.
+  - Example: If your audit was named Sarah, first create a branch named `sarah` off of main.
   First check what branch you are working on:
 ```
 $ git status
-On branch master
+On branch main
 ...
 ```
-If you are not on `master`, run:
+If you are not on `main`, run:
 ```
-$ git checkout master
+$ git checkout main
 ```
-Finally, checkout your branch from `master` and create a remote version of that branch:
+Finally, checkout your branch from `main` and create a remote version of that branch:
 ```
 $ git checkout -b sarah
 $ git push -u origin sarah
 ```
   - Feel free to create branches of of this base branch as you work on developing the audit, but keep in mind that branches should be used for larger changes/additions. For example, creating a branch for fixing documentation and comments probably isn't a good idea, but creating a branch for developing a comprehensive set of test cases could be useful.
-  - Note: We will use the base branch for your audit when merging into `master`.
+  - Note: We will use the base branch for your audit when merging into `main`.
 
 2. Choose an IDE or text editor.
   - If you use an IDE with plugins for linting, ensure it uses `flake8`.
@@ -59,7 +59,7 @@ $ git push -u origin sarah
 
 ## Understanding the Workflow
 
-Even though you might be the only person working on your branch right now, your `git` history will eventually be seen by others (and included on `master`), so it is important to use `git` best practices from the beginning.
+Even though you might be the only person working on your branch right now, your `git` history will eventually be seen by others (and included on `main`), so it is important to use `git` best practices from the beginning.
 
 1. Writing code.
   - Starting from scratch can be difficult. If you are not sure where to start, try starting at a very high level, leaving places where code will eventually go with placeholder `TODO: ` comments, then filling in the skeleton.
@@ -113,7 +113,7 @@ Even though you might be the only person working on your branch right now, your 
     - *Note:* Test data sets will be created, so don't worry about these tests just yet.
 6. Debug! Ensure your test cases (and all other test cases that were previously passing) are passing.
 
-## Merging into `master`
+## Merging into `main`
 
 1. Open a Pull Request.
   - Collaborating is a big part of this library, so feel free to open a PR on a branch that is not yet complete. **If you want to open a PR before a branch can be merged, simply put `WIP: ` before the title.`**

@@ -175,7 +175,7 @@ the line of code, either in function or intended purpose.
 
 **Documentation Strings** should follow the
 [Google Style](http://google.github.io/styleguide/pyguide.html) guidelines and
-be compatible with [Sphinx](https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html). Below are some examples of what different docstrings *might*
+be compatible with [Sphinx](https://www.sphinx-doc.org/en/main/usage/extensions/napoleon.html). Below are some examples of what different docstrings *might*
 look like.
 
 **Class**
@@ -256,7 +256,7 @@ Some editors can integrate `yapf` as a plugin&mdash;this is highly recommended.
 
 Current documentation [here](https://r2b2.readthedocs.io/en/latest/)
 
-[Sphinx](https://www.sphinx-doc.org/en/master/) and
+[Sphinx](https://www.sphinx-doc.org/en/main/) and
 [ReadTheDocs](https://docs.readthedocs.io/en/latest/index.html) will be used to
 generate well-formatted documentation for the library.
 
@@ -311,4 +311,4 @@ less, followed by a detailed description of changes made
   - DO NOT merge your own PR without any review
   - At least 1 other contributor, if not more must review your PR before a merge
   - The repository is configured to require that pull requests apply cleanly, so
-  `git rebase origin/master` your changes to the latest master if necessary.
+  `git rebase origin/main` your changes to the latest main if necessary.
