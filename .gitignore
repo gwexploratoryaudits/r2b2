@@ -1,6 +1,9 @@
 *.py[cod]
 __pycache__
 
+# nohup outputs
+*nohup.out
+
 # C extensions
 *.so
 

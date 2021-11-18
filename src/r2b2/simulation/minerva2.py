@@ -3,17 +3,17 @@ import random as r
 from typing import List
 from typing import Tuple
 
-from r2b2.minerva import Minerva
+from r2b2.minerva2 import Minerva2
 from r2b2.simulator import Simulation
 from r2b2.simulator import histogram
 
 
-class MinervaOneRoundRisk(Simulation):
-    """Simulate a 1-round Minerva audit for a given sample size to compute risk limit."""
+class Minerva2OneRoundRisk(Simulation):
+    """Simulate a 1-round Minerva2 audit for a given sample size to compute risk limit."""
     sample_size: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -27,14 +27,14 @@ class MinervaOneRoundRisk(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit.')
@@ -48,7 +48,7 @@ class MinervaOneRoundRisk(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a 1-round minerva audit (using r2b2.minerva.Minerva)"""
+        """Execute a 1-round minerva2 audit (using r2b2.minerva2.Minerva2)"""
 
         r.seed(seed)
 
@@ -128,12 +128,12 @@ class MinervaOneRoundRisk(Simulation):
         return stopped / num_trials
 
 
-class MinervaOneRoundStoppingProb(Simulation):
-    """Simulate a 1-round Minerva audit for a given sample size to compute stopping probability."""
+class Minerva2OneRoundStoppingProb(Simulation):
+    """Simulate a 1-round Minerva2 audit for a given sample size to compute stopping probability."""
     sample_size: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -147,14 +147,14 @@ class MinervaOneRoundStoppingProb(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.total_relevant_ballots = sum(self.reported.tally.values())
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit')
@@ -170,7 +170,7 @@ class MinervaOneRoundStoppingProb(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a 1-round minerva audit."""
+        """Execute a 1-round minerva2 audit."""
 
         r.seed(seed)
 
@@ -230,13 +230,13 @@ class MinervaOneRoundStoppingProb(Simulation):
         return stopped / num_trials
 
 
-class MinervaOneRoundAlteredMargin(Simulation):
-    """Simulate a 1-round Minerva audit for a given sample size with a correct outcome but incorrect reported margin"""
+class Minerva2OneRoundAlteredMargin(Simulation):
+    """Simulate a 1-round Minerva2 audit for a given sample size with a correct outcome but incorrect reported margin"""
     underlying_margin: float
     sample_size: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -252,7 +252,7 @@ class MinervaOneRoundAlteredMargin(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
-        super().__init__('minerva', alpha, reported, {
+        super().__init__('minerva2', alpha, reported, {
             'change': underlying,
             'margin': underlying_margin
         }, True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
@@ -263,7 +263,7 @@ class MinervaOneRoundAlteredMargin(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit')
@@ -282,7 +282,7 @@ class MinervaOneRoundAlteredMargin(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a 1-round minerva audit."""
+        """Execute a 1-round minerva2 audit."""
 
         r.seed(seed)
 
@@ -343,8 +343,8 @@ class MinervaOneRoundAlteredMargin(Simulation):
         return analysis
 
 
-class MinervaMultiRoundStoppingProb(Simulation):
-    """Simulate a multi-round Minerva audit.
+class Minerva2MultiRoundStoppingProb(Simulation):
+    """Simulate a multi-round Minerva2 audit.
 
     If sample_sprob is provided, sample sizes to achieve a sample_sprob
     probability of stopping will be computed and used. Otherwise,
@@ -358,7 +358,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
     max_rounds: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -382,7 +382,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
             kwargs['sim_args']['sample_sprob'] = sample_sprob
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob}
-        super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_sprob = sample_sprob
         self.sample_size = sample_size
         self.sample_mult = sample_mult
@@ -392,7 +392,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         # self.reported.contest_ballots = self.total_relevant_ballots
         # self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_sprob is None and sample_size is None and sample_mult is None:
             raise ValueError('Sample sizes cannot be chosen without sample_sprob or sample_size and sample_mult.')
@@ -419,7 +419,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a multiround minerva audit (using r2b2.minerva.Minerva)"""
+        """Execute a multiround minerva2 audit (using r2b2.minerva2.Minerva2)"""
 
         r.seed(seed)
 
@@ -509,6 +509,8 @@ class MinervaMultiRoundStoppingProb(Simulation):
         num_trials = 0
         stopped = 0
         rounds_stopped = []
+        totals_sampled = []
+        all_stopped = True
         # TODO: Create additinal structures to store trial data
 
         for trial in trials:
@@ -516,6 +518,9 @@ class MinervaMultiRoundStoppingProb(Simulation):
             if trial['stop']:
                 stopped += 1
                 rounds_stopped.append(trial['round'])
+                totals_sampled.append(sum(trial['relevant_sample_size_sched']))
+            else:
+                all_stopped = False
             # TODO: Extract more data from trial
 
         if verbose:
@@ -527,6 +532,14 @@ class MinervaMultiRoundStoppingProb(Simulation):
 
         if hist:
             histogram(rounds_stopped, 'Rounds reached in stopped trials.')
+
+        # Compute ASN
+        if not all_stopped:
+            asn = 'Not all audits stopped.'
+        else:
+            assert num_trials == len(totals_sampled)
+            asn = sum(totals_sampled) / num_trials
+        print(asn)
 
         # Find stopping probability for each round
         sprob_by_round = [0]*self.max_rounds
@@ -548,7 +561,8 @@ class MinervaMultiRoundStoppingProb(Simulation):
             'sprob': stopped / num_trials,
             'sprob_by_round': sprob_by_round,
             'remaining_by_round': remaining_by_round,
-            'stopped_by_round': stopped_by_round
+            'stopped_by_round': stopped_by_round,
+            'asn': asn
         }
 
         # Update simulation entry to include analysis
@@ -558,8 +572,8 @@ class MinervaMultiRoundStoppingProb(Simulation):
         return analysis
 
 
-class MinervaMultiRoundRisk(Simulation):
-    """Simulate a multi-round Minerva audit.
+class Minerva2MultiRoundRisk(Simulation):
+    """Simulate a multi-round Minerva2 audit.
 
     If sample_sprob is provided, sample sizes to achieve a sample_sprob
     probability of stopping will be computed and used. Otherwise,
@@ -573,7 +587,7 @@ class MinervaMultiRoundRisk(Simulation):
     max_rounds: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -597,7 +611,7 @@ class MinervaMultiRoundRisk(Simulation):
             kwargs['sim_args']['sample_sprob'] = sample_sprob
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob}
-        super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.sample_mult = sample_mult
         self.sample_sprob = sample_sprob
@@ -607,7 +621,7 @@ class MinervaMultiRoundRisk(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         # self.reported.contest_ballots = self.total_relevant_ballots
         # self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_sprob is None and sample_size is None and sample_mult is None:
             raise ValueError('Sample sizes cannot be chosen without sample_sprob or sample_size and sample_mult.')
@@ -632,7 +646,7 @@ class MinervaMultiRoundRisk(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a multiround minerva audit (using r2b2.minerva.Minerva)"""
+        """Execute a multiround minerva2 audit (using r2b2.minerva2.Minerva2)"""
 
         r.seed(seed)
 
@@ -766,8 +780,8 @@ class MinervaMultiRoundRisk(Simulation):
         return analysis
 
 
-class MinervaRandomMultiRoundRisk(Simulation):
-    """Simulate a multi-round Minerva audit for random subsequent sample sizes.
+class Minerva2RandomMultiRoundRisk(Simulation):
+    """Simulate a multi-round Minerva2 audit for random subsequent sample sizes.
 
     The initial sample size, x, is given as input and further sample sizes are
     chosen randomly as an additioanl 0.5x to 1.5x ballots in the next round.
@@ -777,7 +791,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
     max_rounds: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -796,7 +810,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
             kwargs['sim_args']['max_rounds'] = max_rounds
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds}
-        super().__init__('minerva', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'tie', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.max_rounds = max_rounds
         self.total_relevant_ballots = sum(self.reported.tally.values())
@@ -804,7 +818,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit.')
@@ -820,7 +834,7 @@ class MinervaRandomMultiRoundRisk(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a 1-round minerva audit (using r2b2.minerva.Minerva)"""
+        """Execute a 1-round minerva2 audit (using r2b2.minerva2.Minerva2)"""
 
         r.seed(seed)
 
@@ -932,8 +946,8 @@ class MinervaRandomMultiRoundRisk(Simulation):
         return stopped / num_trials
 
 
-class MinervaRandomMultiRoundStoppingProb(Simulation):
-    """Simulate a multi-round Minerva audit for random subsequent sample sizes.
+class Minerva2RandomMultiRoundStoppingProb(Simulation):
+    """Simulate a multi-round Minerva2 audit for random subsequent sample sizes.
 
     The initial sample size, x, is given as input and further sample sizes are
     chosen randomly as an additioanl 0.5x to 1.5x ballots in the next round.
@@ -943,7 +957,7 @@ class MinervaRandomMultiRoundStoppingProb(Simulation):
     max_rounds: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -962,7 +976,7 @@ class MinervaRandomMultiRoundStoppingProb(Simulation):
             kwargs['sim_args']['max_rounds'] = max_rounds
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds}
-        super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        super().__init__('minerva2', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
         self.sample_size = sample_size
         self.max_rounds = max_rounds
         self.total_relevant_ballots = sum(self.reported.tally.values())
@@ -970,7 +984,7 @@ class MinervaRandomMultiRoundStoppingProb(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit.')
@@ -988,7 +1002,7 @@ class MinervaRandomMultiRoundStoppingProb(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a 1-round minerva audit (using r2b2.minerva.Minerva)"""
+        """Execute a 1-round minerva2 audit (using r2b2.minerva2.Minerva2)"""
 
         r.seed(seed)
 
@@ -1100,14 +1114,14 @@ class MinervaRandomMultiRoundStoppingProb(Simulation):
         return stopped / num_trials
 
 
-class MinervaMultiRoundAlteredMargin(Simulation):
-    """Simulate a Minerva audit for a given sample size with a correct outcome but incorrect reported margin"""
+class Minerva2MultiRoundAlteredMargin(Simulation):
+    """Simulate a Minerva2 audit for a given sample size with a correct outcome but incorrect reported margin"""
     underlying_margin: float
     sample_size: int
     max_rounds: int
     total_relevant_ballots: int
     vote_dist: List[Tuple[str, int]]
-    audit: Minerva
+    audit: Minerva2
 
     def __init__(self,
                  alpha,
@@ -1128,7 +1142,7 @@ class MinervaMultiRoundAlteredMargin(Simulation):
             kwargs['sim__args']['max_rounds'] = max_rounds
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds}
-        super().__init__('minerva', alpha, reported, {
+        super().__init__('minerva2', alpha, reported, {
             'change': underlying,
             'margin': underlying_margin
         }, True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
@@ -1140,7 +1154,7 @@ class MinervaMultiRoundAlteredMargin(Simulation):
         self.contest_ballots = self.reported.contest_ballots
         self.reported.contest_ballots = self.total_relevant_ballots
         self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
-        self.audit = Minerva(self.alpha, 1.0, self.reported)
+        self.audit = Minerva2(self.alpha, 1.0, self.reported)
 
         if sample_size < self.audit.min_sample_size:
             raise ValueError('Sample size is less than minimum sample size for audit')
@@ -1155,7 +1169,7 @@ class MinervaMultiRoundAlteredMargin(Simulation):
         self.vote_dist.append(('invalid', self.contest_ballots))
 
     def trial(self, seed):
-        """Execute a multiround minerva audit."""
+        """Execute a multiround minerva2 audit."""
 
         r.seed(seed)
 
