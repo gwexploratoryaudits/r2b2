@@ -1,0 +1,1 @@
+This directory contains many scripts for running simulations, performing analysis of the results, and plotting such results. The scripts are not well documented or maintained, rather they are kept here as a record and example of the types of simulation tasks that can be performed in r2b2. 
