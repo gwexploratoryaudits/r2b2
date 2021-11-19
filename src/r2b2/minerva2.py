@@ -90,9 +90,13 @@ class Minerva2(Audit):
         sum_denom = sum(denom_dist[mid:orig_right]) + sum_denom_right
         satisfies_risk = self.alpha * sum_num >= sum_denom
 
-        sum_num_prev = sum_num + num_dist[mid - 1]
-        sum_denom_prev = sum_denom + denom_dist[mid - 1]
-        satisfies_risk_prev = self.alpha * (sum_num_prev) >= (sum_denom_prev)
+        if len(num_dist) > 1:
+            sum_num_prev = sum_num + num_dist[mid - 1]
+            sum_denom_prev = sum_denom + denom_dist[mid - 1]
+            satisfies_risk_prev = self.alpha * (sum_num_prev) >= (sum_denom_prev)
+        else:
+            # Drawing fewer ballots is impossible
+            satisfies_risk_prev = False
 
         if satisfies_risk and not satisfies_risk_prev:
             return mid
@@ -102,11 +106,6 @@ class Minerva2(Audit):
             return self.sample_size_kmin(mid + 1, right, num_dist, denom_dist, sum_num_right, sum_denom_right, orig_right)
         else:
             # To accompany Exception TODO fix method of communication
-            print("satisfies_risk_prev",satisfies_risk_prev)
-            print("satisfies_risk",satisfies_risk)
-            print("mid",mid)
-            print("left",left)
-            print("right",right)
             raise Exception("sample_size_sprob: k not monotonic.")
 
     def find_sprob(self, n, sub_audit: PairwiseAudit):
@@ -182,8 +181,8 @@ class Minerva2(Audit):
 
     def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
         """
-        Attempt to find a next sample size estimate no greater than 10000.
-        Failing that, try to find an estimate no greater than 20000, and so on.
+        Attempt to find a next sample size estimate no greater than 10^1.
+        Failing that, try to find an estimate no greater than 10^2, and so on.
 
         Args:
             sprob (float): Compute next sample for this stopping probability.
@@ -230,7 +229,7 @@ class Minerva2(Audit):
             Estimate in the format [sample size, kmin, stopping probability].
         """
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
-        start = 10000
+        start = 10**1
         subsequent_round = len(self.rounds) > 0
         previous_round = 0
         if subsequent_round:
@@ -241,26 +240,31 @@ class Minerva2(Audit):
         else:
             init_upper_bound = start
         upper_bound = init_upper_bound
+        # Before binary search, check if one additional ballot is sufficient
+        sprob_kmin_pair = self.find_sprob(previous_round + 1, sub_audit)
+        if (sprob_kmin_pair[1] >= sprob):
+            assert sprob_kmin_pair[0] > 0
+            return previous_round + 1, sprob_kmin_pair[0], sprob_kmin_pair[1]
         while upper_bound < 10**7:
             if len(self.rounds) > 0:
                 # Ensure upper bound is sufficiently large.
                 if upper_bound == init_upper_bound:
                     estimate = self.binary_search_estimate(previous_round + 1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
+                    estimate = self.binary_search_estimate(upper_bound // 10, upper_bound, sprob, sub_audit)
             else:
                 if upper_bound == init_upper_bound:
                     estimate = self.binary_search_estimate(1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
+                    estimate = self.binary_search_estimate(upper_bound // 10, upper_bound, sprob, sub_audit)
             if estimate[0] > 0:
                 return estimate
-            upper_bound *= 2
+            upper_bound *= 10
         return 0
 
     def get_upper_bound(self, n, start):
         while start <= n:
-            start *= 2
+            start *= 10
         return start
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
