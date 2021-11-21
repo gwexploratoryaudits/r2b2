@@ -218,7 +218,7 @@ class Minerva(Audit):
             # Scale estimates by pairwise invalid proportion
             proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
-            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
+            scaled_estimate = (math.ceil(estimate[0] * proportion), estimate[1], estimate[2])
             estimates.append(scaled_estimate)
 
         # Return the maximum scaled next round size estimate
@@ -242,7 +242,7 @@ class Minerva(Audit):
             Estimate in the format [sample size, kmin, stopping probability].
         """
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
-        start = 10000
+        start = 10**1
         subsequent_round = len(self.rounds) > 0
         previous_round = 0
         if subsequent_round:
@@ -259,15 +259,15 @@ class Minerva(Audit):
                 if upper_bound == init_upper_bound:
                     estimate = self.binary_search_estimate(previous_round + 1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
+                    estimate = self.binary_search_estimate(upper_bound // 10, upper_bound, sprob, sub_audit)
             else:
                 if upper_bound == init_upper_bound:
                     estimate = self.binary_search_estimate(1, upper_bound, sprob, sub_audit)
                 else:
-                    estimate = self.binary_search_estimate(upper_bound // 2, upper_bound, sprob, sub_audit)
+                    estimate = self.binary_search_estimate(upper_bound // 10, upper_bound, sprob, sub_audit)
             if estimate[0] > 0:
                 return estimate
-            upper_bound *= 2
+            upper_bound *= 10
         return 0
 
     def get_upper_bound(self, n, start):
