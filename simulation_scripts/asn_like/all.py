@@ -79,11 +79,21 @@ def get_lists(audit_name, description, max_rounds=None):
     return points_by_margin, margins
 
 if __name__ == '__main__':
-    db = DBInterface(port=27018,user='reader', pwd='icanread')
+    db = DBInterface(port=27020,user='reader', pwd='icanread')
     colors= ['b','r','g','c','m']
     globidx = 0
     markers = ['o','x','s','d','*']
- 
+
+    # MINERVA 2.0!!
+    minerva2_points, margins = get_lists('minerva2', 'Multiround Minerva2 (90%)')
+    if minerva2_points is not None:
+        minerva2_name = 'Minerva2 90%'
+        for m in range(len(minerva2_points)):
+            if m >= len(colors):
+                break
+            plt.plot(minerva2_points[m][0], minerva2_points[m][1], colors[globidx]+markers[globidx], label=minerva2_name)
+            globidx+=1
+
     # MINERVA 1.0X 
     minerva1p0_points, margins = get_lists('minerva', 'Multi round Minerva (90% then 1.0x)')
     if minerva1p0_points is not None:
