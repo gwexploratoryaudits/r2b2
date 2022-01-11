@@ -13,7 +13,7 @@ from r2b2.simulator import DBInterface
 
 from pymongo import MongoClient
 
-from txtme import txtme
+#from txtme import txtme
 
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
@@ -38,7 +38,7 @@ def state_trial(state, alpha):
         'underlying': 'tie', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Multiround Minerva2 (90%)',
+        'description' : 'Multiround Minerva2 (90%) Corrected',
         'max_rounds': 5
     }
     sim = db.simulations.find_one(query)
@@ -66,9 +66,9 @@ def state_trial(state, alpha):
   
     # Run simulation
     trials_left = 10000 - num_trials
-    txtme('Running {} more risk trials for {}'.format(trials_left, state))
+    #txtme('Running {} more risk trials for {}'.format(trials_left, state))
     sim_obj.run(trials_left)
-    txtme('Ran {} more risk trials for {}'.format(trials_left, state))
+    #txtme('Ran {} more risk trials for {}'.format(trials_left, state))
     if trials_left > 0:
         return sim_obj.analyze()
     else:
@@ -85,4 +85,4 @@ if __name__ == '__main__':
             continue
         computed_risk = state_trial(contest, 0.1)
         logging.info('{}: {}'.format(contest, computed_risk))
-    txtme('Done with current risk simulations')
+    #txtme('Done with current risk simulations')

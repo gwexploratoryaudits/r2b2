@@ -35,6 +35,9 @@ if __name__ == '__main__':
             continue
         sim_id = sprob_sim['_id']
         analysis = sprob_sim['analysis']
+        if 'avg_sampled_by_round' in analysis.keys():
+            # we have already performed this anlysis on this state
+            continue
         trials = db.trial_lookup(sprob_sim['_id']) #this function is slowwwww
         # Five empty lists, a list for each round to be filled with the number of ballots sampled for each audit
         sampled = [ [] for _ in range(5) ] 
