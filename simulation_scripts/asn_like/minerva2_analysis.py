@@ -27,8 +27,9 @@ if __name__ == '__main__':
             'reported': reported_id,
             'underlying': 'reported',
             'audit': audit_id,
-            'description': 'Multiround Minerva2 (90%)',
+            'description': 'Multiround Minerva2 (90%) Corrected',
             'invalid_ballots': True,
+            'max_rounds': 100,
         })
         if sprob_sim is None:
             # For several low margin states, we didn't run simulations

@@ -56,7 +56,7 @@ def state_trial(state, alpha):
                election.contests[state],
                max_rounds=5,
                sample_sprob=.9,
-               sim_args={'description': 'Multiround Minerva2 (90%)'},
+               sim_args={'description': 'Multiround Minerva2 (90%) Corrected'},
                user='sarah',
                pwd='haras',
                reported_args={
