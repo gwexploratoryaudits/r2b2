@@ -9,7 +9,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27020,user='reader', pwd='icanread')
+    db = DBInterface(port=27018,user='reader', pwd='icanread')
     risks = []
     risk_stops = []
     sprobs = []
@@ -22,7 +22,6 @@ if __name__ == '__main__':
     for contest in election.contests:
         audit_id = db.audit_lookup('minerva2', 0.1)
         reported_id = db.contest_lookup(election.contests[contest], qapp={'description': '2020 Presidential'})
-        """
         tied_sim = db.db.simulations.find_one({
             'reported': reported_id,
             'underlying': 'tie',
@@ -35,7 +34,6 @@ if __name__ == '__main__':
         if tied_sim is None:
             # For several low margin states, we didn't run simulations
             continue
-        """
         sprob_sim = db.db.simulations.find_one({
             'reported': reported_id,
             'underlying': 'reported',
@@ -49,15 +47,15 @@ if __name__ == '__main__':
             # Some low margin states were not used
             continue
 
-        """
         risk_analysis = tied_sim['analysis']
         risks.append(risk_analysis['risk_by_round'])
         risk_stops.append(risk_analysis['stopped_by_round'])
-        """
 
+        """
         sprob_analysis = sprob_sim['analysis']
         sprobs.append(sprob_analysis['sprob_by_round'])
         sprob_stops.append(sprob_analysis['stopped_by_round'])
+        """
 
         total_to_start = sprob_analysis['remaining_by_round'][0]
 
@@ -65,7 +63,6 @@ if __name__ == '__main__':
             election.contests[contest].tally.values())
         margins.append(winner_prop - (1.0 - winner_prop))
 
-    """
     # Plot risks vs. margins
     for r in range (1,max_rounds+1):
         #risks_for_this_round = [] #conditional risks
@@ -98,6 +95,7 @@ if __name__ == '__main__':
     plt.grid()
     plt.show()
 
+    """
     # Plot the total sprob across all rounds (this should just be 1... since we are
     # running the sprob trials to audit completion (100 rounds allowed...))
     total_sprobs = []
@@ -132,7 +130,7 @@ if __name__ == '__main__':
         plt.ylabel('Experimental Stopping Probability')
         plt.grid()
         plt.show()
-    """
+
     # Plot conditional sprobs vs. margins
     #for r in range (1,max_rounds+1):
     for r in range (1,7):
@@ -153,7 +151,6 @@ if __name__ == '__main__':
         plt.grid()
         plt.show()
 
-    """
     # Plot ratios vs. margins
     for r in range (1,max_rounds+1):
         ratios_for_this_round = []
