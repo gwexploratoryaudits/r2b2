@@ -264,11 +264,15 @@ class SO_BRAVO(Audit):
         ktot = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
         ntot = ktot + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
 
-        passes = False
+
+        POS_INF = 10**10
 
         kcur = kprev
         ncur = nprev
         num_relevant = 0
+
+        passes = False
+        minpvalue = POS_INF
         # Check the stopping condition at each individual ballot draw
         for i in range(len(winner_sample)):
             # Only consider relevant ballots (ie for winner or loser)
@@ -286,10 +290,13 @@ class SO_BRAVO(Audit):
                 logratio = k * logp + (n - k) * logoneminusp - n * loghalf
                 passes = logratio >= logoneoveralpha
                 if passes:
-                    self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+                    pvalue = 1 / math.exp(logratio)
+                    if pvalue < minpvalue:
+                        minpvalue = pvalue
                     break
-
-        POS_INF = 10**10
+        
+        if passes:
+            self.sub_audits[pair].pvalue_schedule.append(minpvalue)
 
         # In rare cases, none of the ballots in the sample are relevant to this contest
         if num_relevant == 0: 
