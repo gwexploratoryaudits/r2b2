@@ -272,6 +272,7 @@ class SO_BRAVO(Audit):
         num_relevant = 0
 
         passes = False
+        curpasses = False
         minpvalue = POS_INF
         # Check the stopping condition at each individual ballot draw
         for i in range(len(winner_sample)):
@@ -288,27 +289,26 @@ class SO_BRAVO(Audit):
                 k = kcur
                 n = ncur
                 logratio = k * logp + (n - k) * logoneminusp - n * loghalf
-                passes = logratio >= logoneoveralpha
-                if passes:
+                curpasses = logratio >= logoneoveralpha
+                if curpasses:
+                    passes = True
                     pvalue = 1 / math.exp(logratio)
                     if pvalue < minpvalue:
                         minpvalue = pvalue
-                    break
         
         if passes:
             self.sub_audits[pair].pvalue_schedule.append(minpvalue)
-
-        # In rare cases, none of the ballots in the sample are relevant to this contest
-        if num_relevant == 0: 
-            passes = False
-            self.sub_audits[pair].pvalue_schedule.append(POS_INF)
-            self.sub_audits[pair].stopped = passes
-
         elif not passes:
             if math.exp(logratio) == 0:
                 self.sub_audits[pair].pvalue_schedule.append(POS_INF)
             else:
                 self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+
+        # In rare cases, none of the ballots in the sample are relevant to this contest
+        elif num_relevant == 0: 
+            passes = False
+            self.sub_audits[pair].pvalue_schedule.append(POS_INF)
+            self.sub_audits[pair].stopped = passes
 
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
