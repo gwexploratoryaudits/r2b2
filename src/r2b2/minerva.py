@@ -272,7 +272,7 @@ class Minerva(Audit):
 
     def get_upper_bound(self, n, start):
         while start <= n:
-            start *= 2
+            start *= 10
         return start
 
     def stopping_condition_pairwise(self, pair: str, verbose: bool = False) -> bool:
