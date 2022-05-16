@@ -82,22 +82,24 @@ if __name__ == '__main__':
         plt.grid()
         plt.legend(loc='upper right')
         plt.show()
-    """
     # Plot the total risk across all rounds
     total_risks = []
     for s in range(len(risks)):
         total_risk = sum(risk_stops[s]) / total_to_start
         total_risks.append(total_risk)
-    plt.plot(margins, total_risks, 'bo')
+    plt.plot(margins, total_risks, 'b+')
     plt.xlabel('Reported Margin')
     title = 'Proportion of Audits that Stopped (Minerva (1.5x), Tie)'
     plt.title(title)
-    plt.ylim(.04,.1)
+    #plt.ylim(.04,.1)
+    plt.ylim(0,.11)
+    risk_limit = .1
+    plt.axhline(y=risk_limit, color='b', linestyle='--', label='Risk Limit')
+ 
     plt.ylabel('Proportion that Stopped')
     plt.grid()
     plt.show()
 
-    """
     # Plot the total sprob across all rounds
     total_sprobs = []
     for s in range(len(sprobs)):
@@ -215,6 +217,7 @@ if __name__ == '__main__':
         plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
     plt.legend(loc='lower right')
+    plt.ylim(.63,.96)
     plt.show()
 
 

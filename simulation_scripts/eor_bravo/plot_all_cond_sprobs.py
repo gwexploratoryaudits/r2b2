@@ -87,6 +87,7 @@ if __name__ == '__main__':
         plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
     plt.legend(loc='lower right')
+    plt.ylim(.63,.96)
     plt.show()
 
 
