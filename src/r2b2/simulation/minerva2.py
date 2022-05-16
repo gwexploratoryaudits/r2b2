@@ -440,12 +440,9 @@ class Minerva2MultiRoundStoppingProb(Simulation):
         sample = [0 for i in range(len(self.vote_dist))]
         while round_num <= self.max_rounds:
             # Draw a sample of a given size
-<<<<<<< HEAD
             if current_sample_size <= previous_sample_size:
                 # TODO figure out when this happens and prevent it
                 current_sample_size = previous_sample_size + 1
-=======
->>>>>>> minerva2sim
             for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(1, self.contest_ballots)
                 for j in range(len(sample)):
