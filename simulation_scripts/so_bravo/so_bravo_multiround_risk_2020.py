@@ -7,7 +7,7 @@ Underlying distribution is a tie.
 import json
 import logging
 
-from r2b2.simulation.so_bravo import SO_BRAVOMultiRoundRisk as EBMRR
+from r2b2.simulation.so_bravo import SO_BRAVOMultiRoundRisk as SOBMRR
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 
@@ -56,7 +56,7 @@ def state_trial(state, alpha):
             num_trials = db.trials.count_documents(query)
 
     # Create simulation
-    sim_obj = EBMRR(alpha,
+    sim_obj = SOBMRR(alpha,
                election.contests[state],
                max_rounds=5,
                sample_sprob=.9,
