@@ -9,7 +9,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27018,user='reader', pwd='icanread')
+    db = DBInterface(port=27020,user='reader', pwd='icanread')
     risks_eor = []
     risks_so = []
     risk_stops_eor = []

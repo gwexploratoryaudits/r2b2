@@ -80,20 +80,13 @@ def get_lists(audit_name, description, max_rounds=None):
 
 if __name__ == '__main__':
     db = DBInterface(port=27020,user='reader', pwd='icanread')
-    colors= ['b','r','g','c','m']
+    #colors= ['b','r','g','c','m']
+    colors= ['r','g','c','b']
     globidx = 0
-    markers = ['o','x','s','d','*']
+    #markers = ['o','x','s','d','*']
+    markers = ['x','s','d','o']
 
-    # MINERVA 2.0!!
-    minerva2_points, margins = get_lists('minerva2', 'Multiround Minerva2 (90%)')
-    if minerva2_points is not None:
-        minerva2_name = 'Minerva2 90%'
-        for m in range(len(minerva2_points)):
-            if m >= len(colors):
-                break
-            plt.plot(minerva2_points[m][0], minerva2_points[m][1], colors[globidx]+markers[globidx], label=minerva2_name)
-            globidx+=1
-
+    """ exclude minerva 1.0x
     # MINERVA 1.0X 
     minerva1p0_points, margins = get_lists('minerva', 'Multi round Minerva (90% then 1.0x)')
     if minerva1p0_points is not None:
@@ -103,6 +96,7 @@ if __name__ == '__main__':
                 break
             plt.plot(minerva1p0_points[m][0], minerva1p0_points[m][1], colors[globidx]+markers[globidx], label=minerva1p0_name)
             globidx+=1
+    """
 
     # MINERVA 1.5X 
     minerva1p5_points, margins = get_lists('minerva', 'Multi round Minerva (90% then 1.5x)')
@@ -139,6 +133,20 @@ if __name__ == '__main__':
         print('Provide a state as command line argument')
         exit()
     contest = sys.argv[1]
+
+    # MINERVA 2.0!!
+    minerva2_points, margins = get_lists('minerva2', 'Multiround Minerva2 (90%) Corrected')
+    if minerva2_points is not None:
+        minerva2_name = 'Providence, 90%'
+        for m in range(len(minerva2_points)):
+            if m >= len(colors):
+                break
+            plt.plot(minerva2_points[m][0], minerva2_points[m][1], colors[globidx]+markers[globidx], label=minerva2_name)
+            globidx+=1
+    else:
+        print('awww :(')
+
+
 
     #title = 'Proportion of Audits that Stopped vs. Average Number of Ballots Sampled '
     title = 'Stopping Probability for Number of Ballots Sampled ['+contest+': margin '+str(round(margins[0], 3))+']'

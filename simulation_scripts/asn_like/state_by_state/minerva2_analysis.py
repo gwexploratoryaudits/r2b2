@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
+from tqdm import tqdm
 from r2b2.tests.util import parse_election
 
 import sys
@@ -13,7 +14,7 @@ import sys
 election = parse_election('../../data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27017,user='sarah', pwd='haras')
+    db = DBInterface(port=27020,user='sarah', pwd='haras')
     #counter = 0
     #if counter == 1:
     #    break
@@ -33,7 +34,7 @@ if __name__ == '__main__':
         'reported': reported_id,
         'underlying': 'reported',
         'audit': audit_id,
-        'description': 'Multiround Minerva2 (90%)',
+        'description': 'Multiround Minerva2 (90%) Corrected',
         'invalid_ballots': True,
         'sample_sprob':.9,
     })
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     sim_id = sprob_sim['_id']
     analysis = sprob_sim['analysis']
     # Five empty lists, a list for each round to be filled with the number of ballots sampled for each audit
+    print('Searching for trials')
     trials = db.db.trials.find({'simulation': sprob_sim['_id']})
     print('Got the trials, now analyzing')
     sampled = [ [] for _ in range(5) ] 
