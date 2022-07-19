@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     numbals = []
     numrounds = []
-    ps = [.1,.2,.3,.4,.5,.6,.7,.8,.9]
+    ps = [.05,.1,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95]
     for p in ps:
         sprob_sim = db.db.simulations.find_one({
             'reported': reported_id,
