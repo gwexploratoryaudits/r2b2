@@ -87,7 +87,7 @@ if __name__ == '__main__':
     tally = sum(election.contests[contest].tally.values())
     loser_tally = tally - winner_tally
     margin = (winner_tally - loser_tally) / tally
-    for sprob in [.9, .8, .7, .6, .5, .4, .3, .2, .1]:
+    for sprob in [.95, .85, .75, .65, .55, .45, .35, .25, .15, .05]:
         print('sprob='+str(sprob))
         computed_risk = state_trial(contest, 0.1, sprob)
         logging.info('{}: {}'.format(contest, computed_risk))
