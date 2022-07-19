@@ -9,7 +9,7 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.minerva2 import Minerva2MultiRoundStoppingProb as MMRSP
+from r2b2.simulation.minerva import MinervaMultiRoundStoppingProb as MMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 
@@ -22,7 +22,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 def state_trial(state, alpha, sprob):
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
-    query = {'audit_type': 'minerva2', 'alpha': .1}
+    query = {'audit_type': 'minerva', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = election.contests[state]
     query = {
@@ -67,7 +67,7 @@ def state_trial(state, alpha, sprob):
                })
   
     # Run simulation
-    total_trials = 10000-1010
+    total_trials = 10000
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     tally = sum(election.contests[contest].tally.values())
     loser_tally = tally - winner_tally
     margin = (winner_tally - loser_tally) / tally
-    for sprob in [.95, .85, .75, .65, .55, .45, .35, .25, .15, .05]:
+    for sprob in [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]:
         print('sprob='+str(sprob))
         computed_risk = state_trial(contest, 0.1, sprob)
         logging.info('{}: {}'.format(contest, computed_risk))

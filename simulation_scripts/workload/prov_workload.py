@@ -67,7 +67,7 @@ def state_trial(state, alpha, sprob):
                })
   
     # Run simulation
-    total_trials = 10000-1010
+    total_trials = 1010
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))
