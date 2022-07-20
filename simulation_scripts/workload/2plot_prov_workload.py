@@ -2,6 +2,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -132,7 +134,7 @@ if __name__ == '__main__':
 # TODO this could linearly interpolate to get better/smoother answers
 balcost = 1
 minimizing_ps = []
-roundcosts = np.linspace(.1,10000,num = 100000)#[1, 10, 100, 1000, 10000]
+roundcosts = np.linspace(1,10000,num = 100000)#[1, 10, 100, 1000, 10000]
 for roundcost in roundcosts:
     # compute expected costs for each round schedule (parameterized by p):
     numbals = np.array(numbals)
@@ -146,10 +148,13 @@ for roundcost in roundcosts:
     """
     minimizing_ps.append(estimate_min2(ps, costs))
 
-plt.plot(roundcosts,minimizing_ps)
-plt.xlabel('c_r')
-plt.ylabel('p')
+font = {'size'   : 17}
+plt.rc('font', **font)
+plt.plot(roundcosts, minimizing_ps, linestyle='-', color='b')
+plt.xlabel('Round Cost, $c_r$')
+plt.ylabel('Stopping Probability, $p$')
 plt.xscale('log')
+plt.tight_layout()
 plt.show()
 
 
