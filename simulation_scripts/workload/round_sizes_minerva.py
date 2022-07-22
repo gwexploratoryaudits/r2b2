@@ -95,9 +95,13 @@ if __name__ == '__main__':
     tally = sum(election.contests[contest].tally.values())
     loser_tally = tally - winner_tally
     margin = (winner_tally - loser_tally) / tally
-    for sprob in [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]:
-        print('sprob='+str(sprob))
+    sprobs = [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]
+    print(sprobs)
+    for sprob in sprobs:
+        #print('sprob='+str(sprob))
         tmpaudit = Minerva(0.1, 1.0, election.contests[contest])
         sample_size = tmpaudit.next_sample_size(sprob)
-        computed_risk = state_trial(contest, 0.1, sample_size, sprob)
-        logging.info('{}: {}'.format(contest, computed_risk))
+        #print('for sprob '+str(sprob)+' use first round size '+str(sample_size))
+        print(str(sample_size)+',')
+        #computed_risk = state_trial(contest, 0.1, sample_size, sprob)
+        #logging.info('{}: {}'.format(contest, computed_risk))

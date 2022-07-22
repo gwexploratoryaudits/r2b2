@@ -367,6 +367,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
                  sample_size=None,
                  sample_mult=None,
                  sample_sprob=None,
+                 first_round_sprob=None,
                  db_mode=True,
                  db_host='localhost',
                  db_name='r2b2',
@@ -380,6 +381,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
             kwargs['sim_args']['max_rounds'] = max_rounds
             kwargs['sim_args']['sample_mult'] = sample_mult
             kwargs['sim_args']['sample_sprob'] = sample_sprob
+            kwargs['sim_args']['first_round_sprob'] = first_round_sprob
         else:
             kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob}
         super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
