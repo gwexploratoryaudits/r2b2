@@ -511,6 +511,56 @@ class MinervaMultiRoundStoppingProb(Simulation):
         num_trials = 0
         stopped = 0
         rounds_stopped = []
+        totals_sampled = []
+        all_stopped = True
+        # TODO: Create additinal structures to store trial data
+
+        for trial in trials:
+            num_trials += 1
+            if trial['stop']:
+                stopped += 1
+                rounds_stopped.append(trial['round'])
+                totals_sampled.append(sum(trial['relevant_sample_size_sched']))
+            else:
+                all_stopped = False
+            # TODO: Extract more data from trial
+
+        if verbose:
+            print('Analysis\n========\n')
+            print('Number of trials: {}'.format(num_trials))
+            print('Experiemtnal Stopping Prob: {:.5f}'.format(stopped / num_trials))
+            if stopped > 0:
+                print('Average Rounds in Stopped Trials: {:.2f}'.format(sum(rounds_stopped) / stopped))
+
+        if hist:
+            histogram(rounds_stopped, 'Rounds reached in stopped trials.')
+
+        # Compute ASN
+        if not all_stopped:
+            asn = 'Not all audits stopped.'
+        else:
+            assert num_trials == len(totals_sampled)
+            asn = sum(totals_sampled) / num_trials
+        print(asn)
+
+        # Find stopping probability for each round
+        sprob_by_round = [0]*self.max_rounds
+        stopped_by_round = [0]*self.max_rounds
+        remaining_by_round = [0]*(self.max_rounds+1)
+        # first round has all remaining
+        remaining_by_round[0] = num_trials
+
+        for rd in range(1, self.max_rounds+1):
+            stopped_this_round = rounds_stopped.count(rd)
+            stopped_by_round[rd-1] = stopped_this_round
+            if remaining_by_round[rd-1] != 0:
+        if self.db_mode:
+            trials = self.db.trial_lookup(self.sim_id)
+        else:
+            trials = self.trials
+        num_trials = 0
+        stopped = 0
+        rounds_stopped = []
         # TODO: Create additinal structures to store trial data
 
         for trial in trials:

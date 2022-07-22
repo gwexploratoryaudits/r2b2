@@ -2,6 +2,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -67,12 +69,22 @@ def estimate_min(xs, ys):
         if yest > prevy:
             return yest
         prevy = yest
-        
 
+def estimate_min2(xs,ys):
+    coefs = np.polyfit(xs, ys, 2)
 
+    c = np.poly1d(coefs)
 
+    crit = c.deriv().r
+    r_crit = crit[crit.imag==0].real
+    test = c.deriv(2)(r_crit) 
 
+    # compute local minima 
+    # excluding range boundaries
+    x_min = r_crit[test>0]
+    y_min = c(x_min)
 
+    return x_min
 
 
 
@@ -122,7 +134,7 @@ if __name__ == '__main__':
 # TODO this could linearly interpolate to get better/smoother answers
 balcost = 1
 minimizing_ps = []
-roundcosts = np.linspace(.1,10000,num = 100000)#[1, 10, 100, 1000, 10000]
+roundcosts = np.linspace(1,10000,num = 100000)#[1, 10, 100, 1000, 10000]
 for roundcost in roundcosts:
     # compute expected costs for each round schedule (parameterized by p):
     numbals = np.array(numbals)
@@ -134,12 +146,15 @@ for roundcost in roundcosts:
     minidx = list(costs).index(min(costs))
     minimizing_ps.append(ps[minidx])
     """
-    minimizing_ps.append(estimate_min(ps, costs))
+    minimizing_ps.append(estimate_min2(ps, costs))
 
-plt.plot(roundcosts,minimizing_ps)
-plt.xlabel('c_r')
-plt.ylabel('p')
+font = {'size'   : 17}
+plt.rc('font', **font)
+plt.plot(roundcosts, minimizing_ps, linestyle='-', color='b')
+plt.xlabel('Round Cost, $c_r$')
+plt.ylabel('Stopping Probability, $p$')
 plt.xscale('log')
+plt.tight_layout()
 plt.show()
 
 

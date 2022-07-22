@@ -1,6 +1,10 @@
 """Generates plots for the 90% sprob multiround Minerva2 risk, stopping probability sims."""
 
 import matplotlib.pyplot as plt
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+import numpy as np
+
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -9,7 +13,7 @@ from r2b2.tests.util import parse_election
 election = parse_election('data/2020_presidential/2020_presidential.json')
 
 if __name__ == '__main__':
-    db = DBInterface(port=27020,user='reader', pwd='icanread')
+    db = DBInterface(port=27018,user='reader', pwd='icanread')
     risks = []
     risk_stops = []
     sprobs = []
@@ -87,22 +91,25 @@ if __name__ == '__main__':
     """
 
     # Plot the total risk across all rounds
+    font = {'size'   : 17}
+    plt.rc('font', **font)
     total_risks = []
     for s in range(len(risks)):
         total_risk = sum(risk_stops[s]) / total_to_start
         total_risks.append(total_risk)
     if len(total_risks) == 0:
         print('no risks')
-    plt.plot(margins, total_risks, 'bo')
+    plt.subplots()
+    plt.plot(margins,np.array(total_risks)*100, 'bo')
     plt.xlabel('Reported Margin')
-    title = 'Proportion of Audits that Stopped (90% Providence, Tie)'
-    plt.title(title)
-    plt.ylim(0,.11)
-    risk_limit = .1
-    plt.axhline(y=risk_limit, color='b', linestyle='--', label='Risk Limit')
- 
-    plt.ylabel('Experimental Risk')
+    plt.ylim(0,11)
+    risk_limit = 10
+    plt.axhline(y=risk_limit, color='b', linestyle='--')
+    plt.legend(loc=(0,1),mode='expand',ncol=3,title = 'Experimental Risk',frameon=False)
+    plt.text(.61,10.12,'Risk Limit', size=14.5)
+    plt.ylabel('Audits that Stopped (%)')
     plt.grid()
+    plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)
     plt.show()
 
     """
@@ -183,6 +190,7 @@ if __name__ == '__main__':
 
     """
     # Plot first 3 rounds conditional sprobs vs. margins
+
     colors= ['b','r','g','c','m']
     markers = ['o','x','s','d','*']
     for r in range (1,5+1-2):
@@ -194,17 +202,21 @@ if __name__ == '__main__':
                 sprobs_for_this_round.append(sprobs[s][r-1]) #conditional sprobs
                 plot_margins.append(margins[s])
         avg_for_this_round = sum(sprobs_for_this_round) / len(sprobs_for_this_round)
+        print('average for round'+str(r))
+        print(avg_for_this_round)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(plot_margins, sprobs_for_this_round, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
+        plt.plot(plot_margins, np.array(sprobs_for_this_round)*100, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
         plt.xlabel('Reported Margin')
-        title = 'Proportion of Audits that Stopped by Round (90% Providence, Reported)'
-        plt.title(title)
-        plt.ylabel('Proportion that Stopped')
+        title = 'Experimental Stopping Probability'
+        #plt.title(title)
+        plt.ylabel('Audits that Stopped (%)')
         plt.grid()
-        plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--', label='Average for Round '+str(r))
+        #plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--')#, label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
-    plt.legend(loc='lower right')
+    #plt.legend(bbox_transform=fig., loc='upper left')
+    plt.legend(loc=(0,1),mode='expand',ncol=3,title = 'Experimental Stopping Probability',frameon=False)
+    plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)
     plt.show()
 
 

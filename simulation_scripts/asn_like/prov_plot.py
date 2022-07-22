@@ -3,6 +3,9 @@ Plots the stopping probability of each audit versus the number of ballots sample
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -11,6 +14,8 @@ from r2b2.tests.util import parse_election
 import sys
 
 election = parse_election('../data/2020_presidential/2020_presidential.json')
+font = {'size'   : 17}
+plt.rc('font', **font)
 
 # function to get the 
 def get_lists(audit_name, description, max_rounds=None):
@@ -81,10 +86,10 @@ def get_lists(audit_name, description, max_rounds=None):
 if __name__ == '__main__':
     db = DBInterface(port=27018,user='reader', pwd='icanread')
     #colors= ['b','r','g','c','m']
-    colors= ['r','g','c','b']
+    colors= ['r','b','c','g']
     globidx = 0
     #markers = ['o','x','s','d','*']
-    markers = ['x','s','d','o']
+    markers = ['x','+','1','2']
 
     """ exclude minerva 1.0x
     # MINERVA 1.0X 
@@ -101,32 +106,45 @@ if __name__ == '__main__':
     # MINERVA 1.5X 
     minerva1p5_points, margins = get_lists('minerva', 'Multi round Minerva (90% then 1.5x)')
     if minerva1p5_points is not None:
-        minerva1p5_name = 'Minerva, 90% then 1.5x'
+        minerva1p5_name = 'Minerva'#, 90% then 1.5x'
         for m in range(len(minerva1p5_points)):
             if m >= len(colors):
                 break
-            plt.plot(minerva1p5_points[m][0], minerva1p5_points[m][1], colors[globidx]+markers[globidx], label=minerva1p5_name)
+            plt.plot(minerva1p5_points[m][0], np.array(minerva1p5_points[m][1])*100, colors[globidx]+markers[globidx], label=minerva1p5_name, markersize=12, mew=2)
             globidx+=1
+
+    # MINERVA 2.0!!
+    minerva2_points, margins = get_lists('minerva2', 'Multiround Minerva2 (90%) Corrected')
+    if minerva2_points is not None:
+        minerva2_name = 'Providence'#, 90%'
+        for m in range(len(minerva2_points)):
+            if m >= len(colors):
+                break
+            plt.plot(minerva2_points[m][0], np.array(minerva2_points[m][1])*100, colors[globidx]+markers[globidx], label=minerva2_name, markersize=12, mew=2)
+            globidx+=1
+    else:
+        print('awww :(')
+
 
 
     # SO BRAVO
     so_bravo_points, margins = get_lists('so_bravo', 'Multiround SO_BRAVO (90%)', max_rounds=100) # a few old 5 round so bravo sprob sims in db
     if so_bravo_points is not None:
-        so_bravo_name = 'SO BRAVO, 90%'
+        so_bravo_name = 'SO BRAVO'#, 90%'
         for m in range(len(so_bravo_points)):
             if m >= len(colors):
                 break
-            plt.plot(so_bravo_points[m][0], so_bravo_points[m][1], colors[globidx]+markers[globidx], label=so_bravo_name) 
+            plt.plot(so_bravo_points[m][0], np.array(so_bravo_points[m][1])*100, colors[globidx]+markers[globidx], label=so_bravo_name, markersize=12, mew=2) 
             globidx+=1
 
     # EOR BRAVO
     eor_bravo_points, margins = get_lists('eor_bravo', 'Multiround EOR_BRAVO (90%) Corrected')
     if eor_bravo_points is not None:
-        eor_bravo_name = 'EoR BRAVO, 90%'
+        eor_bravo_name = 'EoR BRAVO'#, 90%'
         for m in range(len(eor_bravo_points)):
             if m >= len(colors):
                 break
-            plt.plot(eor_bravo_points[m][0], eor_bravo_points[m][1], colors[globidx]+markers[globidx], label=eor_bravo_name)
+            plt.plot(eor_bravo_points[m][0], np.array(eor_bravo_points[m][1])*100, colors[globidx]+markers[globidx], label=eor_bravo_name, markersize=12, mew=2)
             globidx+=1
 
     if len(sys.argv) < 2:
@@ -134,23 +152,10 @@ if __name__ == '__main__':
         exit()
     contest = sys.argv[1]
 
-    # MINERVA 2.0!!
-    minerva2_points, margins = get_lists('minerva2', 'Multiround Minerva2 (90%) Corrected')
-    if minerva2_points is not None:
-        minerva2_name = 'Providence, 90%'
-        for m in range(len(minerva2_points)):
-            if m >= len(colors):
-                break
-            plt.plot(minerva2_points[m][0], minerva2_points[m][1], colors[globidx]+markers[globidx], label=minerva2_name)
-            globidx+=1
-    else:
-        print('awww :(')
-
-
 
     #title = 'Proportion of Audits that Stopped vs. Average Number of Ballots Sampled '
-    title = 'Stopping Probability for Number of Ballots Sampled ['+contest+': margin '+str(round(margins[0], 3))+']'
-    plt.title(title)
+    title = 'Stopping Probability for Number of Ballots Sampled'
+    #['+contest+': margin '+str(round(margins[0], 3))+']'
 
     # asn
     if contest == 'Texas':
@@ -161,10 +166,11 @@ if __name__ == '__main__':
         asn = 40.97318563740795
 
     #add vertical line of ASN to show how low it is (bc R2, not B2)
-    plt.axvline(asn, linestyle='dashed', label='ASN')
-
+    plt.axvline(asn, linestyle='dashed')#, label='ASN')
     plt.xlabel('Average Number of Ballots Sampled')
-    plt.ylabel('Proportion of Audits that Stopped')
+    plt.ylabel('Audits that Stopped (%)')
+    plt.text(1500,97,'ASN', size=14.5)
     plt.grid()
-    plt.legend()
+    plt.legend(loc=(0,1),mode='expand',ncol=4,title=title,frameon=False,handletextpad=-.5,prop={'size': 14})
+    plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)
     plt.show()
