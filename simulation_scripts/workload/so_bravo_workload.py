@@ -9,8 +9,8 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.minerva import MinervaMultiRoundStoppingProb as MMRSP
-from r2b2.minerva import Minerva
+from r2b2.simulation.so_bravo import SO_BRAVOMultiRoundStoppingProb as MMRSP
+from r2b2.so_bravo import SO_BRAVO
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 
@@ -25,7 +25,7 @@ def state_trial(state, alpha, sample_size, sprob):
     db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
 
     # find correct audit entry in db
-    query = {'audit_type': 'minerva', 'alpha': .1}
+    query = {'audit_type': 'so_bravo', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
 
     # find contest entry in db
@@ -45,9 +45,9 @@ def state_trial(state, alpha, sample_size, sprob):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'first_round_sprob': sprob,
-        'description' : 'Prov paper: Minerva workload',
-        'max_rounds': 100
+        'sprob': sprob,
+        'description' : 'so bravo workload',
+        'max_rounds': 1000
     }
     sim = db.simulations.find_one(query)
 
@@ -64,11 +64,11 @@ def state_trial(state, alpha, sample_size, sprob):
     # Create simulation object to run more trials
     sim_obj = MMRSP(alpha,
                election.contests[state],
-               max_rounds=100,
+               max_rounds=1000,
                sample_size=sample_size,
                sample_mult=1,
-               first_round_sprob=sprob,
-               sim_args={'description': 'Prov paper: Minerva workload'},
+               sample_sprob=sprob,
+               sim_args={'description': 'so bravo workload'},
                user='sarah',
                pwd='haras',
                reported_args={
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     margin = (winner_tally - loser_tally) / tally
     for sprob in [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]:
         print('sprob='+str(sprob))
-        tmpaudit = Minerva(0.1, 1.0, election.contests[contest])
+        tmpaudit = SO_BRAVO(0.1, 1.0, election.contests[contest])
         sample_size = tmpaudit.next_sample_size(sprob)
         computed_risk = state_trial(contest, 0.1, sample_size, sprob)
         logging.info('{}: {}'.format(contest, computed_risk))
