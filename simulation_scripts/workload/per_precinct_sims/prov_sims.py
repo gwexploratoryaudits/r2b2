@@ -19,14 +19,17 @@ from pymongo import MongoClient
 
 #from txtme import txtme
 
-election = parse_election('data/2020_presidential/2020_presidential.json')
 
-def state_trial(state, alpha, sprob):
+def state_trial(state, alpha, sprob, contest_name):
+    # to avoid the effort of renaming, the first intput called state is the contest objhect
+    contest= state
+    contest_obj=state
     # Find the number of trials so we can keep all even
-    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
+    db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
     query = {'audit_type': 'minerva2', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
-    contest_obj = election.contests[state]
+    #contest_obj = election.contests[state]
+    contest_obj = state# for this script, state argument was already a contest ob
     query = {
         'contest_ballots': contest_obj.contest_ballots,
         'tally': contest_obj.tally,
@@ -36,7 +39,11 @@ def state_trial(state, alpha, sprob):
     }
     #'name': state,
     #print(query)
-    contest_id = db.contests.find_one(query)['_id']
+
+
+    dbinterface = DBInterface(host='localhost', port=27017, name='r2b2', user='writer', pwd='icanwrite')
+    contest_id = dbinterface.contest_lookup(contest)
+    #contest_id = db.contests.find_one(query)['_id']
     query = {
         'reported': contest_id, 
         'underlying': 'reported', 
@@ -57,14 +64,14 @@ def state_trial(state, alpha, sprob):
 
     # Create simulation
     sim_obj = MMRSP(alpha,
-               election.contests[state],
+               contest,
                max_rounds=100,
                sample_sprob=sprob,
                sim_args={'description': 'Providence paper workload section'},
-               user='sarah',
-               pwd='haras',
+               user='writer',
+               pwd='icanwrite',
                reported_args={
-                   'name': state,
+                   'name': contest_name,
                    'description': '2020 Presidential'
                })
   
@@ -82,7 +89,7 @@ def state_trial(state, alpha, sprob):
  
 if __name__ == '__main__':
     # manually construct contest object from known values
-    contest_name = 'virginia 2016 presidential contest'
+    contest_name = 'Virginia 2016 presidential contest'
     tally = {'Hillary R. Clinton': 1981473, 'Donald J. Trump': 1769443, 'Gary Johnson': 118274, 'Evan McMullin':54054, 'Jill Stein':27638, 'All Others':33749}
     reported_winner = max(tally, key=tally.get)
     winner_votes = tally[reported_winner]
@@ -96,12 +103,10 @@ if __name__ == '__main__':
                                 reported_winners=[reported_winner],
                                 contest_type=ContestType.PLURALITY)
  
-    print('Simulations for '+contest)
-    winner_tally = election.contests[contest].tally[election.contests[contest].reported_winners[0]]
-    tally = sum(election.contests[contest].tally.values())
-    loser_tally = tally - winner_tally
-    margin = (winner_tally - loser_tally) / tally
+    print('Simulations for '+contest_name)
+    winner_tally = winner_votes
+    loser_tally = loser_votes
     for sprob in [.95, .85, .75, .65, .55, .45, .35, .25, .15, .05]:
         print('sprob='+str(sprob))
-        computed_risk = state_trial(contest, 0.1, sprob)
+        computed_risk = state_trial(contest, 0.1, sprob, contest_name)
         logging.info('{}: {}'.format(contest, computed_risk))

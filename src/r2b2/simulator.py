@@ -12,7 +12,7 @@ from r2b2.contest import Contest
 
 
 class DBInterface():
-    """Class for handling MongoDB operations."""
+    """Class for handling MongoDB operations.""" 
     def __init__(self, host='localhost', port=27017, name='r2b2', user='reader', pwd='icanread'):
         self.client = MongoClient(host=host, port=port, username=user, password=pwd)
         self.db = self.client[name]
@@ -154,8 +154,8 @@ class Simulation(ABC):
                  db_host='localhost',
                  db_port=27017,
                  db_name='r2b2',
-                 user='reader',
-                 pwd='icanread',
+                 user='writer',
+                 pwd='icanwrite',
                  *args,
                  **kwargs):
         self.audit_type = audit_type

@@ -229,6 +229,14 @@ class Minerva2(Audit):
             Estimate in the format [sample size, kmin, stopping probability].
         """
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
+
+        # Firstly, if this sub_audit already stopped then the next sample size for 
+        # this can be 0 greater and have probability of stopping 1 and kmin same as sample size
+        if sub_audit.stopped:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            return previous_round, 1, previous_round
         start = 10**1
         subsequent_round = len(self.rounds) > 0
         previous_round = 0
@@ -260,7 +268,7 @@ class Minerva2(Audit):
             if estimate[0] > 0:
                 return estimate
             upper_bound *= 10
-        return 0
+        return -1
 
     def get_upper_bound(self, n, start):
         while start <= n:

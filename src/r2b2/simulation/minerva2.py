@@ -536,7 +536,7 @@ class Minerva2MultiRoundStoppingProb(Simulation):
         else:
             assert num_trials == len(totals_sampled)
             asn = sum(totals_sampled) / num_trials
-        print(asn)
+        print('asn: '+str(asn)+'(printing from src/r2b2/simulation/minerva2.py)')
 
         # Find stopping probability for each round
         sprob_by_round = [0]*self.max_rounds
