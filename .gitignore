@@ -75,3 +75,7 @@ docs/_build
 
 # Mypy Cache
 .mypy_cache/
+
+
+# Ballot data (too much data)
+*bals.json

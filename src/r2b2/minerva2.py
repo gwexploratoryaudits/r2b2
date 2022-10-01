@@ -252,6 +252,7 @@ class Minerva2(Audit):
         sprob_kmin_pair = self.find_sprob(previous_round + 1, sub_audit)
         if (sprob_kmin_pair[1] >= sprob):
             assert sprob_kmin_pair[0] > 0
+            print('previous_round+1')
             return previous_round + 1, sprob_kmin_pair[0], sprob_kmin_pair[1]
         while upper_bound < 10**7:
             if len(self.rounds) > 0:

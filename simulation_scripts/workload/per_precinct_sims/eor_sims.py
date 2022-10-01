@@ -9,7 +9,7 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.minerva2 import PerPrecinctMinerva2MultiRoundStoppingProb as MMRSP
+from r2b2.simulation.eor_bravo import EOR_BRAVOMultiRoundStoppingProb as MMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 from r2b2.contest import Contest
@@ -26,7 +26,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
     contest_obj=state
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
-    query = {'audit_type': 'minerva2', 'alpha': .1}
+    query = {'audit_type': 'eor_bravo', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     #contest_obj = election.contests[state]
     contest_obj = state# for this script, state argument was already a contest ob
@@ -66,11 +66,10 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
     # Create simulation
     sim_obj = MMRSP(alpha,
                contest,
-               per_precinct_ballots,
-               precinct_list,
+               #per_precinct_ballots,
                max_rounds=100,
                sample_sprob=sprob,
-               sim_args={'description': 'Per-precinct Providence'},
+               sim_args={'description': 'Pre-precinct Providence'},
                user='writer',
                pwd='icanwrite',
                reported_args={
@@ -107,8 +106,6 @@ if __name__ == '__main__':
                                 contest_type=ContestType.PLURALITY)
     with open('bals.json') as f:
         per_precinct_ballots = json.load(f)["bals"]
-    with open('precinct_list.json') as f:
-        precinct_list = json.load(f)["precinct_list"]
     print('Simulations for '+contest_name)
     winner_tally = winner_votes
     loser_tally = loser_votes
