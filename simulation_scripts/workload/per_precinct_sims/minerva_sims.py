@@ -9,7 +9,8 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.minerva2 import PerPrecinctMinerva2MultiRoundStoppingProb as MMRSP
+from r2b2.minerva import Minerva
+from r2b2.simulation.minerva import PerPrecinctMinervaMultiRoundStoppingProb as MMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 from r2b2.contest import Contest
@@ -26,7 +27,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
     contest_obj=state
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
-    query = {'audit_type': 'minerva2', 'alpha': .1}
+    query = {'audit_type': 'minerva', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     #contest_obj = election.contests[state]
     contest_obj = state# for this script, state argument was already a contest ob
@@ -49,8 +50,9 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Per-precinct Providence',
-        'max_rounds': 1000
+        'description' : 'Per-precinct minerva (90% then 1.5)',
+        'max_rounds': 1000,
+        'first_round_sprob': sprob
     }
     sim = db.simulations.find_one(query)
     if sim is None:
@@ -63,14 +65,21 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
             num_trials = db.trials.count_documents(query)
 
 
+    # first round size to achieve sprob probability of stopping
+    tmp_audit = Minerva(alpha, 1.0, contest)
+    sample_size = tmp_audit.next_sample_size(sprob)
+    # sample multiple 1.5 for now
+    sample_mult = 1.5
+
     # Create simulation
     sim_obj = MMRSP(alpha,
                contest,
                per_precinct_ballots,
                precinct_list,
                max_rounds=1000,
-               sample_sprob=sprob,
-               sim_args={'description': 'Per-precinct Providence'},
+               sample_mult=sample_mult,
+               sample_size=sample_size,
+               sim_args={'description': 'Per-precinct minerva (90% then 1.5)', 'first_round_sprob': sprob},
                user='writer',
                pwd='icanwrite',
                reported_args={

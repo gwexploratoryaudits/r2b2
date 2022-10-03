@@ -228,11 +228,15 @@ class EOR_BRAVO(Audit):
         logoneoveralpha = math.log(1 / self.alpha)
         logratio = k * logp + (n - k) * logoneminusp - n * loghalf
         passes = logratio >= logoneoveralpha
-        if math.exp(logratio) == 0:
-            self.sub_audits[pair].pvalue_schedule.append(POS_INF)
-        else:
-            self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
-
+        try:
+            if math.exp(logratio) == 0:
+                self.sub_audits[pair].pvalue_schedule.append(POS_INF)
+            else:
+                self.sub_audits[pair].pvalue_schedule.append(1 / math.exp(logratio))
+        except OverflowError as err:
+            # if overflow then logratio large and exp(logratio) very very large and so 
+            # 1 / exp(logratio) near zero
+            self.sub_audits[pair].pvalue_schedule.append(0)
         if verbose:
             click.echo('\n({}) p-value: {}'.format(pair, self.sub_audits[pair].pvalue_schedule[-1]))
 

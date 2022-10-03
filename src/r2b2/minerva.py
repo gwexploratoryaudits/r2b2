@@ -203,7 +203,7 @@ class Minerva(Audit):
                 be returned in addition to the next sample size itself.
 
         Return:
-            Return maxmimum next sample size estimate across all pairwise subaudits. If verbose,
+            Return maximum next sample size estimate across all pairwise subaudits. If verbose,
                 return information as specified above.
         """
 
@@ -218,7 +218,7 @@ class Minerva(Audit):
             # Scale estimates by pairwise invalid proportion
             proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
             estimate = self._next_sample_size_pairwise(sub_audit, sprob)
-            scaled_estimate = (int(estimate[0] * proportion), estimate[1], estimate[2])
+            scaled_estimate = (math.ceil(estimate[0] * proportion), estimate[1], estimate[2])
             estimates.append(scaled_estimate)
 
         # Return the maximum scaled next round size estimate
@@ -241,6 +241,14 @@ class Minerva(Audit):
         Return:
             Estimate in the format [sample size, kmin, stopping probability].
         """
+        # Firstly, if this sub_audit already stopped then the next sample size for 
+        # this can be 0 greater and have probability of stopping 1 and kmin same as sample size
+        if sub_audit.stopped:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            return previous_round, 1, previous_round
+ 
         # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
         start = 10000
         subsequent_round = len(self.rounds) > 0

@@ -124,6 +124,52 @@ class Minerva2(Audit):
             k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
             n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
                 + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
+            round_draw = n - n_prev
+
+        num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev, 0), 'constant', constant_values=(0, 0))
+        denom_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p0), (k_prev, 0), 'constant', constant_values=(0, 0))
+        if len(self.rounds) > 0:
+            num_dist = binom.pmf(k_prev, n_prev, p1) * num_dist_round_draw
+            denom_dist = binom.pmf(k_prev, n_prev, p0) * denom_dist_round_draw
+        else:
+            num_dist = num_dist_round_draw
+            denom_dist = denom_dist_round_draw
+
+        # We find the kmin for this would-be round size.
+        right = min(self.kmin_search_upper_bound(n, sub_audit), len(num_dist))
+        kmin = self.sample_size_kmin(len(num_dist) // 2, right, num_dist, denom_dist, sum(num_dist[right:]), sum(denom_dist[right:]), right)
+
+        # If there isn't a kmin, clearly we need a larger round size.
+        if kmin == 0:
+            return 0, 0.0
+
+        # What are the odds that we get as many winner ballots in the round draw
+        # as are needed? That is the stopping probability.
+        sprob_round = sum(num_dist_round_draw[kmin:])
+
+        return kmin, sprob_round
+
+    def find_sprob_using_minerva(self, n, sub_audit: PairwiseAudit):
+        """Helper method to find the stopping probability of a given prospective round size."""
+        p0 = (sub_audit.sub_contest.contest_ballots // 2) / sub_audit.sub_contest.contest_ballots
+        p1 = sub_audit.sub_contest.winner_prop
+
+        # Find the kmin by pretending that the new marginal draw is a first round Minerva audit
+        sample_size_kmin(left, right, num_dist, denom_dist, sum_num_right, sum_denom_right, orig_right)
+        kmin = self.sample_size_kmin(len(num_dist) // 2, right, num_dist, denom_dist, sum(num_dist[right:]), sum(denom_dist[right:]), right)
+
+
+        # The number of ballots that will be drawn this round.
+        # and the previous (most recent) cumulative tally of winner ballots.
+        if len(self.rounds) == 0:
+            k_prev = 0
+            n_prev = 0
+            round_draw = n
+        else:
+            pair = sub_audit.get_pair_str()
+            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
+                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
             round_draw = n - self.rounds[-1]
 
         num_dist_round_draw = np.pad(binom.pmf(range(0, round_draw + 1), round_draw, p1), (k_prev, 0), 'constant', constant_values=(0, 0))
@@ -148,6 +194,7 @@ class Minerva2(Audit):
         sprob_round = sum(num_dist_round_draw[kmin:])
 
         return kmin, sprob_round
+
 
     def binary_search_estimate(self, left, right, sprob, sub_audit: PairwiseAudit):
         """Method to use binary search approximation to find a round size estimate."""
@@ -179,7 +226,7 @@ class Minerva2(Audit):
         else:
             return self.binary_search_estimate(mid, right, sprob, sub_audit)
 
-    def next_sample_size(self, sprob=.9, verbose=False, *args, **kwargs):
+    def next_sample_size(self, sprob=.9, linear_search=False, verbose=False, *args, **kwargs):
         """
         Attempt to find a next sample size estimate no greater than 10^1.
         Failing that, try to find an estimate no greater than 10^2, and so on.
@@ -188,6 +235,8 @@ class Minerva2(Audit):
             sprob (float): Compute next sample for this stopping probability.
             verbose (bool): If true, the kmin and stopping probability of the next sample size will
                 be returned in addition to the next sample size itself.
+            linear_search (bool): If true then the the linear search algorithm will be used, but
+                otherwise the binary search will be used by default (which is quicker).
 
         Return:
             Return maxmimum next sample size estimate across all pairwise subaudits. If verbose,
@@ -204,7 +253,10 @@ class Minerva2(Audit):
         for sub_audit in self.sub_audits.values():
             # Scale estimates by pairwise invalid proportion
             proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
-            estimate = self._next_sample_size_pairwise(sub_audit, sprob)
+            if linear_search:
+                estimate = self._next_sample_size_pairwise_linear_search(sub_audit, sprob)
+            else:
+                estimate = self._next_sample_size_pairwise(sub_audit, sprob)
             scaled_estimate = (math.ceil(estimate[0] * proportion), estimate[1], estimate[2])
             estimates.append(scaled_estimate)
 
@@ -269,6 +321,56 @@ class Minerva2(Audit):
             if estimate[0] > 0:
                 return estimate
             upper_bound *= 10
+        return -1
+
+    def _next_sample_size_pairwise_linear_search(self, sub_audit: PairwiseAudit, sprob=0.9):
+        """Compute next sample size for a single pairwise subaudit using a linear search.
+            This function is never used by default and is much slower than the default binary
+            search alternative found in _next_sample_size_pairwise. The linear search is more
+            consistent in its results however since the lowest possible round size to achieve 
+            sprob probability of stopping returned every time.
+
+        Args:
+            sub_audit (PairwiseAudit): Compute the sample size for this sub_audit.
+            sprob (float): Get the sample size for this stopping probability.
+
+        Return:
+            Estimate in the format [sample size, kmin, stopping probability].
+        """
+        # NOTE: Numerical issues arise when sample results disagree to an extreme extent with the reported margin.
+        desired_sprob = sprob # Readable renaming
+
+        # Firstly, if this sub_audit already stopped then the next sample size for 
+        # this can be 0 greater and have probability of stopping 1 and kmin same as sample size
+        if sub_audit.stopped:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            return previous_round, 1, previous_round
+
+        is_subsequent_round = len(self.rounds) > 0
+        previous_round = 0
+        if is_subsequent_round:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+
+        # For each new ballot drawn, compute the probability of meeting the minerva2 stopping condition.
+        n = previous_round + 1
+        while n < 10**7:
+            sprob_kmin_pair = self.find_sprob(n, sub_audit)
+            kmin = sprob_kmin_pair[0]
+            sprob = sprob_kmin_pair[1]
+
+            # Check if we achieve the desired stopping probabilty for this round size.
+            if sprob_kmin_pair[1] >= desired_sprob:
+                return n, kmin, sprob
+
+            # Increment n.
+            n += 1
+
+        # 10^7 is unreasonably large, return -1
+        raise Exception('Required next round size greater than 10^7.')
         return -1
 
     def get_upper_bound(self, n, start):

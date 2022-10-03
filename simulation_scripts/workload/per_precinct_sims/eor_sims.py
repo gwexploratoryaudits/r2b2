@@ -9,7 +9,7 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.eor_bravo import EOR_BRAVOMultiRoundStoppingProb as MMRSP
+from r2b2.simulation.eor_bravo import PerPrecinctEOR_BRAVOMultiRoundStoppingProb as MMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 from r2b2.contest import Contest
@@ -49,8 +49,8 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Per-precinct Providence',
-        'max_rounds': 100
+        'description' : 'Per-precinct eor bravo',
+        'max_rounds': 1000
     }
     sim = db.simulations.find_one(query)
     if sim is None:
@@ -66,10 +66,11 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
     # Create simulation
     sim_obj = MMRSP(alpha,
                contest,
-               #per_precinct_ballots,
-               max_rounds=100,
+               per_precinct_ballots,
+               precinct_list,
+               max_rounds=1000,
                sample_sprob=sprob,
-               sim_args={'description': 'Pre-precinct Providence'},
+               sim_args={'description': 'Per-precinct eor bravo'},
                user='writer',
                pwd='icanwrite',
                reported_args={
@@ -78,7 +79,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
                })
   
     # Run simulation
-    total_trials = 100
+    total_trials = 1000
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))
@@ -106,10 +107,12 @@ if __name__ == '__main__':
                                 contest_type=ContestType.PLURALITY)
     with open('bals.json') as f:
         per_precinct_ballots = json.load(f)["bals"]
+    with open('precinct_list.json') as f:
+        precinct_list = json.load(f)["precinct_list"]
     print('Simulations for '+contest_name)
     winner_tally = winner_votes
     loser_tally = loser_votes
-    for sprob in [.95, .85, .75, .65, .55, .45, .35, .25, .15, .05]:
+    for sprob in [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]:
         print('sprob='+str(sprob))
         computed_risk = state_trial(contest, 0.1, sprob, contest_name, per_precinct_ballots)
         logging.info('{}: {}'.format(contest, computed_risk))

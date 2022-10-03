@@ -9,7 +9,7 @@ Alpha: 10\%
 import json
 import logging
 
-from r2b2.simulation.minerva2 import PerPrecinctMinerva2MultiRoundStoppingProb as MMRSP
+from r2b2.simulation.so_bravo import PerPrecinctSO_BRAVOMultiRoundStoppingProb as MMRSP
 from r2b2.tests.util import parse_election
 from r2b2.simulator import DBInterface
 from r2b2.contest import Contest
@@ -26,7 +26,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
     contest_obj=state
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
-    query = {'audit_type': 'minerva2', 'alpha': .1}
+    query = {'audit_type': 'so_bravo', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     #contest_obj = election.contests[state]
     contest_obj = state# for this script, state argument was already a contest ob
@@ -49,7 +49,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Per-precinct Providence',
+        'description' : 'Per-precinct so bravo',
         'max_rounds': 1000
     }
     sim = db.simulations.find_one(query)
@@ -70,7 +70,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
                precinct_list,
                max_rounds=1000,
                sample_sprob=sprob,
-               sim_args={'description': 'Per-precinct Providence'},
+               sim_args={'description': 'Per-precinct so bravo'},
                user='writer',
                pwd='icanwrite',
                reported_args={

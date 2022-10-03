@@ -516,7 +516,7 @@ class Minerva2MultiRoundStoppingProb(Simulation):
             if trial['stop']:
                 stopped += 1
                 rounds_stopped.append(trial['round'])
-                totals_sampled.append(sum(trial['relevant_sample_size_sched']))
+                totals_sampled.append(trial['relevant_sample_size_sched'][-1])
             else:
                 all_stopped = False
             # TODO: Extract more data from trial
@@ -1290,6 +1290,7 @@ class PerPrecinctMinerva2MultiRoundStoppingProb(Simulation):
                  sample_size=None,
                  sample_mult=None,
                  sample_sprob=None,
+                 linear_search=False,
                  db_mode=True,
                  db_host='localhost',
                  db_name='r2b2',
@@ -1298,6 +1299,7 @@ class PerPrecinctMinerva2MultiRoundStoppingProb(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
+        self.linear_search = linear_search
         self.per_precinct_ballots = per_precinct_ballots
         # Add parameters to simulation DB entry
         if 'sim_args' in kwargs:
@@ -1413,7 +1415,7 @@ class PerPrecinctMinerva2MultiRoundStoppingProb(Simulation):
             round_num += 1
             previous_sample_size = current_sample_size
             if self.sample_sprob is not None:
-                current_sample_size = self.audit.next_sample_size(self.sample_sprob)
+                current_sample_size = self.audit.next_sample_size(self.sample_sprob, linear_search=self.linear_search)
             else:
                 current_sample_size += next_sample
                 next_sample = math.ceil(self.sample_mult * self.sample_size)
@@ -1456,7 +1458,7 @@ class PerPrecinctMinerva2MultiRoundStoppingProb(Simulation):
             if trial['stop']:
                 stopped += 1
                 rounds_stopped.append(trial['round'])
-                totals_sampled.append(sum(trial['relevant_sample_size_sched']))
+                totals_sampled.append(trial['relevant_sample_size_sched'][-1])
                 avg_precincts_sampled_by_round += np.array(trial['distinct_precincts_sampled_from_by_round'])
             else:
                 all_stopped = False
@@ -1482,8 +1484,7 @@ class PerPrecinctMinerva2MultiRoundStoppingProb(Simulation):
             asn = sum(totals_sampled) / num_trials
         print('asn: '+str(asn)+'(printing from src/r2b2/simulation/minerva2.py)')
 
-        # Compute number of precincts sampled from per round
-        total_num_precincts = -1
+        # Compute average number of ballots sampled for each round
 
 
         # Find stopping probability for each round

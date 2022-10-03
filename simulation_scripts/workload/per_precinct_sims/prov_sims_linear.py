@@ -49,7 +49,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Per-precinct Providence',
+        'description' : 'Per-precinct Providence linear search',
         'max_rounds': 1000
     }
     sim = db.simulations.find_one(query)
@@ -70,7 +70,8 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
                precinct_list,
                max_rounds=1000,
                sample_sprob=sprob,
-               sim_args={'description': 'Per-precinct Providence'},
+               linear_search=True,
+               sim_args={'description': 'Per-precinct Providence linear search'},
                user='writer',
                pwd='icanwrite',
                reported_args={

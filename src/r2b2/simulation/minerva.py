@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import random as r
 from typing import List
 from typing import Tuple
@@ -482,7 +483,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
                 current_sample_size = self.audit.next_sample_size(self.sample_sprob)
             else:
                 current_sample_size += next_sample
-                next_sample = math.ceil(self.sample_mult * self.sample_size)
+                next_sample = math.ceil(self.sample_mult * next_sample)
 
         # If audit does not stop, return trial output
         # FIXME: Improve output format
@@ -553,7 +554,7 @@ class MinervaMultiRoundStoppingProb(Simulation):
         for rd in range(1, self.max_rounds+1):
             stopped_this_round = rounds_stopped.count(rd)
             stopped_by_round[rd-1] = stopped_this_round
-            if remaining_by_round[rd-1] != 0:
+            #if remaining_by_round[rd-1] != 0:
         if self.db_mode:
             trials = self.db.trial_lookup(self.sim_id)
         else:
@@ -1302,3 +1303,261 @@ class MinervaMultiRoundAlteredMargin(Simulation):
             self.db.update_analysis(self.sim_id, analysis)
 
         return analysis
+
+
+class PerPrecinctMinervaMultiRoundStoppingProb(Simulation):
+    """Simulate a multi-round Minerva audit.
+
+    If sample_sprob is provided, sample sizes to achieve a sample_sprob
+    probability of stopping will be computed and used. Otherwise,
+    the initial sample size, sample_size, is given as input and further sample
+    sizes are an additional (sample_mult) * (sample_size)  ballots.
+    The audit executes until it stops or reaches the maximum number of rounds.
+    """
+    sample_sprob: float
+    sample_size: int
+    sample_mult: float
+    max_rounds: int
+    total_relevant_ballots: int
+    vote_dist: List[Tuple[str, int]]
+    audit: Minerva
+    per_precinct_ballots: []
+
+    def __init__(self,
+                 alpha,
+                 reported,
+                 per_precinct_ballots,
+                 precinct_list,
+                 max_rounds,
+                 sample_size=None,
+                 sample_mult=None,
+                 sample_sprob=None,
+                 db_mode=True,
+                 db_host='localhost',
+                 db_name='r2b2',
+                 db_port=27017,
+                 user='writer',
+                 pwd='icanwrite',
+                 *args,
+                 **kwargs):
+        self.per_precinct_ballots = per_precinct_ballots
+        # Add parameters to simulation DB entry
+        if 'sim_args' in kwargs:
+            kwargs['sim_args']['max_rounds'] = max_rounds
+            kwargs['sim_args']['sample_mult'] = sample_mult
+            kwargs['sim_args']['sample_sprob'] = sample_sprob
+            kwargs['sim_args']['sample_size'] = sample_size
+        else:
+            kwargs['sim_args'] = {'max_rounds': max_rounds, 'sample_mult': sample_mult, 'sample_sprob': sample_sprob, 'sample_size': sample_size}
+        super().__init__('minerva', alpha, reported, 'reported', True, db_mode, db_host, db_port, db_name, user, pwd, *args, **kwargs)
+        self.sample_sprob = sample_sprob
+        self.sample_size = sample_size
+        self.sample_mult = sample_mult
+        self.max_rounds = max_rounds
+        self.total_relevant_ballots = sum(self.reported.tally.values())
+        self.candidate_list = list(self.reported.tally.keys())
+        self.precinct_list = precinct_list
+        # FIXME: temporary until pairwise contest fix is implemented
+        self.contest_ballots = self.reported.contest_ballots
+        # self.reported.contest_ballots = self.total_relevant_ballots
+        # self.reported.winner_prop = self.reported.tally[self.reported.reported_winners[0]] / self.reported.contest_ballots
+        self.audit = Minerva(self.alpha, 1.0, self.reported)
+
+        if sample_sprob is None and sample_size is None and sample_mult is None:
+            raise ValueError('Sample sizes cannot be chosen without sample_sprob or sample_size and sample_mult.')
+        if sample_sprob is not None:
+            if not sample_sprob > 0 or not sample_sprob < 1:
+                raise ValueError('Sample size stopping probability is not between 0 and 1.')
+        else:
+            min_sample_size = 0
+            for pairwise_audit in self.audit.sub_audits.values():
+                min_sample_size = max(pairwise_audit.min_sample_size, min_sample_size)
+            if sample_size < min_sample_size:
+                raise ValueError('Sample size is less than minimum sample size for audit.')
+        if max_rounds < 2:
+            raise ValueError('Maximum rounds is too small.')
+
+        # FIXME: sorted candidate list will be created by new branch, update once merged
+        # Generate a sorted underlying vote distribution
+        sorted_tally = sorted(self.reported.tally.items(), key=lambda x: x[1], reverse=True)
+        self.vote_dist = [(sorted_tally[0][0], sorted_tally[0][1])]
+        current = sorted_tally[0][1]
+        for i in range(1, len(sorted_tally)):
+            current += sorted_tally[i][1]
+            self.vote_dist.append((sorted_tally[i][0], current))
+        self.vote_dist.append(('invalid', self.contest_ballots))
+
+    def trial(self, seed):
+        """Execute a multiround minerva audit (using r2b2.minerva.Minerva)"""
+
+        r.seed(seed)
+
+        # Ensure audit is reset
+        self.audit._reset()
+
+        # Initialize first round including initial sample size
+        round_num = 1
+        previous_sample_size = 0
+        if self.sample_sprob is not None:
+            current_sample_size = self.audit.next_sample_size(self.sample_sprob)
+        else:
+            current_sample_size = self.sample_size
+            next_sample = math.ceil(self.sample_mult * self.sample_size)
+        stop = False
+
+        # For each round
+        sample = [0 for i in range(len(self.vote_dist))]
+        precincts_sampled_from = []
+        distinct_precincts_sampled_from_by_round = np.zeros(self.max_rounds)
+        while round_num <= self.max_rounds:
+            # Draw a sample of a given size
+            for i in range(current_sample_size - previous_sample_size):
+                ballot = r.randint(0, self.contest_ballots-1)
+                bal = self.per_precinct_ballots[ballot]
+                precinct = bal["precinct"]
+                precincts_sampled_from.append(precinct)
+                j = self.candidate_list.index(bal["candidate"])
+                sample[j] += 1
+                #
+                #for j in range(len(sample)):
+                #    if ballot <= self.vote_dist[j][1]:
+                #        sample[j] += 1
+                #        break
+
+            # Convert this sample to a dict
+            sample_dict = {}
+            for i in range(len(self.vote_dist)):
+                # For now, we will ignore the irrelevant votes for this simulation
+                if not self.vote_dist[i][0] == 'invalid':
+                    sample_dict[self.vote_dist[i][0]] = sample[i]
+
+            # Execute a round of the audit for this sample
+            stop = self.audit.execute_round(current_sample_size, sample_dict)
+
+            # compute, for this round, the number of distinct precincts sampled from
+            distinct_precincts_sampled_from_by_round[round_num-1] = len(set(precincts_sampled_from))
+            precincts_sampled_from = []
+
+            # If audit is done, return trial output
+            # FIXME: Improve output format
+            if stop:
+                return {
+                    'stop': stop,
+                    'round': round_num,
+                    'p_value_sched': self.audit.pvalue_schedule,
+                    'p_value': self.audit.get_risk_level(),
+                    'relevant_sample_size_sched': self.audit.rounds,
+                    'winner_ballots_drawn_sched': self.audit.sample_ballots,
+                    'distinct_precincts_sampled_from_by_round': list(distinct_precincts_sampled_from_by_round)
+                    # 'kmin_sched': self.audit.min_winner_ballots
+                }
+
+            # Else choose a next round size and continue
+            round_num += 1
+            previous_sample_size = current_sample_size
+            if self.sample_sprob is not None:
+                current_sample_size = self.audit.next_sample_size(self.sample_sprob)
+            else:
+                current_sample_size += next_sample
+                next_sample = math.ceil(self.sample_mult * next_sample)
+
+        # If audit does not stop, return trial output
+        # FIXME: Improve output format
+        return {
+            'stop': stop,
+            'round': self.max_rounds,
+            'p_value_sched': self.audit.pvalue_schedule,
+            'p_value': self.audit.get_risk_level(),
+            'relevant_sample_size_sched': self.audit.rounds,
+            'winner_ballots_drawn_sched': self.audit.sample_ballots,
+            'distinct_precincts_sampled_from_by_round': distinct_precincts_sampled_from_by_round
+            # 'kmin_sched': self.audit.min_winner_ballots
+        }
+
+    def analyze(self, verbose: bool = False, hist: bool = False):
+        """Analyze trials to get experimental stopping probability.
+
+        Args:
+            verbose (bool): If true, analyze will print simulation analysis information.
+            hist (bool): If true, analyze will generate and display 2 histograms: winner
+                ballots found in the sample size and computed stopping probability.
+        """
+        if self.db_mode:
+            trials = self.db.trial_lookup(self.sim_id)
+        else:
+            trials = self.trials
+        num_trials = 0
+        stopped = 0
+        rounds_stopped = []
+        totals_sampled = []
+        all_stopped = True
+        # TODO: Create additinal structures to store trial data
+        avg_precincts_sampled_by_round = np.zeros(self.max_rounds)
+
+        for trial in trials:
+            num_trials += 1
+            if trial['stop']:
+                stopped += 1
+                rounds_stopped.append(trial['round'])
+                totals_sampled.append(trial['relevant_sample_size_sched'][-1])
+                avg_precincts_sampled_by_round += np.array(trial['distinct_precincts_sampled_from_by_round'])
+            else:
+                all_stopped = False
+            # TODO: Extract more data from trial
+        for i in range(len(avg_precincts_sampled_by_round)):
+            avg_precincts_sampled_by_round[i] /= num_trials
+
+        if verbose:
+            print('Analysis\n========\n')
+            print('Number of trials: {}'.format(num_trials))
+            print('Experiemtnal Stopping Prob: {:.5f}'.format(stopped / num_trials))
+            if stopped > 0:
+                print('Average Rounds in Stopped Trials: {:.2f}'.format(sum(rounds_stopped) / stopped))
+
+        if hist:
+            histogram(rounds_stopped, 'Rounds reached in stopped trials.')
+
+        # Compute ASN
+        if not all_stopped:
+            asn = 'Not all audits stopped.'
+        else:
+            assert num_trials == len(totals_sampled)
+            asn = sum(totals_sampled) / num_trials
+        print('asn: '+str(asn)+'(printing from src/r2b2/simulation/minerva.py)')
+
+        # Compute average number of ballots sampled for each round
+
+
+        # Find stopping probability for each round
+        sprob_by_round = [0]*self.max_rounds
+        stopped_by_round = [0]*self.max_rounds
+        remaining_by_round = [0]*(self.max_rounds+1)
+        # first round has all remaining
+        remaining_by_round[0] = num_trials
+
+        for rd in range(1, self.max_rounds+1):
+            stopped_this_round = rounds_stopped.count(rd)
+            stopped_by_round[rd-1] = stopped_this_round
+            if remaining_by_round[rd-1] != 0:
+                sprob_by_round[rd-1] = stopped_this_round/remaining_by_round[rd-1]
+            else:
+                sprob_by_round[rd-1] = -1
+            remaining_by_round[rd] = remaining_by_round[rd-1]-stopped_this_round
+
+        analysis = {
+            'sprob': stopped / num_trials,
+            'sprob_by_round': sprob_by_round,
+            'remaining_by_round': remaining_by_round,
+            'stopped_by_round': stopped_by_round,
+            'asn': asn,
+            'avg_precincts_sampled_by_round': list(avg_precincts_sampled_by_round)
+        }
+
+        # Update simulation entry to include analysis
+        if self.db_mode:
+            self.db.update_analysis(self.sim_id, analysis)
+
+        return analysis
+
+
+
