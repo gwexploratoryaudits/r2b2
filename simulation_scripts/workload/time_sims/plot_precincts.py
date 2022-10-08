@@ -12,8 +12,23 @@ from r2b2.contest import Contest
 from r2b2.contest import ContestType
 import json
 
+# function used to estimate the minimum of a low 
+# degree polynomial fit to a set of points
 def estimate_min2(xs,ys):
-    return xs[np.where(ys==min(ys))[0][0]], min(ys)
+    coefs = np.polyfit(xs, ys, 2)
+
+    c = np.poly1d(coefs)
+
+    crit = c.deriv().r
+    r_crit = crit[crit.imag==0].real
+    test = c.deriv(2)(r_crit) 
+
+    # compute local minima 
+    # excluding range boundaries
+    x_min = r_crit[test>0]
+    y_min = c(x_min)
+
+    return (x_min, y_min)
 
 # audit-specific items:
 all_audit_specific_items = {}
@@ -21,34 +36,25 @@ audits = []
 audit_labels = {}
 # providence
 audit_name = 'minerva2'
-marker = 'o'
-color = 'b'
-linestyle = '-'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'Providence'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct Providence potentially fixed'}
-all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
+all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
 # eor bravo
 audit_name = 'eor_bravo'
-marker = 'x'
-color = 'r'
-linestyle = '-.'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'EOR BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct eor bravo'}
-all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
+all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
 # so bravo
-marker = 's'
-color = 'g'
-linestyle = '--'
 audit_name = 'so_bravo'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'SO BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct so bravo'}
-all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
+all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
 """
 # minerva
 audit_name = 'minerva'
@@ -234,186 +240,8 @@ plt.legend(loc='upper left')
 plt.tight_layout()
 plt.show() 
 """
-
-
-
-
-# expected number of ballots vs p
-font = {'size'   : 17}
-plt.rc('font', **font)
-#colors= ['b','r','g','c','m']
-#markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
-    ps = per_audit_results[cur_audit]['ps']
-    costs = per_audit_results[cur_audit]['expbals']
-    plt.plot(ps,
-        np.array(costs)/1000,
-        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],
-        label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Stopping probability, $p$')
-plt.ylabel('Average total ballots sampled (x$10^3$)')
-plt.title('Average total number of ballots sampled')
-plt.legend(loc='upper left')
-plt.tight_layout()
-plt.show() 
-
-# expected number of ballots vs p as a ratio of the prov exp bals
-font = {'size'   : 17}
-plt.rc('font', **font)
 colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-cur_audit = 'minerva2'
-ps = per_audit_results[cur_audit]['ps']
-prov_costs = np.array(per_audit_results[cur_audit]['expbals'])
-
-cur_audit = 'so_bravo'
-ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs),                linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],
- 
-        label=audit_labels[cur_audit])
-i += 1
-cur_audit = 'eor_bravo'
-ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs),        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-i += 1
-cur_audit = 'minerva2'
-ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Total ballots fraction')
-plt.axhline(y=1, linestyle='--')
-plt.title('Average total ballots sampled \nas fraction of Providence total')
-plt.legend(loc='upper left')
-plt.tight_layout()
-plt.show() 
-
-# expected cost vs p (round cost only)
-font = {'size'   : 17}
-plt.rc('font', **font)
-colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
-    ps = per_audit_results[cur_audit]['ps']
-    costs = per_audit_results[cur_audit]['costs']
-    plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Average Cost')
-#plt.yscale('log') # need to ax
-plt.title('Constant round cost of '+str(roundcost)+' ballots')
-plt.legend(loc='upper right')
-plt.yscale('log')
-plt.tight_layout()
-plt.show() 
-
-# expected cost vs p (round cost and precinct cost)
-font = {'size'   : 17}
-plt.rc('font', **font)
-colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
-    ps = per_audit_results[cur_audit]['ps']
-    precinct_costs = per_audit_results[cur_audit]['precinct_costs']
-    plt.plot(ps,np.array(precinct_costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Average Cost')
-#plt.yscale('log')
-plt.title('Round cost '+str(newroundcost)+' and precinct cost '+str(precinctcost))
-plt.legend(loc='upper right')
-plt.tight_layout()
-plt.show() 
-
-# optimals ps for all three audits
-optimums = {}
-i=0
-linestyles=['-','--','-.']
-for cur_audit in audits:
-    ps = per_audit_results[cur_audit]['ps']
-    precinct_costs = per_audit_results[cur_audit]['precinct_costs']
-    #plt.plot(ps,np.array(precinct_costs),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
-    audit = cur_audit
-    costs = per_audit_results[audit]['costs']
-    numbals = per_audit_results[audit]['expbals']
-    numrounds = per_audit_results[audit]['exprounds']
-    balcost = 1
-    minimizing_ps = []
-    minimal_costs = []
-    roundcosts = np.linspace(1,100000,num = 100000)#[1, 10, 100, 1000, 10000]
-
-    for roundcost in roundcosts:
-        # compute expected costs for each round schedule (parameterized by p):
-        numbals = np.array(numbals)
-        numrounds = np.array(numrounds)
-        costs = balcost * numbals + roundcost * numrounds
-
-        # find the value of p which achieves the minimum cost in costs
-        """
-        minidx = list(costs).index(min(costs))
-        minimizing_ps.append(ps[minidx])
-        """
-        minimizing_ps.append(estimate_min2(ps, costs)[0])
-        minimal_costs.append(estimate_min2(ps, costs)[1])
-
-    optimums.update({cur_audit:{'minimizing_ps':minimizing_ps,'minimal_costs':minimal_costs}})
-    i += 1
-
-# minimal cost ps
-font = {'size'   : 17}
-plt.rc('font', **font)
-i = 0
-for cur_audit in audits:
-    plt.plot(roundcosts, optimums[cur_audit]['minimizing_ps'],  linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-         label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Round Cost, $c_r$')
-plt.ylabel('Stopping Probability, $p$')
-plt.title('Optimal stopping probability $p$') 
-plt.xscale('log')
-plt.legend(loc='upper left')
-plt.tight_layout()
-plt.show()
-
-# minimal costs
-font = {'size'   : 17}
-plt.rc('font', **font)
-i = 0
-for cur_audit in audits:
-    plt.plot(roundcosts, np.array(optimums[cur_audit]['minimal_costs']) / np.array(optimums['minerva2']['minimal_costs']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
- label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Round Cost, $c_r$')
-plt.ylabel('Optimal cost')
-plt.title('Optimal cost as fraction of Providence cost') 
-plt.legend(loc='upper left')
-plt.xscale('log')
-plt.tight_layout()
-plt.show()
-
-
-
+markers = ['x','o','s','d','*']
 # optimals ps for all three audits under the per-precinct model
 optimums = {}
 i=0
@@ -426,18 +254,21 @@ for cur_audit in audits:
     costs = per_audit_results[audit]['costs']
     numbals = per_audit_results[audit]['expbals']
     numrounds = per_audit_results[audit]['exprounds']
+    expprecincts = np.array(per_audit_results[audit]['expprecincts'])
     balcost = 1
     roundcost = 1000
     minimizing_ps = []
     minimal_costs = []
-    precinctcosts = np.linspace(0,5,num=100)#[1, 10, 100, 1000, 10000]
+    precinctcosts = np.linspace(0,50,num=100)#[1, 10, 100, 1000, 10000]
+    print(cur_audit)
+    print(expprecincts)
 
     for precinctcost in precinctcosts:
         # compute expected costs for each round schedule (parameterized by p):
         numbals = np.array(numbals)
         numrounds = np.array(numrounds)
         #costs = balcost * numbals + roundcost * numrounds
-        costs = balcost * numbals + roundcost * numrounds + distinct_precinct_samples * precinctcost
+        costs = balcost * numbals + roundcost * numrounds + expprecincts * precinctcost
 
         # find the value of p which achieves the minimum cost in costs
         """
@@ -455,28 +286,42 @@ font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(precinctcosts, optimums[cur_audit]['minimizing_ps'], linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'], label=audit_labels[cur_audit])
+    plt.plot(precinctcosts, optimums[cur_audit]['minimizing_ps'], linestyle=linestyles[i], color=colors[i], label=audit_labels[cur_audit])
     i += 1
 plt.xlabel('Precinct Cost, $c_p$')
 plt.ylabel('Stopping Probability, $p$')
 plt.title('Optimal stopping probability $p$') 
 plt.xscale('log')
-plt.legend(loc='upper left')
+plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show()
+
+# minimal costs as fraction
+font = {'size'   : 17}
+plt.rc('font', **font)
+i = 0
+for cur_audit in audits:
+    plt.plot(precinctcosts, np.array(optimums[cur_audit]['minimal_costs']) / np.array(optimums['minerva2']['minimal_costs']), linestyle=linestyles[i], color=colors[i], label=audit_labels[cur_audit])
+    i += 1
+plt.xlabel('Precinct Cost, $c_p$')
+plt.ylabel('Optimal cost')
+plt.title('Optimal cost as fraction of Providence cost') 
+plt.legend(loc='upper right')
+plt.xscale('log')
+plt.tight_layout()
+plt.show()
+
 
 # minimal costs
 font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(precinctcosts, np.array(optimums[cur_audit]['minimal_costs']) / np.array(optimums['minerva2']['minimal_costs']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'], label=audit_labels[cur_audit])
+    plt.plot(precinctcosts, np.array(optimums[cur_audit]['minimal_costs']), linestyle=linestyles[i], color=colors[i], label=audit_labels[cur_audit])
     i += 1
 plt.xlabel('Precinct Cost, $c_p$')
 plt.ylabel('Optimal cost')
-plt.title('Optimal cost as fraction of Providence cost') 
+plt.title('Optimal cost for varying per-precinct costs') 
 plt.legend(loc='upper left')
 plt.xscale('log')
 plt.tight_layout()

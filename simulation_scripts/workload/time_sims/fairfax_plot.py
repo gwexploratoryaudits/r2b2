@@ -5,6 +5,10 @@ import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 
+from scipy.optimize import minimize
+from scipy.optimize import curve_fit
+from scipy.stats import beta
+
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
 from r2b2.tests.util import parse_election
@@ -12,8 +16,61 @@ from r2b2.contest import Contest
 from r2b2.contest import ContestType
 import json
 
-def estimate_min2(xs,ys):
+
+def mybeta(x,a,b,s):
+    return beta.pdf(x, a, b)*s
+# function used to estimate the minimum of a low 
+# degree polynomial fit to a set of points
+def estimate_min2(xs,ys,curve=False):
+    res = curve_fit(mybeta, xs, ys)
+    a = res[0][0]
+    b = res[0][1]
+    s = res[0][2]
+    print(a,b)
+    cxs = np.arange(0,1,.01)
+    cys = [mybeta(x,a,b,s) for x in cxs]
+
+    return (0, 0, cxs, cys)
+
+    # for now, just return the actual minimum:
     return xs[np.where(ys==min(ys))[0][0]], min(ys)
+
+    coefs = np.polyfit(xs, ys, np.shape(xs)[0]+1)
+    #params = beta.fit(xs,ys)
+    #print(params)
+    #return 1, 0
+
+    c = np.poly1d(coefs)
+
+    fit = minimize(c, x0=.5, method='L-BFGS-B', bounds=((0,1),))
+    #print(fit)
+
+    if curve:
+        return fit.x, fit.fun, c
+    return fit.x, fit.fun
+
+    crit = c.deriv().r
+    r_crit = crit[crit.imag==0].real
+    test = c.deriv(2)(r_crit) 
+
+    # compute local minima 
+    # excluding range boundaries
+    x_min = r_crit[test>0]
+    y_min = c(x_min)
+
+    if x_min < .05:
+        print(x_min)
+        x_min = .05
+        y_min = ys[np.where(xs==.05)]
+    if x_min > .95:
+        print(x_min)
+        x_min = .95
+        y_min = ys[np.where(xs==.95)]
+
+    if curve:
+        return (x_min, y_min, c)
+
+    return (x_min, y_min)
 
 # audit-specific items:
 all_audit_specific_items = {}
@@ -27,7 +84,7 @@ linestyle = '-'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'Providence'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct Providence potentially fixed'}
+sim_args = {'description':'Timing Per-precinct Providence'}
 all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 # eor bravo
 audit_name = 'eor_bravo'
@@ -37,7 +94,7 @@ linestyle = '-.'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'EOR BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct eor bravo'}
+sim_args = {'description':'Timing Per-precinct eor bravo'}
 all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 # so bravo
 marker = 's'
@@ -47,7 +104,7 @@ audit_name = 'so_bravo'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'SO BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct so bravo'}
+sim_args = {'description':'Timing Per-precinct so bravo'}
 all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 """
 # minerva
@@ -313,6 +370,17 @@ for cur_audit in audits:
     plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
+    # also, let's go ahead and plot the estimate_min curve
+    ps = np.array(ps)
+    costs = np.array(costs)
+    res = estimate_min2(ps, costs, curve=True)
+    x_min = res[0]
+    y_min = res[1]
+    cxs = res[2]
+    cys = res[3]
+    plt.plot(cxs, cys, label='curve fit')
+    #curve = res[2]
+    #plt.plot(np.arange(0,1,.01), curve(np.arange(0,1,.01)), label='curve fit')
     i += 1
 plt.xlabel('Stopping Probability, p')
 plt.ylabel('Average Cost')
@@ -359,7 +427,7 @@ for cur_audit in audits:
     balcost = 1
     minimizing_ps = []
     minimal_costs = []
-    roundcosts = np.linspace(1,100000,num = 100000)#[1, 10, 100, 1000, 10000]
+    roundcosts = np.linspace(1,100000,num = 100)#[1, 10, 100, 1000, 10000]
 
     for roundcost in roundcosts:
         # compute expected costs for each round schedule (parameterized by p):

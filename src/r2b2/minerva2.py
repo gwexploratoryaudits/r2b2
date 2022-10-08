@@ -265,6 +265,11 @@ class Minerva2(Audit):
         for estimate in estimates:
             if estimate[0] > max_estimate[0]:
                 max_estimate = estimate
+        
+        # In extremely rare cases, the rounding can cause the next round size estimate to be the same
+        # as the current number of ballots drawn
+        if len(self.rounds) > 1:
+            max_estimate = (max(max_estimate[0], self.rounds[-1] + 1), max_estimate[1], max_estimate[2])
 
         if verbose:
             return max_estimate
@@ -682,3 +687,95 @@ class Minerva2(Audit):
         forecast kmin values like this function is intended to do.
         """
         raise Exception('In Minerva 2.0, a kmin cannot be forecasted for future rounds until their preceding round is complete')
+
+    def min_round_size_to_avoid_misleading_results(self, prob_not_misleading):
+        """
+        Assuming the announced outcome is correct, a round is called misleading if the tally has more
+        ballots for the true loser than the true winner. Selecting sufficiently many ballots to avoid
+        such a misleading round may be desirable given that election officials are being threatened and
+        elections being generally mistrusted; drawing sufficiently many ballots that it is very likely
+        that the tally will agree with announced and correct results is desirable.
+
+        Args:
+            prob_not_misleading (float in (0,1]) : the desired probability that the sample will not be misleading
+
+
+        Returns:
+            n, a nonnegative integer, the smallest round size for which a misleading sample will occur only 
+                with probability 1 - prob_not_misleading
+        """
+        # If the audit has already terminated, return the most recent sample size (draw no more ballots)
+        if self.stopped:
+            return self.rounds[-1]
+
+        estimates = []
+        for sub_audit in self.sub_audits.values():
+            # Scale estimates by pairwise invalid proportion
+            proportion = float(self.contest.contest_ballots) / float(sub_audit.sub_contest.contest_ballots)
+            if linear_search:
+                estimate = self._sub_contest_min_round_size_to_avoid_misleading_results(sub_audit, prob_not_misleading)
+            else:
+                estimate = self._sub_contest_min_round_size_to_avoid_misleading_results(sub_audit, prob_not_misleading)
+            scaled_estimate = math.ceil(estimate * proportion)
+            estimates.append(scaled_estimate)
+
+        # Return the maximum scaled next round size estimate
+        max_estimate = 0
+        for estimate in estimates:
+            if estimate > max_estimate:
+                max_estimate = estimate
+        
+        return max_estimate
+
+    def _sub_contest_min_round_size_to_avoid_misleading_results(self, sub_audit, desired_prob_not_misleading):
+        """
+        Find the minumum round size to avoid misleading results just for this sub contest.
+
+        Assuming the announced outcome is correct, a round is called misleading if the tally has more
+        ballots for the true loser than the true winner. Selecting sufficiently many ballots to avoid
+        such a misleading round may be desirable given that election officials are being threatened and
+        elections being generally mistrusted; drawing sufficiently many ballots that it is very likely
+        that the tally will agree with announced and correct results is desirable.
+
+        Args:
+            prob_not_misleading (float in (0,1]) : the desired probability that the sample will not be misleading
+
+
+        Returns:
+            n, a nonnegative integer, the smallest round size for which a misleading sample will occur only 
+                with probability 1 - prob_not_misleading
+        """
+        # Firstly, if this sub_audit already stopped then return just the previous sample size for it
+        if sub_audit.stopped:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+            return previous_round
+
+        is_subsequent_round = len(self.rounds) > 0
+        previous_round = 0
+        if is_subsequent_round:
+            winner_ballots = self.sample_ballots[sub_audit.sub_contest.reported_winner][-1]
+            loser_ballots = self.sample_ballots[sub_audit.sub_contest.reported_loser][-1]
+            previous_round = winner_ballots + loser_ballots
+
+        # For each new ballot drawn, compute the probability of a misleading 
+        # result (tail of binomial assuming alternative)
+        n = previous_round + 1
+        while n < 10**7:
+            marginal_sample_size = n - previous_round
+            prob_not_misleading = binom.sf(math.floor(.5*marginal_sample_size),marginal_sample_size,sub_audit.sub_contest.winner_prop)
+
+            # Check if this round size n achieves the desired probability of not having a misleading result
+            if prob_not_misleading >= desired_prob_not_misleading:
+                return n
+
+            # Increment n
+            n += 1
+
+        # 10^7 is unreasonably large, return -1
+        raise Exception('Required next round size greater than 10^7.')
+        return -1
+
+
+

@@ -466,11 +466,14 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
                  alpha,
                  reported,
                  per_precinct_ballots,
+                 county_and_precinct_info,
                  precinct_list,
+                 county_list,
                  max_rounds,
                  sample_size=None,
                  sample_mult=None,
                  sample_sprob=None,
+                 linear_search=False,
                  db_mode=True,
                  db_host='localhost',
                  db_name='r2b2',
@@ -479,6 +482,7 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
                  pwd='icanwrite',
                  *args,
                  **kwargs):
+        self.linear_search = linear_search
         self.per_precinct_ballots = per_precinct_ballots
         # Add parameters to simulation DB entry
         if 'sim_args' in kwargs:
@@ -492,9 +496,11 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
         self.sample_size = sample_size
         self.sample_mult = sample_mult
         self.max_rounds = max_rounds
+        self.county_list = county_list
+        self.precinct_list = precinct_list
         self.total_relevant_ballots = sum(self.reported.tally.values())
         self.candidate_list = list(self.reported.tally.keys())
-        self.precinct_list = precinct_list
+        self.county_and_precinct_info = county_and_precinct_info
         # FIXME: temporary until pairwise contest fix is implemented
         self.contest_ballots = self.reported.contest_ballots
         # self.reported.contest_ballots = self.total_relevant_ballots
@@ -545,15 +551,37 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
 
         # For each round
         sample = [0 for i in range(len(self.vote_dist))]
+        
+
+        """
         precincts_sampled_from = []
+        ballots_per_county = {}
+        for county in county_list:
+            ballots_per_county.update({county:0})
+        ballots_per_precinct = {}
+        for precinct in precinct_list:
+            ballots_per_precinct.update({precinct:0})
+        """
         distinct_precincts_sampled_from_by_round = np.zeros(self.max_rounds)
+        fairfax_bals = np.zeros(self.max_rounds)
+        fairfax_distinct_precincts = np.zeros(self.max_rounds)
         while round_num <= self.max_rounds:
+            # dense sample will keep track of, for each county, for each precinct, how many ballots
+            # are sampled there
+            dense_sample = {}
+            for county in self.county_list:
+                dense_sample.update({county:{}})
+                for precinct in self.county_and_precinct_info[county]:
+                    dense_sample[county].update({precinct:0})
+     
             # Draw a sample of a given size
             for i in range(current_sample_size - previous_sample_size):
                 ballot = r.randint(0, self.contest_ballots-1)
                 bal = self.per_precinct_ballots[ballot]
                 precinct = bal["precinct"]
-                precincts_sampled_from.append(precinct)
+                county = bal["county"]
+                dense_sample[county][precinct] += 1
+                #precincts_sampled_from.append(precinct)
                 j = self.candidate_list.index(bal["candidate"])
                 sample[j] += 1
                 #
@@ -573,8 +601,20 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
             stop = self.audit.execute_round(current_sample_size, sample_dict)
 
             # compute, for this round, the number of distinct precincts sampled from
-            distinct_precincts_sampled_from_by_round[round_num-1] = len(set(precincts_sampled_from))
-            precincts_sampled_from = []
+            #distinct_precincts_sampled_from_by_round[round_num-1] = len(set(precincts_sampled_from))
+            distinct_precincts_sampled_from_by_round[round_num-1] = 0
+            for county in self.county_list:
+                for precinct in self.county_and_precinct_info[county]:
+                    if dense_sample[county][precinct] > 0:
+                        distinct_precincts_sampled_from_by_round[round_num-1] += 1
+
+            # find number of distinct precincts sampled from for the biggest county (fairfax) and 
+            # total number of ballots sampled in fairfax
+            county = 'Fairfax County'
+            for precinct in dense_sample[county].keys():
+                fairfax_bals[round_num-1] += dense_sample[county][precinct]
+                if dense_sample[county][precinct] > 0:
+                    fairfax_distinct_precincts[round_num - 1] += 1
 
             # If audit is done, return trial output
             # FIXME: Improve output format
@@ -586,7 +626,9 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
                     'p_value': self.audit.get_risk_level(),
                     'relevant_sample_size_sched': self.audit.rounds,
                     'winner_ballots_drawn_sched': self.audit.sample_ballots,
-                    'distinct_precincts_sampled_from_by_round': list(distinct_precincts_sampled_from_by_round)
+                    'distinct_precincts_sampled_from_by_round': list(distinct_precincts_sampled_from_by_round),
+                    'fairfax_bals':list(fairfax_bals),
+                    'fairfax_distinct_precincts':list(fairfax_distinct_precincts),
                     # 'kmin_sched': self.audit.min_winner_ballots
                 }
 
@@ -594,7 +636,7 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
             round_num += 1
             previous_sample_size = current_sample_size
             if self.sample_sprob is not None:
-                current_sample_size = self.audit.next_sample_size(self.sample_sprob)
+                current_sample_size = self.audit.next_sample_size(self.sample_sprob, linear_search=self.linear_search)
             else:
                 current_sample_size += next_sample
                 next_sample = math.ceil(self.sample_mult * self.sample_size)
@@ -608,7 +650,9 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
             'p_value': self.audit.get_risk_level(),
             'relevant_sample_size_sched': self.audit.rounds,
             'winner_ballots_drawn_sched': self.audit.sample_ballots,
-            'distinct_precincts_sampled_from_by_round': list(distinct_precincts_sampled_from_by_round)
+            'distinct_precincts_sampled_from_by_round': distinct_precincts_sampled_from_by_round,
+            'fairfax_bals':list(fairfax_bals),
+            'fairfax_distinct_precincts':list(fairfax_distinct_precincts),
             # 'kmin_sched': self.audit.min_winner_ballots
         }
 
@@ -632,6 +676,8 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
         # TODO: Create additinal structures to store trial data
         avg_precincts_sampled_by_round = np.zeros(self.max_rounds)
 
+        avg_fairfax_bals = np.zeros(self.max_rounds)
+        avg_fairfax_distinct_precincts = np.zeros(self.max_rounds)
         for trial in trials:
             num_trials += 1
             if trial['stop']:
@@ -639,11 +685,15 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
                 rounds_stopped.append(trial['round'])
                 totals_sampled.append(trial['relevant_sample_size_sched'][-1])
                 avg_precincts_sampled_by_round += np.array(trial['distinct_precincts_sampled_from_by_round'])
+                avg_fairfax_bals += np.array(trial['fairfax_bals'])
+                avg_fairfax_distinct_precincts += np.array(trial['fairfax_distinct_precincts'])
             else:
                 all_stopped = False
             # TODO: Extract more data from trial
         for i in range(len(avg_precincts_sampled_by_round)):
             avg_precincts_sampled_by_round[i] /= num_trials
+            avg_fairfax_bals[i] /= num_trials
+            avg_fairfax_distinct_precincts[i] /= num_trials
 
         if verbose:
             print('Analysis\n========\n')
@@ -688,7 +738,9 @@ class PerPrecinctEOR_BRAVOMultiRoundStoppingProb(Simulation):
             'remaining_by_round': remaining_by_round,
             'stopped_by_round': stopped_by_round,
             'asn': asn,
-            'avg_precincts_sampled_by_round': list(avg_precincts_sampled_by_round)
+            'avg_precincts_sampled_by_round': list(avg_precincts_sampled_by_round),
+            'avg_fairfax_bals': list(avg_fairfax_bals),
+            'avg_fairfax_distinct_precincts': list(avg_fairfax_distinct_precincts)
         }
 
         # Update simulation entry to include analysis

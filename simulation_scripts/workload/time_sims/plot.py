@@ -12,8 +12,23 @@ from r2b2.contest import Contest
 from r2b2.contest import ContestType
 import json
 
+# function used to estimate the minimum of a low 
+# degree polynomial fit to a set of points
 def estimate_min2(xs,ys):
-    return xs[np.where(ys==min(ys))[0][0]], min(ys)
+    coefs = np.polyfit(xs, ys, 2)
+
+    c = np.poly1d(coefs)
+
+    crit = c.deriv().r
+    r_crit = crit[crit.imag==0].real
+    test = c.deriv(2)(r_crit) 
+
+    # compute local minima 
+    # excluding range boundaries
+    x_min = r_crit[test>0]
+    y_min = c(x_min)
+
+    return (x_min, y_min)
 
 # audit-specific items:
 all_audit_specific_items = {}

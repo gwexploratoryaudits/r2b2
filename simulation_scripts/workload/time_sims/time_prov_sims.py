@@ -20,7 +20,7 @@ from pymongo import MongoClient
 #from txtme import txtme
 
 
-def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
+def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots, precinct_list, county_list, county_and_precinct_list):
     # to avoid the effort of renaming, the first intput called state is the contest objhect
     contest= state
     contest_obj=state
@@ -49,11 +49,12 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         'underlying': 'reported', 
         'audit': audit_id, 
         'invalid_ballots': True, 
-        'description' : 'Per-precinct Providence potentially fixed',
+        'description' : 'Timing Per-precinct Providence',
         'max_rounds': 1000,
         'sample_sprob':sprob
     }
     sim = db.simulations.find_one(query)
+    """
     if sim is None:
         num_trials = 0
     else:
@@ -62,16 +63,20 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
         else:
             query = {'simulation' : sim['_id']}
             num_trials = db.trials.count_documents(query)
+    """
+    num_trials = 0
 
 
     # Create simulation
     sim_obj = MMRSP(alpha,
                contest,
                per_precinct_ballots,
-               precinct_list,
+               precinct_list=precinct_list,
+               county_list=county_list,
+               county_and_precinct_info=county_and_precinct_info,
                max_rounds=1000,
                sample_sprob=sprob,
-               sim_args={'description': 'Per-precinct Providence potentially fixed'},
+               sim_args={'description': 'Timing Per-precinct Providence'},
                user='writer',
                pwd='icanwrite',
                reported_args={
@@ -80,7 +85,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots):
                })
   
     # Run simulation
-    total_trials = 10000
+    total_trials = 1000
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))
@@ -110,10 +115,15 @@ if __name__ == '__main__':
         per_precinct_ballots = json.load(f)["bals"]
     with open('precinct_list.json') as f:
         precinct_list = json.load(f)["precinct_list"]
+    with open('county_list.json') as f:
+        county_list = json.load(f)["county_list"]
+    with open('county_and_precinct_info.json') as f:
+        county_and_precinct_info = json.load(f)
+ 
     print('Simulations for '+contest_name)
     winner_tally = winner_votes
     loser_tally = loser_votes
     for sprob in [.95, .9, .85, .8, .75, .7, .65, .6, .55, .5, .45, .4, .35, .3, .25, .2, .15, .1, .05]:
         print('sprob='+str(sprob))
-        computed_risk = state_trial(contest, 0.1, sprob, contest_name, per_precinct_ballots)
+        computed_risk = state_trial(contest, 0.1, sprob, contest_name, per_precinct_ballots, precinct_list, county_list, county_and_precinct_info)
         logging.info('{}: {}'.format(contest, computed_risk))
