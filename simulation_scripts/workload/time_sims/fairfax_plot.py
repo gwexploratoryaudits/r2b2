@@ -17,60 +17,8 @@ from r2b2.contest import ContestType
 import json
 
 
-def mybeta(x,a,b,s):
-    return beta.pdf(x, a, b)*s
-# function used to estimate the minimum of a low 
-# degree polynomial fit to a set of points
 def estimate_min2(xs,ys,curve=False):
-    res = curve_fit(mybeta, xs, ys)
-    a = res[0][0]
-    b = res[0][1]
-    s = res[0][2]
-    print(a,b)
-    cxs = np.arange(0,1,.01)
-    cys = [mybeta(x,a,b,s) for x in cxs]
-
-    return (0, 0, cxs, cys)
-
-    # for now, just return the actual minimum:
     return xs[np.where(ys==min(ys))[0][0]], min(ys)
-
-    coefs = np.polyfit(xs, ys, np.shape(xs)[0]+1)
-    #params = beta.fit(xs,ys)
-    #print(params)
-    #return 1, 0
-
-    c = np.poly1d(coefs)
-
-    fit = minimize(c, x0=.5, method='L-BFGS-B', bounds=((0,1),))
-    #print(fit)
-
-    if curve:
-        return fit.x, fit.fun, c
-    return fit.x, fit.fun
-
-    crit = c.deriv().r
-    r_crit = crit[crit.imag==0].real
-    test = c.deriv(2)(r_crit) 
-
-    # compute local minima 
-    # excluding range boundaries
-    x_min = r_crit[test>0]
-    y_min = c(x_min)
-
-    if x_min < .05:
-        print(x_min)
-        x_min = .05
-        y_min = ys[np.where(xs==.05)]
-    if x_min > .95:
-        print(x_min)
-        x_min = .95
-        y_min = ys[np.where(xs==.95)]
-
-    if curve:
-        return (x_min, y_min, c)
-
-    return (x_min, y_min)
 
 # audit-specific items:
 all_audit_specific_items = {}
@@ -147,6 +95,8 @@ for cur_audit in audits:
     numbals = []
     numrounds = []
     distinct_precinct_samples = []
+    avg_fairfax_bals = []
+    avg_fairfax_precincts = []
     ps = [.05,.1,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95]
     for p in ps:
         query = {
@@ -188,6 +138,12 @@ for cur_audit in audits:
         # 3. and now also think about the number of precincts sampled from in each round
         avg_precincts_per_round = sprob_analysis['avg_precincts_sampled_by_round']
         distinct_precinct_samples.append(sum(avg_precincts_per_round))
+
+        avg_fairfax_bals_by_round = sprob_analysis['avg_fairfax_bals']
+        avg_fairfax_bals.append(sum(avg_fairfax_bals_by_round))
+
+        avg_fairfax_precincts_by_round = sprob_analysis['avg_fairfax_distinct_precincts']
+        avg_fairfax_precincts.append(sum(avg_fairfax_precincts_by_round))
 
     # plot the cost for each round schedule parameter p 
     # (the round schedule's constant stopping probability)
@@ -255,18 +211,30 @@ for cur_audit in audits:
     plt.show()
     """
 
+    # real time
+    balcost = 1
+    newroundcost = 1000
+    precinctcost = 2#TODO
+
+    # compute expected costs for each round schedule (parameterized by p):
+    numbals = np.array(numbals)
+    numrounds = np.array(numrounds)
+    distinct_precinct_samples = np.array(distinct_precinct_samples)
+    precinct_costs = balcost * numbals + roundcost * numrounds + distinct_precinct_samples * precinctcost
+ 
+
     print(distinct_precinct_samples)
     cur_results = {cur_audit: { 
         'ps':ps,
         'expbals':list(expbals),
         'exprounds':list(numrounds),
         'expprecincts':list(distinct_precinct_samples),
+        'expfairfaxbals':list(avg_fairfax_bals),
+        'expfairfaxprecincts':list(avg_fairfax_precincts),
         'costs':list(costs),
         'precinct_costs':list(precinct_costs)
     }}
     per_audit_results.update(cur_results)
-
-
 
 
 """
@@ -295,6 +263,7 @@ plt.show()
 
 
 
+"""
 # expected number of ballots vs p
 font = {'size'   : 17}
 plt.rc('font', **font)
@@ -357,6 +326,7 @@ plt.title('Average total ballots sampled \nas fraction of Providence total')
 plt.legend(loc='upper left')
 plt.tight_layout()
 plt.show() 
+"""
 
 # expected cost vs p (round cost only)
 font = {'size'   : 17}
@@ -364,32 +334,36 @@ plt.rc('font', **font)
 colors= ['b','r','g','c','m']
 markers = ['o','x','s','d','*']
 i = 0
+baltime = 75
+roundtimehours = 3
+roundtime = 60*60*roundtimehours
+precincttime = baltime*2
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    costs = per_audit_results[cur_audit]['costs']
-    plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    exp_fairfax_bals = np.array(per_audit_results[cur_audit]['expfairfaxbals'])
+    exp_fairfax_rounds = np.array(per_audit_results[cur_audit]['exprounds'])
+    exp_fairfax_precincts = np.array(per_audit_results[cur_audit]['expfairfaxprecincts'])
+    real_times = exp_fairfax_bals*baltime + exp_fairfax_rounds*roundtime + exp_fairfax_precincts*precincttime
+    real_times = real_times / 60 / 60
+    plt.plot(ps,np.array(real_times), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
     # also, let's go ahead and plot the estimate_min curve
     ps = np.array(ps)
     costs = np.array(costs)
-    res = estimate_min2(ps, costs, curve=True)
+    res = estimate_min2(ps, costs)
     x_min = res[0]
     y_min = res[1]
-    cxs = res[2]
-    cys = res[3]
-    plt.plot(cxs, cys, label='curve fit')
-    #curve = res[2]
-    #plt.plot(np.arange(0,1,.01), curve(np.arange(0,1,.01)), label='curve fit')
     i += 1
 plt.xlabel('Stopping Probability, p')
-plt.ylabel('Average Cost')
+plt.ylabel('Real time (hours)')
 #plt.yscale('log') # need to ax
-plt.title('Constant round cost of '+str(roundcost)+' ballots')
+#plt.title('Real time')
 plt.legend(loc='upper right')
-plt.yscale('log')
+#plt.yscale('log')
 plt.tight_layout()
 plt.show() 
+"""
 
 # expected cost vs p (round cost and precinct cost)
 font = {'size'   : 17}
@@ -411,6 +385,7 @@ plt.title('Round cost '+str(newroundcost)+' and precinct cost '+str(precinctcost
 plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show() 
+
 
 # optimals ps for all three audits
 optimums = {}
@@ -436,10 +411,8 @@ for cur_audit in audits:
         costs = balcost * numbals + roundcost * numrounds
 
         # find the value of p which achieves the minimum cost in costs
-        """
-        minidx = list(costs).index(min(costs))
-        minimizing_ps.append(ps[minidx])
-        """
+        #minidx = list(costs).index(min(costs))
+        #minimizing_ps.append(ps[minidx])
         minimizing_ps.append(estimate_min2(ps, costs)[0])
         minimal_costs.append(estimate_min2(ps, costs)[1])
 
@@ -508,10 +481,8 @@ for cur_audit in audits:
         costs = balcost * numbals + roundcost * numrounds + distinct_precinct_samples * precinctcost
 
         # find the value of p which achieves the minimum cost in costs
-        """
-        minidx = list(costs).index(min(costs))
-        minimizing_ps.append(ps[minidx])
-        """
+        #minidx = list(costs).index(min(costs))
+        #minimizing_ps.append(ps[minidx])
         minimizing_ps.append(estimate_min2(ps, costs)[0])
         minimal_costs.append(estimate_min2(ps, costs)[1])
 
@@ -552,6 +523,7 @@ plt.show()
 
 
 
+"""
 
 
 
