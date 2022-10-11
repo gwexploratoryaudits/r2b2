@@ -5,6 +5,8 @@ import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 
+plt.rcParams['text.usetex'] = True
+
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
 from r2b2.tests.util import parse_election
@@ -139,9 +141,11 @@ for cur_audit in audits:
     plt.plot(ps,np.array(prop_misleadings),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
     i += 1
 plt.xlabel('Stopping probability, $p$')
-plt.ylabel('Misleading proportion of audits')
+plt.ylabel('Proportion')
 plt.title('Proportion of audits with a misleading sample')
+plt.axhline(y=.1, linestyle='--', label='Misleading Limit = .1')
 plt.axhline(y=.01, linestyle='--', label='Misleading Limit = .01')
+plt.axhline(y=.001, linestyle='--', label='Misleading Limit = .001')
 plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show() 

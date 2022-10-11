@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['text.usetex'] = True
+
 
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit

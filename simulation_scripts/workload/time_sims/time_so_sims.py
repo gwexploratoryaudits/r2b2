@@ -54,7 +54,6 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots, precinc
         'sample_sprob':sprob
     }
     sim = db.simulations.find_one(query)
-    """
     if sim is None:
         num_trials = 0
     else:
@@ -63,8 +62,6 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots, precinc
         else:
             query = {'simulation' : sim['_id']}
             num_trials = db.trials.count_documents(query)
-    """
-    num_trials = 0
 
 
     # Create simulation
@@ -85,7 +82,7 @@ def state_trial(state, alpha, sprob, contest_name, per_precinct_ballots, precinc
                })
   
     # Run simulation
-    total_trials = 1000
+    total_trials = 10000
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))

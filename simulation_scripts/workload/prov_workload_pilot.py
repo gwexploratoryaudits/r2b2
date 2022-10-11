@@ -21,8 +21,8 @@ from pymongo import MongoClient
 
 def state_trial(contest, alpha, sprob):
     # Find the number of trials so we can keep all even
-    db_interface = DBInterface(host='localhost', port=27017, name='r2b2', user='sarah', pwd='haras')
-    db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
+    db_interface = DBInterface(host='localhost', port=27017, name='r2b2', user='writer', pwd='icanwrite')
+    db = MongoClient(host='localhost', port=27017, username='writer', password='icanwrite')['r2b2']
     query = {'audit_type': 'minerva2', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = contest
@@ -43,7 +43,7 @@ def state_trial(contest, alpha, sprob):
         'audit': audit_id, 
         'invalid_ballots': True, 
         'description' : 'prov pilot workload',
-        'max_rounds': 100
+        'max_rounds': 1000
     }
     sim = db.simulations.find_one(query)
     if sim is None:
@@ -58,18 +58,18 @@ def state_trial(contest, alpha, sprob):
     # Create simulation
     sim_obj = MMRSP(alpha,
                contest_obj,
-               max_rounds=100,
+               max_rounds=1000,
                sample_sprob=sprob,
                sim_args={'description': 'prov pilot workload'},
-               user='sarah',
-               pwd='haras',
+               user='writer',
+               pwd='icanwrite',
                reported_args={
                    'name': 'Pilot',
                    'description': '2020 Presidential'
                })
   
     # Run simulation
-    total_trials = 10000
+    total_trials = 1000
     trials_left = total_trials - num_trials
     print('Running '+str(trials_left)+' trials...')
     #txtme('Running {} sprob trials for {}'.format(trials_left, state))

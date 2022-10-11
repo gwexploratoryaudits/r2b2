@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['text.usetex'] = True
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -25,7 +26,7 @@ marker = 'o'
 color = 'b'
 linestyle = '-'
 audits.append(audit_name)
-audit_labels.update({audit_name: 'Providence'})
+audit_labels.update({audit_name: r'\textsc{Providence}'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct Providence potentially fixed'}
 all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
@@ -35,7 +36,7 @@ marker = 'x'
 color = 'r'
 linestyle = '-.'
 audits.append(audit_name)
-audit_labels.update({audit_name: 'EOR BRAVO'})
+audit_labels.update({audit_name: r'EoR \textsc{BRAVO}'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct eor bravo'}
 all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
@@ -45,7 +46,7 @@ color = 'g'
 linestyle = '--'
 audit_name = 'so_bravo'
 audits.append(audit_name)
-audit_labels.update({audit_name: 'SO BRAVO'})
+audit_labels.update({audit_name: r'SO \textsc{BRAVO}'})
 simulation_sprob_arg = 'sample_sprob'
 sim_args = {'description':'Per-precinct so bravo'}
 all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
@@ -132,23 +133,23 @@ for cur_audit in audits:
         avg_precincts_per_round = sprob_analysis['avg_precincts_sampled_by_round']
         distinct_precinct_samples.append(sum(avg_precincts_per_round))
 
-    # plot the cost for each round schedule parameter p 
+    # plot the workload for each round schedule parameter p 
     # (the round schedule's constant stopping probability)
 
     # workload model parameters:
-    balcost = 1
+    balworkload = 1
     # AT FIRST JUST PLOT THE NUM BALLOTS EXPECTED WITH NO ROUND COST
-    roundcost = 0
+    roundworkload = 0
 
-    # compute expected costs for each round schedule (parameterized by p):
+    # compute expected workloads for each round schedule (parameterized by p):
     numbals = np.array(numbals)
     numrounds = np.array(numrounds)
-    costs = balcost * numbals + roundcost * numrounds
-    expbals = costs
+    workloads = balworkload * numbals + roundworkload * numrounds
+    expbals = workloads
     """
     font = {'size'   : 17}
     plt.rc('font', **font)
-    plt.plot(ps,np.array(costs)/1000,linestyle='--', marker='o', color='b')
+    plt.plot(ps,np.array(workloads)/1000,linestyle='--', marker='o', color='b')
     plt.xlabel('Stopping Probability, p')
     plt.ylabel('Expected Ballots Sampled (x$10^3$)')
     plt.tight_layout()
@@ -156,44 +157,44 @@ for cur_audit in audits:
     """
 
     # workload model parameters:
-    # now again for cost model
-    balcost = 1
-    roundcost = 1000
+    # now again for workload model
+    balworkload = 1
+    roundworkload = 1000
 
-    # compute expected costs for each round schedule (parameterized by p):
+    # compute expected workloads for each round schedule (parameterized by p):
     numbals = np.array(numbals)
     numrounds = np.array(numrounds)
-    costs = balcost * numbals + roundcost * numrounds
+    workloads = balworkload * numbals + roundworkload * numrounds
     """
     font = {'size'   : 17}
     plt.rc('font', **font)
-    plt.plot(ps,np.array(costs)/1000,linestyle='--', marker='o', color='b')
+    plt.plot(ps,np.array(workloads)/1000,linestyle='--', marker='o', color='b')
     plt.xlabel('Stopping Probability, p')
-    plt.ylabel('Expected Cost (x$10^3$)')
-    plt.title('Round Cost of '+str(roundcost))
+    plt.ylabel('Expected Workload (x$10^3$)')
+    plt.title('Round Workload of '+str(roundworkload))
     plt.tight_layout()
     plt.show()
     """
 
-    # now compute the workload using the model where the round size cost
+    # now compute the workload using the model where the round size workload
     # is part constant and part a linear function of the number of precincts
     # sampled from
-    balcost = 1
-    newroundcost = 1000
-    precinctcost = 2#TODO
+    balworkload = 1
+    newroundworkload = 1000
+    precinctworkload = 2#TODO
 
-    # compute expected costs for each round schedule (parameterized by p):
+    # compute expected workloads for each round schedule (parameterized by p):
     numbals = np.array(numbals)
     numrounds = np.array(numrounds)
     distinct_precinct_samples = np.array(distinct_precinct_samples)
-    precinct_costs = balcost * numbals + roundcost * numrounds + distinct_precinct_samples * precinctcost
+    precinct_workloads = balworkload * numbals + roundworkload * numrounds + distinct_precinct_samples * precinctworkload
     """
     font = {'size'   : 17}
     plt.rc('font', **font)
-    plt.plot(ps,np.array(costs)/1000,linestyle='--', marker='o', color='b')
+    plt.plot(ps,np.array(workloads)/1000,linestyle='--', marker='o', color='b')
     plt.xlabel('Stopping Probability, p')
-    plt.ylabel('Expected Cost (x$10^3$)')
-    plt.title('Round Cost of '+str(roundcost))
+    plt.ylabel('Expected Workload (x$10^3$)')
+    plt.title('Round Workload of '+str(roundworkload))
     plt.tight_layout()
     plt.show()
     """
@@ -204,8 +205,8 @@ for cur_audit in audits:
         'expbals':list(expbals),
         'exprounds':list(numrounds),
         'expprecincts':list(distinct_precinct_samples),
-        'costs':list(costs),
-        'precinct_costs':list(precinct_costs)
+        'workloads':list(workloads),
+        'precinct_workloads':list(precinct_workloads)
     }}
     per_audit_results.update(cur_results)
 
@@ -246,16 +247,16 @@ plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    costs = per_audit_results[cur_audit]['expbals']
+    workloads = per_audit_results[cur_audit]['expbals']
     plt.plot(ps,
-        np.array(costs)/1000,
+        np.array(workloads)/1000,
         linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],
         label=audit_labels[cur_audit])
     i += 1
 plt.xlabel('Stopping probability, $p$')
-plt.ylabel('Average total ballots sampled (x$10^3$)')
+plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
 plt.title('Average total number of ballots sampled')
 plt.legend(loc='upper left')
 plt.tight_layout()
@@ -269,12 +270,12 @@ markers = ['o','x','s','d','*']
 i = 0
 cur_audit = 'minerva2'
 ps = per_audit_results[cur_audit]['ps']
-prov_costs = np.array(per_audit_results[cur_audit]['expbals'])
+prov_workloads = np.array(per_audit_results[cur_audit]['expbals'])
 
 cur_audit = 'so_bravo'
 ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs),                linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+plt.plot(ps,np.array(workloads),                linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],
  
@@ -282,26 +283,26 @@ plt.plot(ps,np.array(costs),                linestyle=all_audit_specific_items[c
 i += 1
 cur_audit = 'eor_bravo'
 ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs),        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+plt.plot(ps,np.array(workloads),        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
 i += 1
 cur_audit = 'minerva2'
 ps = per_audit_results[cur_audit]['ps']
-costs = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_costs)
-plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+plt.plot(ps,np.array(workloads), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
 plt.xlabel('Stopping Probability, p')
 plt.ylabel('Total ballots fraction')
 plt.axhline(y=1, linestyle='--')
-plt.title('Average total ballots sampled \nas fraction of Providence total')
+plt.title('Average total ballots sampled \nas fraction of '+r'\textsc{Providence} total')
 plt.legend(loc='upper left')
 plt.tight_layout()
 plt.show() 
 
-# expected cost vs p (round cost only)
+# expected workload vs p (round workload only)
 font = {'size'   : 17}
 plt.rc('font', **font)
 colors= ['b','r','g','c','m']
@@ -309,21 +310,21 @@ markers = ['o','x','s','d','*']
 i = 0
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    costs = per_audit_results[cur_audit]['costs']
-    plt.plot(ps,np.array(costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    workloads = per_audit_results[cur_audit]['workloads']
+    plt.plot(ps,np.array(workloads), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Average Cost')
+plt.xlabel('Stopping probability, p')
+plt.ylabel(r'Average workload ($\times 10^3$)')
 #plt.yscale('log') # need to ax
-plt.title('Constant round cost of '+str(roundcost)+' ballots')
+plt.title('Constant round workload of '+str(roundworkload)+' ballots')
 plt.legend(loc='upper right')
 plt.yscale('log')
 plt.tight_layout()
 plt.show() 
 
-# expected cost vs p (round cost and precinct cost)
+# expected workload vs p (round workload and precinct workload)
 font = {'size'   : 17}
 plt.rc('font', **font)
 colors= ['b','r','g','c','m']
@@ -331,15 +332,15 @@ markers = ['o','x','s','d','*']
 i = 0
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    precinct_costs = per_audit_results[cur_audit]['precinct_costs']
-    plt.plot(ps,np.array(precinct_costs), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    precinct_workloads = per_audit_results[cur_audit]['precinct_workloads']
+    plt.plot(ps,np.array(precinct_workloads)/1000, linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Average Cost')
+plt.xlabel('Stopping probability, p')
+plt.ylabel(r'Average workload ($\times 10^3$)')
 #plt.yscale('log')
-plt.title('Round cost '+str(newroundcost)+' and precinct cost '+str(precinctcost))
+plt.title('Round workload '+str(newroundworkload)+' and precinct workload '+str(precinctworkload))
 plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show() 
@@ -350,63 +351,65 @@ i=0
 linestyles=['-','--','-.']
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    precinct_costs = per_audit_results[cur_audit]['precinct_costs']
-    #plt.plot(ps,np.array(precinct_costs),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
+    precinct_workloads = per_audit_results[cur_audit]['precinct_workloads']
+    #plt.plot(ps,np.array(precinct_workloads),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
     audit = cur_audit
-    costs = per_audit_results[audit]['costs']
+    workloads = per_audit_results[audit]['workloads']
     numbals = per_audit_results[audit]['expbals']
     numrounds = per_audit_results[audit]['exprounds']
-    balcost = 1
+    balworkload = 1
     minimizing_ps = []
-    minimal_costs = []
-    roundcosts = np.linspace(1,100000,num = 100000)#[1, 10, 100, 1000, 10000]
+    minimal_workloads = []
+    roundworkloads = np.linspace(1,100000,num = 100000)#[1, 10, 100, 1000, 10000]
 
-    for roundcost in roundcosts:
-        # compute expected costs for each round schedule (parameterized by p):
+    for roundworkload in roundworkloads:
+        # compute expected workloads for each round schedule (parameterized by p):
         numbals = np.array(numbals)
         numrounds = np.array(numrounds)
-        costs = balcost * numbals + roundcost * numrounds
+        workloads = balworkload * numbals + roundworkload * numrounds
 
-        # find the value of p which achieves the minimum cost in costs
+        # find the value of p which achieves the minimum workload in workloads
         """
-        minidx = list(costs).index(min(costs))
+        minidx = list(workloads).index(min(workloads))
         minimizing_ps.append(ps[minidx])
         """
-        minimizing_ps.append(estimate_min2(ps, costs)[0])
-        minimal_costs.append(estimate_min2(ps, costs)[1])
+        minimizing_ps.append(estimate_min2(ps, workloads)[0])
+        minimal_workloads.append(estimate_min2(ps, workloads)[1])
 
-    optimums.update({cur_audit:{'minimizing_ps':minimizing_ps,'minimal_costs':minimal_costs}})
+    optimums.update({cur_audit:{'minimizing_ps':minimizing_ps,'minimal_workloads':minimal_workloads}})
     i += 1
 
-# minimal cost ps
+# minimal workload ps
 font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(roundcosts, optimums[cur_audit]['minimizing_ps'],  linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    plt.plot(roundworkloads, optimums[cur_audit]['minimizing_ps'],  
+        linestyle=all_audit_specific_items[cur_audit]['linestyle'],#linestyle='None',
+        #marker=all_audit_specific_items[cur_audit]['marker'],
         color=all_audit_specific_items[cur_audit]['color'],
          label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Round Cost, $c_r$')
-plt.ylabel('Stopping Probability, $p$')
+plt.xlabel('Round workload, $c_r$')
+plt.ylabel('Stopping probability, $p$')
 plt.title('Optimal stopping probability $p$') 
 plt.xscale('log')
 plt.legend(loc='upper left')
 plt.tight_layout()
 plt.show()
 
-# minimal costs
+# minimal workloads
 font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(roundcosts, np.array(optimums[cur_audit]['minimal_costs']) / np.array(optimums['minerva2']['minimal_costs']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    plt.plot(roundworkloads, np.array(optimums[cur_audit]['minimal_workloads']) / np.array(optimums['minerva2']['minimal_workloads']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
  label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Round Cost, $c_r$')
-plt.ylabel('Optimal cost')
-plt.title('Optimal cost as fraction of Providence cost') 
+plt.xlabel('Round workload, $c_r$')
+plt.ylabel('Optimal workload fraction')
+plt.title('Optimal workload as fraction \nof optimal '+r'\textsc{Providence} workload') 
 plt.legend(loc='upper left')
 plt.xscale('log')
 plt.tight_layout()
@@ -420,76 +423,69 @@ i=0
 linestyles=['-','--','-.']
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
-    precinct_costs = per_audit_results[cur_audit]['precinct_costs']
-    #plt.plot(ps,np.array(precinct_costs),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
+    precinct_workloads = per_audit_results[cur_audit]['precinct_workloads']
+    #plt.plot(ps,np.array(precinct_workloads),linestyle='--', marker=markers[i], color=colors[i], label=audit_labels[cur_audit])
     audit = cur_audit
-    costs = per_audit_results[audit]['costs']
+    workloads = per_audit_results[audit]['workloads']
     numbals = per_audit_results[audit]['expbals']
     numrounds = per_audit_results[audit]['exprounds']
-    balcost = 1
-    roundcost = 1000
+    expprecincts = per_audit_results[audit]['expprecincts']
+    balworkload = 1
+    roundworkload = 1000
     minimizing_ps = []
-    minimal_costs = []
-    precinctcosts = np.linspace(0,5,num=100)#[1, 10, 100, 1000, 10000]
+    minimal_workloads = []
+    precinctworkloads = np.linspace(0,50,num=100)#[1, 10, 100, 1000, 10000]
 
-    for precinctcost in precinctcosts:
-        # compute expected costs for each round schedule (parameterized by p):
+    for precinctworkload in precinctworkloads:
+        # compute expected workloads for each round schedule (parameterized by p):
         numbals = np.array(numbals)
         numrounds = np.array(numrounds)
-        #costs = balcost * numbals + roundcost * numrounds
-        costs = balcost * numbals + roundcost * numrounds + distinct_precinct_samples * precinctcost
+        expprecincts = np.array(expprecincts)
+        #workloads = balworkload * numbals + roundworkload * numrounds
+        workloads = balworkload * numbals + roundworkload * numrounds + precinctworkload * expprecincts
 
-        # find the value of p which achieves the minimum cost in costs
+        # find the value of p which achieves the minimum workload in workloads
         """
-        minidx = list(costs).index(min(costs))
+        minidx = list(workloads).index(min(workloads))
         minimizing_ps.append(ps[minidx])
         """
-        minimizing_ps.append(estimate_min2(ps, costs)[0])
-        minimal_costs.append(estimate_min2(ps, costs)[1])
+        minimizing_ps.append(estimate_min2(ps, workloads)[0])
+        minimal_workloads.append(estimate_min2(ps, workloads)[1])
 
-    optimums.update({cur_audit:{'minimizing_ps':minimizing_ps,'minimal_costs':minimal_costs}})
+    optimums.update({cur_audit:{'minimizing_ps':minimizing_ps,'minimal_workloads':minimal_workloads}})
     i += 1
 
-# minimal cost ps
+# minimal workload ps
 font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(precinctcosts, optimums[cur_audit]['minimizing_ps'], linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    plt.plot(precinctworkloads, optimums[cur_audit]['minimizing_ps'], linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'], label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Precinct Cost, $c_p$')
-plt.ylabel('Stopping Probability, $p$')
+plt.xlabel('Precinct workload, $c_p$')
+plt.ylabel('Stopping probability, $p$')
 plt.title('Optimal stopping probability $p$') 
 plt.xscale('log')
-plt.legend(loc='upper left')
+plt.legend(loc='upper right')
 plt.tight_layout()
 plt.show()
 
-# minimal costs
+# minimal workloads
 font = {'size'   : 17}
 plt.rc('font', **font)
 i = 0
 for cur_audit in audits:
-    plt.plot(precinctcosts, np.array(optimums[cur_audit]['minimal_costs']) / np.array(optimums['minerva2']['minimal_costs']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+    plt.plot(precinctworkloads, np.array(optimums[cur_audit]['minimal_workloads']) / np.array(optimums['minerva2']['minimal_workloads']), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'], label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Precinct Cost, $c_p$')
-plt.ylabel('Optimal cost')
-plt.title('Optimal cost as fraction of Providence cost') 
-plt.legend(loc='upper left')
-plt.xscale('log')
+plt.xlabel('Precinct workload, $c_p$')
+plt.ylabel('Optimal workload')
+plt.title('Optimal workload as fraction \nof optimal '+r'\textsc{Providence} workload') 
+plt.legend(loc='upper right')
+#plt.xscale('log')
 plt.tight_layout()
 plt.show()
-
-
-
-
-
-
-
-
-
 
 
 

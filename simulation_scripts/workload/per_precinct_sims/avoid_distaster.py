@@ -17,7 +17,6 @@ from r2b2.contest import ContestType
 
 from pymongo import MongoClient
 
-#from txtme import txtme
 
 
 # manually construct contest object from known values
@@ -34,14 +33,9 @@ contest = Contest(total_relevant,
                             num_winners=1,
                             reported_winners=[reported_winner],
                             contest_type=ContestType.PLURALITY)
-with open('bals.json') as f:
-    per_precinct_ballots = json.load(f)["bals"]
-with open('precinct_list.json') as f:
-    precinct_list = json.load(f)["precinct_list"]
-print('Simulations for '+contest_name)
-winner_tally = winner_votes
-loser_tally = loser_votes
-sprob = .9
-print('sprob='+str(sprob))
-computed_risk = state_trial(contest, 0.1, sprob, contest_name, per_precinct_ballots)
-logging.info('{}: {}'.format(contest, computed_risk))
+
+for 
+
+
+
+
