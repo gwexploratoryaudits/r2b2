@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['text.usetex'] = True
+font = {'size'   : 17}
+plt.rc('font', **font)
 
 from r2b2.simulator import DBInterface
 from r2b2.simulator import histogram
@@ -86,10 +91,10 @@ def get_lists(audit_name, description, max_rounds=None):
 if __name__ == '__main__':
     db = DBInterface(port=27018,user='reader', pwd='icanread')
     #colors= ['b','r','g','c','m']
-    colors= ['r','b','c','g']
+    colors= ['c','b','g','r']
     globidx = 0
     #markers = ['o','x','s','d','*']
-    markers = ['x','+','1','2']
+    markers = ['+','.','1','x']
 
     """ exclude minerva 1.0x
     # MINERVA 1.0X 
@@ -110,7 +115,7 @@ if __name__ == '__main__':
         for m in range(len(minerva1p5_points)):
             if m >= len(colors):
                 break
-            plt.plot(minerva1p5_points[m][0], np.array(minerva1p5_points[m][1])*100, colors[globidx]+markers[globidx], label=minerva1p5_name, markersize=12, mew=2)
+            plt.plot(minerva1p5_points[m][0], np.array(minerva1p5_points[m][1]), colors[globidx]+markers[globidx], label=minerva1p5_name, markersize=12, mew=2)
             globidx+=1
 
     # MINERVA 2.0!!
@@ -120,7 +125,7 @@ if __name__ == '__main__':
         for m in range(len(minerva2_points)):
             if m >= len(colors):
                 break
-            plt.plot(minerva2_points[m][0], np.array(minerva2_points[m][1])*100, colors[globidx]+markers[globidx], label=minerva2_name, markersize=12, mew=2)
+            plt.plot(minerva2_points[m][0], np.array(minerva2_points[m][1]), colors[globidx]+markers[globidx], label=minerva2_name, markersize=12, mew=2)
             globidx+=1
     else:
         print('awww :(')
@@ -134,7 +139,7 @@ if __name__ == '__main__':
         for m in range(len(so_bravo_points)):
             if m >= len(colors):
                 break
-            plt.plot(so_bravo_points[m][0], np.array(so_bravo_points[m][1])*100, colors[globidx]+markers[globidx], label=so_bravo_name, markersize=12, mew=2) 
+            plt.plot(so_bravo_points[m][0], np.array(so_bravo_points[m][1])*1, colors[globidx]+markers[globidx], label=so_bravo_name, markersize=12, mew=2) 
             globidx+=1
 
     # EOR BRAVO
@@ -144,7 +149,7 @@ if __name__ == '__main__':
         for m in range(len(eor_bravo_points)):
             if m >= len(colors):
                 break
-            plt.plot(eor_bravo_points[m][0], np.array(eor_bravo_points[m][1])*100, colors[globidx]+markers[globidx], label=eor_bravo_name, markersize=12, mew=2)
+            plt.plot(eor_bravo_points[m][0], np.array(eor_bravo_points[m][1])*1, colors[globidx]+markers[globidx], label=eor_bravo_name, markersize=12, mew=2)
             globidx+=1
 
     if len(sys.argv) < 2:
@@ -167,9 +172,9 @@ if __name__ == '__main__':
 
     #add vertical line of ASN to show how low it is (bc R2, not B2)
     plt.axvline(asn, linestyle='dashed')#, label='ASN')
-    plt.xlabel('Average Number of Ballots Sampled')
-    plt.ylabel('Audits that Stopped (%)')
-    plt.text(1500,97,'ASN', size=14.5)
+    plt.xlabel('Average number of ballots sampled')
+    plt.ylabel('Audits that stopped')
+    plt.text(1500,.97,'ASN', size=14.5)
     plt.grid()
     plt.legend(loc=(0,1),mode='expand',ncol=4,title=title,frameon=False,handletextpad=-.5,prop={'size': 14})
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)

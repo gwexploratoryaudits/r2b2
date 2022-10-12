@@ -91,6 +91,9 @@ if __name__ == '__main__':
     """
 
     # Plot the total risk across all rounds
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
+    plt.rcParams['text.usetex'] = True
     font = {'size'   : 17}
     plt.rc('font', **font)
     total_risks = []
@@ -100,14 +103,15 @@ if __name__ == '__main__':
     if len(total_risks) == 0:
         print('no risks')
     plt.subplots()
-    plt.plot(margins,np.array(total_risks)*100, 'bo')
+    plt.plot(margins,np.array(total_risks), 'bo')
     plt.xlabel('Reported Margin')
-    plt.ylim(0,11)
-    risk_limit = 10
+    plt.ylim(0,.11)
+    risk_limit = .10
     plt.axhline(y=risk_limit, color='b', linestyle='--')
-    plt.legend(loc=(0,1),mode='expand',ncol=3,title = 'Experimental Risk',frameon=False)
-    plt.text(.61,10.12,'Risk Limit', size=14.5)
-    plt.ylabel('Audits that Stopped (%)')
+    #plt.legend(loc=(0,1),mode='expand',ncol=3,title = 'Experimental risk',frameon=False)
+    plt.title('Experimental risk')
+    plt.text(.61,.1012,'Risk Limit', size=14.5)
+    plt.ylabel('Audits that stopped')
     plt.grid()
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)
     plt.show()
@@ -190,9 +194,14 @@ if __name__ == '__main__':
 
     """
     # Plot first 3 rounds conditional sprobs vs. margins
-
-    colors= ['b','r','g','c','m']
-    markers = ['o','x','s','d','*']
+    plt.rcParams['mathtext.fontset'] = 'stix'
+    plt.rcParams['font.family'] = 'STIXGeneral'
+    plt.rcParams['text.usetex'] = True
+    font = {'size'   : 17}
+    plt.rc('font', **font)
+ 
+    colors= ['b','c','m','c','m']
+    markers = ['1','2','3','o','x','s','d','*']
     for r in range (1,5+1-2):
         sprobs_for_this_round = [] #conditional sprobs
         absolute_sprobs_for_this_round = [] #absolute sprobs
@@ -206,16 +215,18 @@ if __name__ == '__main__':
         print(avg_for_this_round)
         # Uncomment the line below to fix the y-axis scale
         #plt.ylim(.65,1)
-        plt.plot(plot_margins, np.array(sprobs_for_this_round)*100, marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None')
-        plt.xlabel('Reported Margin')
-        title = 'Experimental Stopping Probability'
+        plt.plot(plot_margins, np.array(sprobs_for_this_round), marker=markers[r-1], color=colors[r-1], label='Round '+str(r), linestyle='None', markersize=10, markeredgewidth=3)
+        plt.xlabel('Reported margin')
+        title = 'Experimental stopping probability'
         #plt.title(title)
-        plt.ylabel('Audits that Stopped (%)')
+        plt.ylabel('Audits that stopped')
         plt.grid()
         #plt.axhline(y=avg_for_this_round, color=colors[r-1], linestyle='--')#, label='Average for Round '+str(r))
     #plt.axhline(y=.9, color='black', linestyle='--')
     #plt.legend(bbox_transform=fig., loc='upper left')
-    plt.legend(loc=(0,1),mode='expand',ncol=3,title = 'Experimental Stopping Probability',frameon=False)
+    #plt.legend(loc=(0,1),mode='expand',ncol=3,frameon=False)
+    plt.legend(loc='lower right')
+    plt.title('Experimental stopping probability')
     plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=1.0)
     plt.show()
 

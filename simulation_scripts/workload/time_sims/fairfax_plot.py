@@ -357,8 +357,9 @@ for cur_audit in audits:
     x_min = res[0]
     y_min = res[1]
     i += 1
-plt.xlabel('Stopping Probability, p')
+plt.xlabel('Stopping probability, p')
 plt.ylabel('Real time (hours)')
+plt.title('Real time estimates')
 #plt.yscale('log') # need to ax
 #plt.title('Real time')
 plt.legend(loc='upper right')
