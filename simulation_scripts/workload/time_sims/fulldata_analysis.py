@@ -37,25 +37,34 @@ audits = []
 audit_labels = {}
 # providence
 audit_name = 'minerva2'
+marker = 'o'
+color = 'b'
+linestyle = '-'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'Providence'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct Providence potentially fixed'}
-all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
+sim_args = {'description':'Timing Per-precinct Providence'}
+all_audit_specific_items.update({'minerva2':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 # eor bravo
 audit_name = 'eor_bravo'
+marker = 'x'
+color = 'r'
+linestyle = '-.'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'EOR BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct eor bravo'}
-all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
+sim_args = {'description':'Timing Per-precinct eor bravo'}
+all_audit_specific_items.update({'eor_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 # so bravo
+marker = 's'
+color = 'g'
+linestyle = '--'
 audit_name = 'so_bravo'
 audits.append(audit_name)
 audit_labels.update({audit_name: 'SO BRAVO'})
 simulation_sprob_arg = 'sample_sprob'
-sim_args = {'description':'Per-precinct so bravo'}
-all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args}})
+sim_args = {'description':'Timing Per-precinct so bravo'}
+all_audit_specific_items.update({'so_bravo':{'audit_name':audit_name,'simulation_sprob_arg':simulation_sprob_arg,'sim_args':sim_args,'marker':marker,'color':color,'linestyle':linestyle}})
 """
 # minerva
 audit_name = 'minerva'
@@ -70,8 +79,6 @@ all_audit_specific_items.update({'minerva':{'audit_name':audit_name,'simulation_
 per_audit_results = {}
 
 for cur_audit in audits:
-    if cur_audit != 'so_bravo':
-        continue
     audit_specific_items = all_audit_specific_items[cur_audit]
     
     db = DBInterface(port=27017,user='reader', pwd='icanread')
@@ -113,11 +120,12 @@ for cur_audit in audits:
         query.update(audit_specific_items['sim_args'])
         sprob_sim = db.db.simulations.find_one(query)
 
-
         # now go thru all the trials and count the samples that had fewer ballots for hillary than for trump
         sim_id = sprob_sim['_id']
         trials = db.trial_lookup(sim_id) #this function is slowwwww
         print(cur_audit)
+        print(all_audit_specific_items[cur_audit]['sim_args'])
+        print(p)
         print('got trials')
         misleading_count = 0
         totals_sampled = []
@@ -148,7 +156,8 @@ for cur_audit in audits:
         analysis = sprob_sim['analysis']
         analysis.update({'misleading_count':misleading_count,
                         'prop_misleading':prop_misleading,
-                        'asn_std':asn_std})
+                        'asn_std':asn_std,
+                        'totals_sampled':list(totals_sampled)})
         db.update_analysis(sim_id, analysis)
 
         """

@@ -1,5 +1,3 @@
-"""Generates plots for the Providence workload sims."""
-
 import matplotlib.pyplot as plt
 import numpy as np
 plt.rcParams['mathtext.fontset'] = 'stix'

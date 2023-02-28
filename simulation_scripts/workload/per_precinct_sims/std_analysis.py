@@ -148,7 +148,8 @@ for cur_audit in audits:
         analysis = sprob_sim['analysis']
         analysis.update({'misleading_count':misleading_count,
                         'prop_misleading':prop_misleading,
-                        'asn_std':asn_std})
+                        'asn_std':asn_std,
+                        'totals_sampled':list(totals_sampled)})
         db.update_analysis(sim_id, analysis)
 
         """

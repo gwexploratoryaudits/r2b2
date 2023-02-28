@@ -1,7 +1,10 @@
 """Generates plots for the Providence workload sims."""
-
+LOW  = .25
+HIGH = .75
 import matplotlib.pyplot as plt
 import numpy as np
+import statistics
+import math
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams['text.usetex'] = True
@@ -90,8 +93,14 @@ for cur_audit in audits:
 
     numbals = []
     numbals_std = []
+    numbals_25 = []
+    numbals_50 = []
+    numbals_75 = []
     numrounds = []
+    numrounds_std = []
     distinct_precinct_samples = []
+    numrounds_fulldata = []
+    numbals_fulldata = []
     ps = [.05,.1,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95]
     for p in ps:
         query = {
@@ -115,6 +124,22 @@ for cur_audit in audits:
         # 1. the expected number of ballots (average num ballots)
         numbals.append(sprob_analysis['asn'])
         numbals_std.append(sprob_analysis['asn_std'])
+        numbals_array = sprob_analysis['totals_sampled']
+        numbals_fulldata.append(numbals_array)
+
+        ##################################
+        ## Temporary plotting
+        ##################################
+        #plt.hist(np.array(numbals_array), bins=50)
+        #plt.tight_layout()
+        #plt.show()
+        ##################################
+        ##################################
+ 
+        ans = np.quantile(np.array(numbals_array), [LOW, .5, HIGH])
+        numbals_25.append(ans[0])
+        numbals_50.append(ans[1])
+        numbals_75.append(ans[2])
 
         # 2. expected number of rounds (average num rounds)
         sprobs = sprob_analysis['sprob_by_round']
@@ -130,10 +155,45 @@ for cur_audit in audits:
             pr_make_it *= (1-sprob)
             r += 1
         numrounds.append(curnumrounds)
+        
+        # 2.1 sanity check
+        stopped_by_round = sprob_analysis['stopped_by_round']
+        total_trials = sum(stopped_by_round)
+        avg_num_rounds = 0
+        for i in range(len(stopped_by_round)):
+            avg_num_rounds += stopped_by_round[i] * (i+1)
+        avg_num_rounds = avg_num_rounds / total_trials
+        # Create a round-stopped-in array for all the trials
+        round_stopped_in = np.array([])
+        for r in range(len(stopped_by_round)):
+            round_stopped_in = np.append(round_stopped_in, (r+1)*np.ones(stopped_by_round[r]))
+        num_rounds_std = statistics.pstdev(round_stopped_in)
+        numrounds_std.append(num_rounds_std)
+        numrounds_fulldata.append(round_stopped_in)
+        print(round_stopped_in)
 
         # 3. and now also think about the number of precincts sampled from in each round
         avg_precincts_per_round = sprob_analysis['avg_precincts_sampled_by_round']
         distinct_precinct_samples.append(sum(avg_precincts_per_round))
+
+    # go thru and compute the quantiles for the round-only workload function
+    ps = [.05,.1,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95]
+    round_workload_low_quantile = []
+    round_workload_median = []
+    round_workload_high_quantile = []
+    balworkload = 1
+    roundworkload = 1000
+    numbals_fulldata_np = np.array(numbals_fulldata)
+    for i in range(len(ps)):
+        per_trial_workloads = []
+        for j in range(np.shape(numbals_fulldata)[1]):
+            per_trial_workloads.append(
+                balworkload * numbals_fulldata[i][j] + roundworkload * numrounds_fulldata[i][j]
+            )
+        ans = np.quantile(np.array(per_trial_workloads), [LOW, .5, HIGH])
+        round_workload_low_quantile.append(ans[0])
+        round_workload_median.append(ans[1])
+        round_workload_high_quantile.append(ans[2])
 
     # plot the workload for each round schedule parameter p 
     # (the round schedule's constant stopping probability)
@@ -168,6 +228,10 @@ for cur_audit in audits:
     numbals = np.array(numbals)
     numbals_std = np.array(numbals_std)
     numrounds = np.array(numrounds)
+    print('balworkload'+str(balworkload))
+    print('numbals'+str(numbals))
+    print('roundworkload'+str(roundworkload))
+    print('roundworkload'+str(numrounds))
     workloads = balworkload * numbals + roundworkload * numrounds
     """
     font = {'size'   : 17}
@@ -209,10 +273,16 @@ for cur_audit in audits:
         'ps':ps,
         'expbals':list(numbals),
         'numbals_std':list(numbals_std),
+        'numbals_25':list(numbals_25),
+        'numbals_50':list(numbals_50),
+        'numbals_75':list(numbals_75),
         'exprounds':list(numrounds),
+        'numrounds_std':list(numrounds_std),
         'expprecincts':list(distinct_precinct_samples),
         'workloads':list(workloads),
-        'precinct_workloads':list(precinct_workloads)
+        'precinct_workloads':list(precinct_workloads),
+        'round_workload_low_quantile':list(round_workload_low_quantile),
+        'round_workload_high_quantile':list(round_workload_high_quantile),
     }}
     per_audit_results.update(cur_results)
 
@@ -242,127 +312,203 @@ plt.tight_layout()
 plt.show() 
 """
 
+plots = [True, True, True , True, True, True, True, True]
+if plots[0]:
+    # expected number of ballots vs p
+    font = {'size'   : 17}
+    plt.rc('font', **font)
+    #colors= ['b','r','g','c','m']
+    #markers = ['o','x','s','d','*']
+    i = 0
+    for cur_audit in audits:
+        ps = per_audit_results[cur_audit]['ps']
+        workloads = np.array(per_audit_results[cur_audit]['expbals'])
+        numbals_std = per_audit_results[cur_audit]['numbals_std']
+        numbals_25 = per_audit_results[cur_audit]['numbals_25']
+        numbals_50 = per_audit_results[cur_audit]['numbals_50']
+        numbals_75 = per_audit_results[cur_audit]['numbals_75']
+        """
+        plt.plot(ps,
+            np.array(workloads)/1000,
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            marker=all_audit_specific_items[cur_audit]['marker'],
+            label=audit_labels[cur_audit])
+        """
+        yerr_almost = np.array([np.array(numbals_25), np.array(numbals_75)]) /1000
+        print('quantiles for each p',LOW,HIGH,yerr_almost)
+        yerr = np.absolute(yerr_almost - np.array(workloads)/1000)
+        print('avg workloads',workloads/1000)
+        print('errorbars',yerr)
+        plt.errorbar(ps,
+            np.array(workloads)/1000,
+            yerr=yerr,#,np.array(numbals_std)/1000,
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            marker=all_audit_specific_items[cur_audit]['marker'],
+            label=audit_labels[cur_audit],
+            solid_capstyle='projecting', capsize=5,
+            errorevery=3)
+     
+        i += 1
+    plt.xlabel('Stopping probability, $p$')
+    plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
+    plt.title('Average total number of ballots sampled')
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    plt.show() 
 
-
-
-# expected number of ballots vs p
-font = {'size'   : 17}
-plt.rc('font', **font)
-#colors= ['b','r','g','c','m']
-#markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
+if plots[1]:
+    # expected number of ballots vs p as a ratio of the prov exp bals
+    font = {'size'   : 17}
+    plt.rc('font', **font)
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    i = 0
+    cur_audit = 'minerva2'
     ps = per_audit_results[cur_audit]['ps']
-    workloads = per_audit_results[cur_audit]['expbals']
+    prov_workloads = np.array(per_audit_results[cur_audit]['expbals'])
+
+    cur_audit = 'so_bravo'
+    ps = per_audit_results[cur_audit]['ps']
     numbals_std = per_audit_results[cur_audit]['numbals_std']
-    """
-    plt.plot(ps,
-        np.array(workloads)/1000,
-        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],
-        label=audit_labels[cur_audit])
-    """
+    numbals_25 = per_audit_results[cur_audit]['numbals_25']
+    numbals_75 = per_audit_results[cur_audit]['numbals_75']
+    workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+    yerr = np.absolute(np.array([np.divide(np.array(numbals_25),prov_workloads), np.divide(np.array(numbals_75),prov_workloads)]) - np.array(workloads))
     plt.errorbar(ps,
-        np.array(workloads)/1000,
-        yerr=np.array(numbals_std)/1000,
-        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],
-        label=audit_labels[cur_audit],
-        solid_capstyle='projecting', capsize=5,
-        errorevery=3)
- 
+            np.array(workloads),                
+            yerr=yerr,
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            marker=all_audit_specific_items[cur_audit]['marker'],
+            solid_capstyle='projecting', capsize=5,
+            errorevery=3,
+            label=audit_labels[cur_audit])
+
     i += 1
-plt.xlabel('Stopping probability, $p$')
-plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
-plt.title('Average total number of ballots sampled')
-plt.legend(loc='upper left')
-plt.tight_layout()
-plt.show() 
-
-# expected number of ballots vs p as a ratio of the prov exp bals
-font = {'size'   : 17}
-plt.rc('font', **font)
-colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-cur_audit = 'minerva2'
-ps = per_audit_results[cur_audit]['ps']
-prov_workloads = np.array(per_audit_results[cur_audit]['expbals'])
-
-cur_audit = 'so_bravo'
-ps = per_audit_results[cur_audit]['ps']
-workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
-plt.plot(ps,np.array(workloads),                linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],
- 
-        label=audit_labels[cur_audit])
-i += 1
-cur_audit = 'eor_bravo'
-ps = per_audit_results[cur_audit]['ps']
-workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
-plt.plot(ps,np.array(workloads),        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-i += 1
-cur_audit = 'minerva2'
-ps = per_audit_results[cur_audit]['ps']
-workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
-plt.plot(ps,np.array(workloads), linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-plt.xlabel('Stopping Probability, p')
-plt.ylabel('Total ballots fraction')
-plt.axhline(y=1, linestyle='--')
-plt.title('Average total ballots sampled \nas fraction of '+r'\textsc{Providence} total')
-plt.legend(loc='upper left')
-plt.tight_layout()
-plt.show() 
-
-# expected workload vs p (round workload only)
-font = {'size'   : 17}
-plt.rc('font', **font)
-colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
+    cur_audit = 'eor_bravo'
     ps = per_audit_results[cur_audit]['ps']
-    workloads = per_audit_results[cur_audit]['workloads']
-    plt.plot(ps,np.array(workloads)/1000, linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
+    numbals_std = per_audit_results[cur_audit]['numbals_std']
+    numbals_25 = per_audit_results[cur_audit]['numbals_25']
+    numbals_75 = per_audit_results[cur_audit]['numbals_75']
+ 
+    workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+    yerr = np.absolute(np.array([np.divide(np.array(numbals_25),prov_workloads), np.divide(np.array(numbals_75),prov_workloads)]) - np.array(workloads))
+    plt.errorbar(ps,
+            np.array(workloads),        
+            yerr=yerr,#np.divide(np.array(numbals_std), prov_workloads),
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            solid_capstyle='projecting', capsize=5,
+            errorevery=3,
+     
+            marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
     i += 1
-plt.xlabel('Stopping probability, p')
-plt.ylabel(r'Average workload ($\times 10^3$)')
-#plt.yscale('log') # need to ax
-plt.title('Constant round workload of '+str(roundworkload)+' ballots')
-plt.legend(loc='upper right')
-#plt.yscale('log')
-plt.tight_layout()
-plt.show() 
-
-# expected workload vs p (round workload and precinct workload)
-font = {'size'   : 17}
-plt.rc('font', **font)
-colors= ['b','r','g','c','m']
-markers = ['o','x','s','d','*']
-i = 0
-for cur_audit in audits:
+    cur_audit = 'minerva2'
     ps = per_audit_results[cur_audit]['ps']
-    precinct_workloads = per_audit_results[cur_audit]['precinct_workloads']
-    plt.plot(ps,np.array(precinct_workloads)/1000, linestyle=all_audit_specific_items[cur_audit]['linestyle'],
-        color=all_audit_specific_items[cur_audit]['color'],
-        marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
-    i += 1
-plt.xlabel('Stopping probability, p')
-plt.ylabel(r'Average workload ($\times 10^3$)')
-#plt.yscale('log')
-plt.title('Round workload '+str(newroundworkload)+' and precinct workload '+str(precinctworkload))
-plt.legend(loc='upper right')
-plt.tight_layout()
-plt.show() 
+    numbals_std = per_audit_results[cur_audit]['numbals_std']
+    numbals_25 = per_audit_results[cur_audit]['numbals_25']
+    numbals_75 = per_audit_results[cur_audit]['numbals_75']
+ 
+    workloads = np.divide(np.array(per_audit_results[cur_audit]['expbals']), prov_workloads)
+    yerr = np.absolute(np.array([np.divide(np.array(numbals_25),prov_workloads), np.divide(np.array(numbals_75),prov_workloads)]) - np.array(workloads))
+    plt.errorbar(ps,
+            np.array(workloads), 
+            yerr=yerr,#np.divide(np.array(numbals_std), prov_workloads),
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            solid_capstyle='projecting', capsize=5,
+            errorevery=3,
+            marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
+    plt.xlabel('Stopping Probability, p')
+    plt.ylabel('Total ballots fraction')
+    plt.axhline(y=1, linestyle='--')
+    plt.title('Average total ballots sampled \nas fraction of '+r'\textsc{Providence} total')
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    plt.show() 
+
+if plots[2]:
+    # expected workload vs p (round workload only)
+    font = {'size'   : 17}
+    plt.rc('font', **font)
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    i = 0
+    """        'ps':ps,
+            'expbals':list(numbals),
+            'numbals_std':list(numbals_std),
+            'exprounds':list(numrounds),
+            'numrounds_std':list(numrounds_std),
+            'expprecincts':list(distinct_precinct_samples),
+            'workloads':list(workloads),
+            'precinct_workloads':list(precinct_workloads)
+    """
+    for cur_audit in audits:
+        ps = per_audit_results[cur_audit]['ps']
+        expbals = per_audit_results[cur_audit]['expbals']
+        numbals_std = per_audit_results[cur_audit]['numbals_std']
+        numbals_25 = per_audit_results[cur_audit]['numbals_25']
+        numbals_75 = per_audit_results[cur_audit]['numbals_75']
+     
+        exprounds = per_audit_results[cur_audit]['exprounds']
+        numrounds_std = per_audit_results[cur_audit]['numrounds_std']
+        round_workload_low_quantile = per_audit_results[cur_audit]['round_workload_low_quantile']
+        round_workload_high_quantile = per_audit_results[cur_audit]['round_workload_high_quantile']
+        #workloads = per_audit_results[cur_audit]['workloads']
+        balworkload = 1
+        roundworkload = 1000
+        workloads = balworkload * np.array(expbals) + roundworkload * np.array(exprounds)
+        workloads = workloads / 1000
+        #workload_std = \
+        #    np.sqrt(
+        #        np.add(
+        #            np.square(balworkload * np.array(numbals_std)),
+        #            np.square(roundworkload * np.array(numrounds_std))
+        #        )
+        #    )
+        yerr = np.absolute(np.array([np.array(round_workload_low_quantile)/1000, np.array(round_workload_high_quantile)/1000]) - workloads)
+        print(np.shape(np.array(yerr)))
+        plt.errorbar(ps,
+            np.array(workloads), 
+            yerr=yerr,#workload_std/1000,
+            linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            solid_capstyle='projecting', capsize=5,
+            errorevery=3,
+            marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
+        i += 1
+    plt.xlabel('Stopping probability, p')
+    plt.ylabel(r'Average workload ($\times 10^3$)')
+    #plt.yscale('log') # need to ax
+    plt.title('Constant round workload of '+str(roundworkload)+' ballots')
+    plt.legend(loc='upper right')
+    #plt.yscale('log')
+    plt.tight_layout()
+    plt.show() 
+
+if plots[3]:
+    # expected workload vs p (round workload and precinct workload)
+    font = {'size'   : 17}
+    plt.rc('font', **font)
+    colors= ['b','r','g','c','m']
+    markers = ['o','x','s','d','*']
+    i = 0
+    for cur_audit in audits:
+        ps = per_audit_results[cur_audit]['ps']
+        precinct_workloads = per_audit_results[cur_audit]['precinct_workloads']
+        plt.plot(ps,np.array(precinct_workloads)/1000, linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+            color=all_audit_specific_items[cur_audit]['color'],
+            marker=all_audit_specific_items[cur_audit]['marker'], label=audit_labels[cur_audit])
+        i += 1
+    plt.xlabel('Stopping probability, p')
+    plt.ylabel(r'Average workload ($\times 10^3$)')
+    #plt.yscale('log')
+    plt.title('Round workload '+str(newroundworkload)+' and precinct workload '+str(precinctworkload))
+    plt.legend(loc='upper right')
+    plt.tight_layout()
+    plt.show() 
 
 # optimals ps for all three audits
 optimums = {}

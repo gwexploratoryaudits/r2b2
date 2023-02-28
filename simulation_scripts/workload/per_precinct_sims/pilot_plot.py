@@ -90,8 +90,8 @@ for cur_audit in audits:
     numbals = []
     numrounds = []
     #ps = [.05,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95]
-    #ps = [.05,.15,.25,.35,.45,.55,.65,.75,.85,.95]
-    ps = [.45,.55,.65,.75,.85,.95]
+    ps = [.05,.15,.25,.35,.45,.55,.65,.75,.85,.95]
+    #ps = [.45,.55,.65,.75,.85,.95]
     for p in ps:
         query = {
             'reported': reported_id,
@@ -140,8 +140,8 @@ for cur_audit in audits:
     roundworkload = 0
 
     # compute expected workloads for each round schedule (parameterized by p):
-    numbals = np.array(numbals)
-    numrounds = np.array(numrounds)
+    numbals = np.array(numbals,dtype='float')
+    numrounds = np.array(numrounds,dtype='float')
     workloads = balworkload * numbals + roundworkload * numrounds
     expbals = workloads
     """
@@ -225,12 +225,21 @@ i = 0
 for cur_audit in audits:
     ps = per_audit_results[cur_audit]['ps']
     workloads = per_audit_results[cur_audit]['expbals']
+    """
     plt.plot(ps,
         np.array(workloads),
         linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],
         label=audit_labels[cur_audit])
+    """
+    plt.errorbar(ps,
+        np.array(workloads),
+        linestyle=all_audit_specific_items[cur_audit]['linestyle'],
+        color=all_audit_specific_items[cur_audit]['color'],
+        marker=all_audit_specific_items[cur_audit]['marker'],
+        label=audit_labels[cur_audit])
+ 
     i += 1
 plt.xlabel('Stopping probability, $p$')
 plt.ylabel(r'Average total ballots sampled')# ($\times 10^3$)')

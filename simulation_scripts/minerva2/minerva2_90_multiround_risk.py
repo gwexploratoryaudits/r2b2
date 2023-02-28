@@ -21,6 +21,7 @@ election = parse_election('data/2020_presidential/2020_presidential.json')
 def state_trial(state, alpha):
     # Find the number of trials so we can keep all even
     db = MongoClient(host='localhost', port=27017, username='sarah', password='haras')['r2b2']
+
     query = {'audit_type': 'minerva2', 'alpha': .1}
     audit_id = db.audits.find_one(query)['_id']
     contest_obj = election.contests[state]

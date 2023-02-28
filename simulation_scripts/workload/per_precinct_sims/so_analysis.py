@@ -10,6 +10,7 @@ from r2b2.simulator import histogram
 from r2b2.tests.util import parse_election
 from r2b2.contest import Contest
 from r2b2.contest import ContestType
+import statistics
 
 election = parse_election('../data/2020_presidential/2020_presidential.json')
 
@@ -94,10 +95,12 @@ if __name__ == '__main__':
         else:
             assert num_trials == len(totals_sampled)
             asn = sum(totals_sampled) / num_trials
+            asn_std = statistics.pstdev(totals_sampled)
 
         print(asn)
 
         analysis['asn'] = asn
+        analysis['asn_std'] = asn_std
         analysis['so_misleading_cases'] = misleading_cases
         analysis['so_misleading_prop'] = misleading_cases / num_trials
 
