@@ -370,33 +370,28 @@ class Minerva2(Audit):
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
+            n_cur = self.rounds[-1]
             k_cur = votes_for_winner
 
             # Compute all parts of the stopping condition
             sigma_num = 1
             sigma_denom = 1
-            tau_num = sum(binom.pmf(range(), k_cur, p_1)[k_cur:])
-            tau_denom = sum(binom.pmf(range(), k_cur, p_0)[k_cur:])
-            tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_1))
-            tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), k_cur, p_0))
+            tau_num = sum(binom.pmf(range(k_cur, n_cur + 1), n_cur, p_1))
+            tau_denom = sum(binom.pmf(range(k_cur, n_cur + 1), n_cur, p_0))
 
         else:
             # Get relevant information
             p_0 = .5
             p_1 = self.sub_audits[pair].sub_contest.winner_prop
-            n_cur = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1] \
-                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-1]
-            n_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2] \
-                + self.sample_ballots[self.sub_audits[pair].sub_contest.reported_loser][-2]
+            n_cur = self.rounds[-1]
+            n_prev = self.rounds[-2]
             k_cur = votes_for_winner
-            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-2]
+            k_prev = self.sample_ballots[self.sub_audits[pair].sub_contest.reported_winner][-1]
 
             # Compute all parts of the stopping condition
             sigma_num = binom.pmf(k_prev, n_prev, p_1)
             sigma_denom = binom.pmf(k_prev, n_prev, p_0)
             tau_num = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), n_cur - n_prev, p_1))
-            # TODO check
             tau_denom = sum(binom.pmf(range(k_cur - k_prev, n_cur - n_prev + 1), n_cur - n_prev, p_0))
 
         if tau_num == 0 or sigma_num == 0:
