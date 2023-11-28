@@ -264,8 +264,8 @@ for cur_audit in audits:
         label=audit_labels[cur_audit])
     """
     plt.errorbar(ps,
-        np.array(workloads)/1000,
-        yerr=np.array(numbals_std)/1000,
+        np.array(workloads),
+        yerr=np.array(numbals_std),
         linestyle=all_audit_specific_items[cur_audit]['linestyle'],
         color=all_audit_specific_items[cur_audit]['color'],
         marker=all_audit_specific_items[cur_audit]['marker'],
@@ -275,7 +275,7 @@ for cur_audit in audits:
  
     i += 1
 plt.xlabel('Stopping probability, $p$')
-plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
+#plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
 plt.title('Average total number of ballots sampled')
 plt.legend(loc='upper left')
 plt.tight_layout()

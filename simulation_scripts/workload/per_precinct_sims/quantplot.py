@@ -335,10 +335,10 @@ if plots[0]:
             marker=all_audit_specific_items[cur_audit]['marker'],
             label=audit_labels[cur_audit])
         """
-        yerr_almost = np.array([np.array(numbals_25), np.array(numbals_75)]) /1000
+        yerr_almost = np.array([np.array(numbals_25), np.array(numbals_75)])
         print('quantiles for each p',LOW,HIGH,yerr_almost)
-        yerr = np.absolute(yerr_almost - np.array(workloads)/1000)
-        print('avg workloads',workloads/1000)
+        yerr = np.absolute(yerr_almost - np.array(workloads))
+        print('avg workloads',workloads)
         print('errorbars',yerr)
         uplims = []
         for i in range(len(yerr[0])):
@@ -350,7 +350,7 @@ if plots[0]:
         print(uplims)
         #uplims = np.array([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], dtype=bool)
         plt.errorbar(ps,
-            np.array(workloads)/1000,
+            np.array(workloads),
             yerr=yerr,#,np.array(numbals_std)/1000,
             linestyle=all_audit_specific_items[cur_audit]['linestyle'],
             color=all_audit_specific_items[cur_audit]['color'],
@@ -374,7 +374,7 @@ if plots[0]:
  
         i += 1
     plt.xlabel('Stopping probability, $p$')
-    plt.ylabel(r'Average total ballots sampled ($\times 10^3$)')
+    plt.ylabel(r'Ballots')
     plt.title('Average total number of ballots sampled')
     plt.legend(loc='upper left')
     plt.tight_layout()
@@ -508,7 +508,7 @@ if plots[2]:
         balworkload = 1
         roundworkload = 1000
         workloads = balworkload * np.array(expbals) + roundworkload * np.array(exprounds)
-        workloads = workloads / 1000
+        workloads = workloads 
         #workload_std = \
         #    np.sqrt(
         #        np.add(
@@ -516,7 +516,7 @@ if plots[2]:
         #            np.square(roundworkload * np.array(numrounds_std))
         #        )
         #    )
-        yerr = np.absolute(np.array([np.array(round_workload_low_quantile)/1000, np.array(round_workload_high_quantile)/1000]) - workloads)
+        yerr = np.absolute(np.array([np.array(round_workload_low_quantile), np.array(round_workload_high_quantile)/1]) - workloads)
         uplims = []
         for i in range(len(yerr[0])):
             if yerr[0][i] == yerr[1][i]:
@@ -537,9 +537,9 @@ if plots[2]:
             marker=all_audit_specific_items[cur_audit]['marker'],  label=audit_labels[cur_audit])
         i += 1
     plt.xlabel('Stopping probability, p')
-    plt.ylabel(r'Average workload ($\times 10^3$)')
+    plt.ylabel(r'Workload')
     #plt.yscale('log') # need to ax
-    plt.title('Constant round workload of '+str(roundworkload)+' ballots')
+    #plt.title('Constant round workload of '+str(roundworkload)+' ballots')
     plt.legend(loc='upper right')
     #plt.yscale('log')
     plt.tight_layout()

@@ -1,8 +1,6 @@
 """Minerva audit module."""
 import math
 from typing import List
-
-import click
 from scipy.signal import convolve
 from scipy.stats import binom
 from scipy.stats import norm
