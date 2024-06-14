@@ -4,6 +4,9 @@ graft ci
 graft tests
 graft simulation_scripts
 
+recursive-include notebook *.ipynb
+recursive-exclude notebook/.ipynb_checkpoints *
+
 include .bumpversion.cfg
 include .coveragerc
 include .cookiecutterrc
